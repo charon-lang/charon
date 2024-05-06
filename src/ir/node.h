@@ -1,6 +1,7 @@
 #pragma once
 #include <stdint.h>
 #include "type.h"
+#include "../diag.h"
 
 typedef enum {
     IR_NODE_TYPE_FUNCTION,

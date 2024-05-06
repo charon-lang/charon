@@ -1,6 +1,5 @@
 #include "node.h"
 #include <stdlib.h>
-#include "../diag.h"
 
 static ir_node_t *make_node(ir_node_type_t type, diag_loc_t diag_loc) {
     ir_node_t *node = malloc(sizeof(ir_node_t));
