@@ -9,7 +9,6 @@ static token_t consume(tokenizer_t *tokenizer, token_type_t type) {
     token_t token = tokenizer_advance(tokenizer);
     if(token.type == type) return token;
     diag_error(token.diag_loc, "expected %s got %s", token_type_name(type), token_type_name(token.type));
-    __builtin_unreachable();
 }
 
 static bool try_expect(tokenizer_t *tokenizer, token_type_t type) {
@@ -22,7 +21,6 @@ static void expect(tokenizer_t *tokenizer, token_type_t type) {
     if(try_expect(tokenizer, type)) return;
     token_t token = tokenizer_peek(tokenizer);
     diag_error(token.diag_loc, "expected %s got %s", token_type_name(type), token_type_name(token.type));
-    __builtin_unreachable();
 }
 
 static const char *make_text_from_token(tokenizer_t *tokenizer, token_t token) {
@@ -156,7 +154,6 @@ static ir_node_t *parse_literal(tokenizer_t *tokenizer) {
         case TOKEN_TYPE_CHAR: return parse_literal_char(tokenizer);
         default: return parse_literal_numeric(tokenizer);
     }
-    __builtin_unreachable();
 }
 
 static ir_node_t *parse_var_or_call(tokenizer_t *tokenizer) {
@@ -190,7 +187,6 @@ static ir_node_t *parse_primary(tokenizer_t *tokenizer) {
         case TOKEN_TYPE_PARENTHESES_LEFT: return parse_group(tokenizer);
         default: return parse_literal(tokenizer);
     }
-    __builtin_unreachable();
 }
 
 static ir_node_t *parse_unary(tokenizer_t *tokenizer) {
@@ -298,7 +294,6 @@ static ir_node_t *parse_statement(tokenizer_t *tokenizer) {
         case TOKEN_TYPE_KEYWORD_IF: return parse_if(tokenizer);
         default: return parse_simple_statement(tokenizer);
     }
-    __builtin_unreachable();
 }
 
 static ir_node_t *parse_function(tokenizer_t *tokenizer) {
