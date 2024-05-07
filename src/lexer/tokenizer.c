@@ -147,14 +147,3 @@ token_t tokenizer_advance(tokenizer_t *tokenizer) {
 bool tokenizer_is_eof(tokenizer_t *tokenizer) {
     return tokenizer->cursor >= tokenizer->source->data_length || tokenizer_peek(tokenizer).type == TOKEN_TYPE_EOF;
 }
-
-char *tokenizer_make_text(tokenizer_t *tokenizer, token_t token) {
-    char *text = malloc(token.length + 1);
-    memcpy(text, tokenizer->source->data + token.offset, token.length);
-    text[token.length] = '\0';
-    return text;
-}
-
-void tokenizer_free_text(tokenizer_t *tokenizer, char *text) {
-    free(text);
-}
