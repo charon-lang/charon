@@ -62,8 +62,8 @@ static spec_t g_spec[] = {
     { .pattern = "^,", .type = TOKEN_TYPE_COMMA }
 };
 
-static compiled_spec_t *g_compiled_spec = NULL;
-static const size_t g_spec_size = sizeof(g_spec) / sizeof(spec_t);
+static compiled_spec_t g_compiled_spec[sizeof(g_spec) / sizeof(spec_t)];
+static bool g_spec_is_compiled = false;
 
 static void print_pcre2_error(int error_code) {
     char error_message[120];
@@ -72,20 +72,19 @@ static void print_pcre2_error(int error_code) {
 }
 
 static bool compile_spec() {
-    g_compiled_spec = malloc(sizeof(compiled_spec_t) * g_spec_size);
-    for(size_t i = 0; i < g_spec_size; i++) {
+    for(size_t i = 0; i < sizeof(g_compiled_spec) / sizeof(compiled_spec_t); i++) {
         int error_code;
         PCRE2_SIZE error_offset;
         pcre2_code *code = pcre2_compile(g_spec[i].pattern, PCRE2_ZERO_TERMINATED, 0, &error_code, &error_offset, NULL);
         if(code == NULL) {
             print_pcre2_error(error_code);
             for(size_t j = 0; j < i; j++) pcre2_code_free(g_compiled_spec[j].pattern);
-            free(g_compiled_spec);
             return false;
         }
         g_compiled_spec[i].type = g_spec[i].type;
         g_compiled_spec[i].pattern = code;
     }
+    g_spec_is_compiled = true;
     return true;
 }
 
@@ -94,7 +93,7 @@ static token_t next_token(tokenizer_t *tokenizer) {
 
     char *sub = tokenizer->source->data + tokenizer->cursor;
     size_t sub_length = tokenizer->source->data_length - tokenizer->cursor;
-    for(size_t i = 0; i < g_spec_size; i++) {
+    for(size_t i = 0; i < sizeof(g_compiled_spec) / sizeof(compiled_spec_t); i++) {
         pcre2_match_data *md = pcre2_match_data_create(1, NULL);
         int match_count = pcre2_match(g_compiled_spec[i].pattern, sub, sub_length, 0, 0, md, NULL);
         if(match_count <= 0) {
@@ -121,7 +120,7 @@ static token_t next_token(tokenizer_t *tokenizer) {
 }
 
 tokenizer_t *tokenizer_make(source_t *source) {
-    if(g_compiled_spec == NULL && !compile_spec()) return NULL;
+    if(!g_spec_is_compiled && !compile_spec()) return NULL;
 
     tokenizer_t *tokenizer = malloc(sizeof(tokenizer_t));
     tokenizer->source = source;
