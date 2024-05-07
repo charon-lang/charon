@@ -25,18 +25,18 @@ static void expect(tokenizer_t *tokenizer, token_type_t type) {
     __builtin_unreachable();
 }
 
-static char *make_text_from_token(tokenizer_t *tokenizer, token_t token) {
+static const char *make_text_from_token(tokenizer_t *tokenizer, token_t token) {
     char *text = malloc(token.length + 1);
     memcpy(text, tokenizer->source->data + token.offset, token.length);
     text[token.length] = '\0';
     return text;
 }
 
-static void free_text(tokenizer_t *tokenizer, char *text) {
-    free(text);
+static void free_text(tokenizer_t *tokenizer, const char *text) {
+    free((char *) text);
 }
 
-static ir_type_t *type_from_text(char *text) {
+static ir_type_t *type_from_text(const char *text) {
     if(strcmp(text, "void") == 0) return ir_type_get_void();
     if(strcmp(text, "uint") == 0) return ir_type_get_uint();
     if(strcmp(text, "u8") == 0) return ir_type_get_u8();
@@ -48,7 +48,7 @@ static ir_type_t *type_from_text(char *text) {
 
 static ir_type_t *parse_type(tokenizer_t *tokenizer) {
     token_t token_type = consume(tokenizer, TOKEN_TYPE_TYPE);
-    char *text = make_text_from_token(tokenizer, token_type);
+    const char *text = make_text_from_token(tokenizer, token_type);
     ir_type_t *type = type_from_text(text);
     if(type == NULL) diag_error(token_type.diag_loc, "invalid type %s", text);
     free_text(tokenizer, text);
@@ -56,7 +56,7 @@ static ir_type_t *parse_type(tokenizer_t *tokenizer) {
     return type;
 }
 
-static char *string_escape(diag_loc_t diag_loc, char *src, size_t src_length) {
+static const char *string_escape(diag_loc_t diag_loc, const char *src, size_t src_length) {
     char *dest = malloc(src_length + 1);
     int dest_index = 0;
     bool escaped = false;
@@ -126,7 +126,7 @@ static ir_node_t *parse_literal_numeric(tokenizer_t *tokenizer) {
         case TOKEN_TYPE_NUMBER_OCT: base = 8; break;
         default: diag_error(token_numeric.diag_loc, "expected a numeric literal");
     }
-    char *text = make_text_from_token(tokenizer, token_numeric);
+    const char *text = make_text_from_token(tokenizer, token_numeric);
     errno = 0;
     uintmax_t value = strtoull(text, NULL, base);
     if(errno == ERANGE) diag_error(token_numeric.diag_loc, "integer constant too large");
@@ -136,15 +136,15 @@ static ir_node_t *parse_literal_numeric(tokenizer_t *tokenizer) {
 
 static ir_node_t *parse_literal_string(tokenizer_t *tokenizer) {
     token_t token_string = consume(tokenizer, TOKEN_TYPE_STRING);
-    char *text = make_text_from_token(tokenizer, token_string);
-    char *value = string_escape(token_string.diag_loc, &text[1], strlen(text) - 2);
+    const char *text = make_text_from_token(tokenizer, token_string);
+    const char *value = string_escape(token_string.diag_loc, &text[1], strlen(text) - 2);
     free_text(tokenizer, text);
     return ir_node_make_expr_literal_string(value, token_string.diag_loc);
 }
 
 static ir_node_t *parse_literal_char(tokenizer_t *tokenizer) {
     token_t token_char = consume(tokenizer, TOKEN_TYPE_CHAR);
-    char *text = make_text_from_token(tokenizer, token_char);
+    const char *text = make_text_from_token(tokenizer, token_char);
     char value = text[1];
     free_text(tokenizer, text);
     return ir_node_make_expr_literal_char(value, token_char.diag_loc);
@@ -161,7 +161,7 @@ static ir_node_t *parse_literal(tokenizer_t *tokenizer) {
 
 static ir_node_t *parse_var_or_call(tokenizer_t *tokenizer) {
     token_t token_identifier = consume(tokenizer, TOKEN_TYPE_IDENTIFIER);
-    char *name = make_text_from_token(tokenizer, token_identifier);
+    const char *name = make_text_from_token(tokenizer, token_identifier);
     if(try_expect(tokenizer, TOKEN_TYPE_PARENTHESES_LEFT)) {
         size_t argument_count = 0;
         ir_node_t **arguments = NULL;
@@ -246,7 +246,7 @@ static ir_node_t *parse_expression(tokenizer_t *tokenizer) {
 static ir_node_t *parse_decl(tokenizer_t *tokenizer) {
     ir_type_t *type = parse_type(tokenizer);
     token_t token_identifier = consume(tokenizer, TOKEN_TYPE_IDENTIFIER);
-    char *name = make_text_from_token(tokenizer, token_identifier);
+    const char *name = make_text_from_token(tokenizer, token_identifier);
     ir_node_t *initial = NULL;
     if(try_expect(tokenizer, TOKEN_TYPE_EQUAL)) initial = parse_expression(tokenizer);
     return ir_node_make_stmt_decl(type, name, initial, token_identifier.diag_loc);
@@ -304,14 +304,14 @@ static ir_node_t *parse_statement(tokenizer_t *tokenizer) {
 static ir_node_t *parse_function(tokenizer_t *tokenizer) {
     ir_type_t *type = parse_type(tokenizer);
     token_t token_identifier = consume(tokenizer, TOKEN_TYPE_IDENTIFIER);
-    char *name = make_text_from_token(tokenizer, token_identifier);
+    const char *name = make_text_from_token(tokenizer, token_identifier);
     expect(tokenizer, TOKEN_TYPE_PARENTHESES_LEFT);
     size_t argument_count = 0;
     ir_function_argument_t *arguments = NULL;
     if(!try_expect(tokenizer, TOKEN_TYPE_PARENTHESES_RIGHT)) {
         do {
             ir_type_t *argument_type = parse_type(tokenizer);
-            char *argument_name = make_text_from_token(tokenizer, consume(tokenizer, TOKEN_TYPE_IDENTIFIER));
+            const char *argument_name = make_text_from_token(tokenizer, consume(tokenizer, TOKEN_TYPE_IDENTIFIER));
             arguments = realloc(arguments, sizeof(ir_function_argument_t) * ++argument_count);
             arguments[argument_count - 1] = (ir_function_argument_t) { .type = argument_type, .name = argument_name };
         } while(try_expect(tokenizer, TOKEN_TYPE_COMMA));
