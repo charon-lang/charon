@@ -53,11 +53,3 @@ ir_type_t *ir_type_make_pointer(ir_type_t *base) {
     type->pointer.base = base;
     return type;
 }
-
-void ir_type_print(ir_type_t *type) {
-    switch(type->kind) {
-        case TYPE_KIND_VOID: printf("void"); break;
-        case TYPE_KIND_UNSIGNED_INTEGER: printf("%lubit-uint", type->bit_size); break;
-        case TYPE_KIND_POINTER: printf("*"); ir_type_print(type->pointer.base); break;
-    }
-}

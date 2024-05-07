@@ -28,5 +28,3 @@ ir_type_t *ir_type_get_u64();
 ir_type_t *ir_type_get_uint();
 
 ir_type_t *ir_type_make_pointer(ir_type_t *base);
-
-void ir_type_print(ir_type_t *type);
