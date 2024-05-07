@@ -42,7 +42,7 @@ typedef enum {
 
 typedef struct {
     ir_type_t *type;
-    char *name;
+    const char *name;
 } ir_function_argument_t;
 
 typedef struct ir_node {
@@ -51,7 +51,7 @@ typedef struct ir_node {
     union {
         struct {
             ir_type_t *type;
-            char *name;
+            const char *name;
             size_t argument_count;
             ir_function_argument_t *arguments;
             struct ir_node *body;
@@ -59,7 +59,7 @@ typedef struct ir_node {
 
         union {
             uintmax_t numeric_value;
-            char *string_value;
+            const char *string_value;
             char char_value;
         } expr_literal;
         struct {
@@ -71,10 +71,10 @@ typedef struct ir_node {
             struct ir_node *operand;
         } expr_unary;
         struct {
-            char *name;
+            const char *name;
         } expr_var;
         struct {
-            char *name;
+            const char *name;
             size_t argument_count;
             struct ir_node **arguments;
         } expr_call;
@@ -93,23 +93,23 @@ typedef struct ir_node {
         } stmt_if;
         struct {
             ir_type_t *type;
-            char *name;
+            const char *name;
             struct ir_node *initial; // OPTIONAL
         } stmt_decl;
     };
 } ir_node_t;
 
-ir_node_t *ir_node_make_function(ir_type_t *type, char *name, size_t argument_count, ir_function_argument_t *arguments, ir_node_t *body, diag_loc_t diag_loc);
+ir_node_t *ir_node_make_function(ir_type_t *type, const char *name, size_t argument_count, ir_function_argument_t *arguments, ir_node_t *body, diag_loc_t diag_loc);
 
 ir_node_t *ir_node_make_expr_literal_numeric(uintmax_t value, diag_loc_t diag_loc);
-ir_node_t *ir_node_make_expr_literal_string(char *value, diag_loc_t diag_loc);
+ir_node_t *ir_node_make_expr_literal_string(const char *value, diag_loc_t diag_loc);
 ir_node_t *ir_node_make_expr_literal_char(char value, diag_loc_t diag_loc);
 ir_node_t *ir_node_make_expr_binary(ir_binary_operation_t operation, ir_node_t *left, ir_node_t *right, diag_loc_t diag_loc);
 ir_node_t *ir_node_make_expr_unary(ir_unary_operation_t operation, ir_node_t *operand, diag_loc_t diag_loc);
-ir_node_t *ir_node_make_expr_var(char *name, diag_loc_t diag_loc);
-ir_node_t *ir_node_make_expr_call(char *name, size_t argument_count, ir_node_t **arguments, diag_loc_t diag_loc);
+ir_node_t *ir_node_make_expr_var(const char *name, diag_loc_t diag_loc);
+ir_node_t *ir_node_make_expr_call(const char *name, size_t argument_count, ir_node_t **arguments, diag_loc_t diag_loc);
 
 ir_node_t *ir_node_make_stmt_block(size_t statement_count, ir_node_t **statements, diag_loc_t diag_loc);
 ir_node_t *ir_node_make_stmt_return(ir_node_t *value, diag_loc_t diag_loc);
 ir_node_t *ir_node_make_stmt_if(ir_node_t *condition, ir_node_t *body, ir_node_t *else_body, diag_loc_t diag_loc);
-ir_node_t *ir_node_make_stmt_decl(ir_type_t *type, char *name, ir_node_t *initial, diag_loc_t diag_loc);
+ir_node_t *ir_node_make_stmt_decl(ir_type_t *type, const char *name, ir_node_t *initial, diag_loc_t diag_loc);

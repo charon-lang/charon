@@ -8,7 +8,7 @@ static ir_node_t *make_node(ir_node_type_t type, diag_loc_t diag_loc) {
     return node;
 }
 
-ir_node_t *ir_node_make_function(ir_type_t *type, char *name, size_t argument_count, ir_function_argument_t *arguments, ir_node_t *body, diag_loc_t diag_loc) {
+ir_node_t *ir_node_make_function(ir_type_t *type, const char *name, size_t argument_count, ir_function_argument_t *arguments, ir_node_t *body, diag_loc_t diag_loc) {
     ir_node_t *node = make_node(IR_NODE_TYPE_FUNCTION, diag_loc);
     node->function.type = type;
     node->function.name = name;
@@ -24,7 +24,7 @@ ir_node_t *ir_node_make_expr_literal_numeric(uintmax_t value, diag_loc_t diag_lo
     return node;
 }
 
-ir_node_t *ir_node_make_expr_literal_string(char *value, diag_loc_t diag_loc) {
+ir_node_t *ir_node_make_expr_literal_string(const char *value, diag_loc_t diag_loc) {
     ir_node_t *node = make_node(IR_NODE_TYPE_EXPR_LITERAL_STRING, diag_loc);
     node->expr_literal.string_value = value;
     return node;
@@ -51,13 +51,13 @@ ir_node_t *ir_node_make_expr_unary(ir_unary_operation_t operation, ir_node_t *op
     return node;
 }
 
-ir_node_t *ir_node_make_expr_var(char *name, diag_loc_t diag_loc) {
+ir_node_t *ir_node_make_expr_var(const char *name, diag_loc_t diag_loc) {
     ir_node_t *node = make_node(IR_NODE_TYPE_EXPR_VAR, diag_loc);
     node->expr_var.name = name;
     return node;
 }
 
-ir_node_t *ir_node_make_expr_call(char *name, size_t argument_count, ir_node_t **arguments, diag_loc_t diag_loc) {
+ir_node_t *ir_node_make_expr_call(const char *name, size_t argument_count, ir_node_t **arguments, diag_loc_t diag_loc) {
     ir_node_t *node = make_node(IR_NODE_TYPE_EXPR_CALL, diag_loc);
     node->expr_call.name = name;
     node->expr_call.argument_count = argument_count;
@@ -86,7 +86,7 @@ ir_node_t *ir_node_make_stmt_if(ir_node_t *condition, ir_node_t *body, ir_node_t
     return node;
 }
 
-ir_node_t *ir_node_make_stmt_decl(ir_type_t *type, char *name, ir_node_t *initial, diag_loc_t diag_loc) {
+ir_node_t *ir_node_make_stmt_decl(ir_type_t *type, const char *name, ir_node_t *initial, diag_loc_t diag_loc) {
     ir_node_t *node = make_node(IR_NODE_TYPE_STMT_DECL, diag_loc);
     node->stmt_decl.type = type;
     node->stmt_decl.name = name;
