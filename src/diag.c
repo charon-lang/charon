@@ -38,9 +38,9 @@ static void diag(diag_loc_t *loc, char *fmt, va_list list, char *type, FILE *fd)
 
         for(size_t i = INFO_LINE_COUNT; i > 0; i--) {
             if(!lines[i - 1].present) continue;
-            fprintf(fd, "%.*s\n", lines[i - 1].length, &loc->source->data[lines[i - 1].offset]);
+            fprintf(fd, "%.*s\n", (int) lines[i - 1].length, &loc->source->data[lines[i - 1].offset]);
         }
-        fprintf(fd, "%*s^\n", loc->offset - lines[0].offset, "");
+        fprintf(fd, "%*s^\n", (int) (loc->offset - lines[0].offset), "");
     } else {
         fprintf(fd, "%s: \e[0m", type);
         vfprintf(fd, fmt, list);

@@ -6,20 +6,19 @@
 #include "lexer/token.h"
 #include "lexer/tokenizer.h"
 #include "parser/parser.h"
+#include "semantics/typecheck.h"
 
 [[noreturn]] void exit_perror() {
     perror("ERROR(main): ");
     exit(EXIT_FAILURE);
-    __builtin_unreachable();
 }
 
 [[noreturn]] void exit_message(char *msg) {
     fprintf(stderr, "ERROR(main): %s\n", msg);
     exit(EXIT_FAILURE);
-    __builtin_unreachable();
 }
 
-static void print_node(ir_node_t *node, size_t depth) {
+static void print_node(ir_node_t *node, int depth) {
     static const char *binary_op_translations[] = {
         "+", "-", "*", "/", "%", ">", ">=", "<", "<=", "==", "!=", "="
     };
@@ -101,6 +100,7 @@ int main(int argc, char **argv) {
     tokenizer_free(tokenizer);
 
     print_node(ast, 0);
+
 
     free(source);
     return EXIT_SUCCESS;

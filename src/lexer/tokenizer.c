@@ -67,7 +67,7 @@ static bool g_spec_is_compiled = false;
 
 static void print_pcre2_error(int error_code) {
     char error_message[120];
-    pcre2_get_error_message(error_code, error_message, 120);
+    pcre2_get_error_message(error_code, (uint8_t *) error_message, 120);
     printf("Error: %s\n", error_message);
 }
 
@@ -75,7 +75,7 @@ static bool compile_spec() {
     for(size_t i = 0; i < sizeof(g_compiled_spec) / sizeof(compiled_spec_t); i++) {
         int error_code;
         PCRE2_SIZE error_offset;
-        pcre2_code *code = pcre2_compile(g_spec[i].pattern, PCRE2_ZERO_TERMINATED, 0, &error_code, &error_offset, NULL);
+        pcre2_code *code = pcre2_compile((const uint8_t *) g_spec[i].pattern, PCRE2_ZERO_TERMINATED, 0, &error_code, &error_offset, NULL);
         if(code == NULL) {
             print_pcre2_error(error_code);
             for(size_t j = 0; j < i; j++) pcre2_code_free(g_compiled_spec[j].pattern);
@@ -95,7 +95,7 @@ static token_t next_token(tokenizer_t *tokenizer) {
     size_t sub_length = tokenizer->source->data_length - tokenizer->cursor;
     for(size_t i = 0; i < sizeof(g_compiled_spec) / sizeof(compiled_spec_t); i++) {
         pcre2_match_data *md = pcre2_match_data_create(1, NULL);
-        int match_count = pcre2_match(g_compiled_spec[i].pattern, sub, sub_length, 0, 0, md, NULL);
+        int match_count = pcre2_match(g_compiled_spec[i].pattern, (const uint8_t *) sub, sub_length, 0, 0, md, NULL);
         if(match_count <= 0) {
             pcre2_match_data_free(md);
             continue;

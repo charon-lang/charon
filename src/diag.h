@@ -9,5 +9,5 @@ typedef struct {
     size_t offset;
 } diag_loc_t;
 
-void diag_error(diag_loc_t diag_loc, char *fmt, ...);
+[[noreturn]] void diag_error(diag_loc_t diag_loc, char *fmt, ...);
 void diag_warn(diag_loc_t diag_loc, char *fmt, ...);
