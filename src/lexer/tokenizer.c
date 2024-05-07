@@ -6,7 +6,7 @@
 #include "../diag.h"
 
 typedef struct {
-    char *pattern;
+    const char *pattern;
     token_type_t type;
 } spec_t;
 
@@ -91,7 +91,7 @@ static bool compile_spec() {
 static token_t next_token(tokenizer_t *tokenizer) {
     if(tokenizer->cursor >= tokenizer->source->data_length) return (token_t) { .type = TOKEN_TYPE_EOF, .diag_loc = { .present = false } };
 
-    char *sub = tokenizer->source->data + tokenizer->cursor;
+    const char *sub = tokenizer->source->data + tokenizer->cursor;
     size_t sub_length = tokenizer->source->data_length - tokenizer->cursor;
     for(size_t i = 0; i < sizeof(g_compiled_spec) / sizeof(compiled_spec_t); i++) {
         pcre2_match_data *md = pcre2_match_data_create(1, NULL);
