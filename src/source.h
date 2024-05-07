@@ -2,7 +2,7 @@
 #include <stddef.h>
 
 typedef struct {
-    char *name;
+    const char *name;
     size_t data_length;
-    char *data;
+    const char *data;
 } source_t;
