@@ -19,7 +19,7 @@
     __builtin_unreachable();
 }
 
-static void print_node([[maybe_unused]] void *ctx, ir_node_t *node, size_t depth) {
+static void print_node(ir_node_t *node, size_t depth) {
     static const char *binary_op_translations[] = {
         "+", "-", "*", "/", "%", ">", ">=", "<", "<=", "==", "!=", "="
     };
@@ -45,6 +45,35 @@ static void print_node([[maybe_unused]] void *ctx, ir_node_t *node, size_t depth
         case IR_NODE_TYPE_STMT_DECL: printf("(decl %s)", node->stmt_decl.name); break;
     }
     printf("\n");
+
+    depth++;
+    switch(node->type) {
+        case IR_NODE_TYPE_FUNCTION: print_node(node->function.body, depth); break;
+
+        case IR_NODE_TYPE_EXPR_LITERAL_NUMERIC: break;
+        case IR_NODE_TYPE_EXPR_LITERAL_STRING: break;
+        case IR_NODE_TYPE_EXPR_LITERAL_CHAR: break;
+        case IR_NODE_TYPE_EXPR_BINARY:
+            print_node(node->expr_binary.left, depth);
+            print_node(node->expr_binary.right, depth);
+            break;
+        case IR_NODE_TYPE_EXPR_UNARY: print_node(node->expr_unary.operand, depth); break;
+        case IR_NODE_TYPE_EXPR_VAR: break;
+        case IR_NODE_TYPE_EXPR_CALL:
+            for(size_t i = 0; i < node->expr_call.argument_count; i++) print_node(node->expr_call.arguments[i], depth);
+            break;
+
+        case IR_NODE_TYPE_STMT_BLOCK:
+            for(size_t i = 0; i < node->stmt_block.statement_count; i++) print_node(node->stmt_block.statements[i], depth);
+            break;
+        case IR_NODE_TYPE_STMT_RETURN: if(node->stmt_return.value != NULL) print_node(node->stmt_return.value, depth); break;
+        case IR_NODE_TYPE_STMT_IF:
+            print_node(node->stmt_if.condition, depth);
+            print_node(node->stmt_if.body, depth);
+            if(node->stmt_if.else_body != NULL) print_node(node->stmt_if.else_body, depth);
+            break;
+        case IR_NODE_TYPE_STMT_DECL: if(node->stmt_decl.initial != NULL) print_node(node->stmt_decl.initial, depth); break;
+    }
 }
 
 int main(int argc, char **argv) {
@@ -69,11 +98,10 @@ int main(int argc, char **argv) {
     tokenizer_t *tokenizer = tokenizer_make(source);
     if(tokenizer == NULL) exit_message("failed to initialize the tokenizer");
     ir_node_t *ast = parser_parse(tokenizer);
-
-    ir_node_recurse(NULL, ast, print_node);
-
     tokenizer_free(tokenizer);
-    free(source);
 
+    print_node(ast, 0);
+
+    free(source);
     return EXIT_SUCCESS;
 }

@@ -113,5 +113,3 @@ ir_node_t *ir_node_make_stmt_block(size_t statement_count, ir_node_t **statement
 ir_node_t *ir_node_make_stmt_return(ir_node_t *value, diag_loc_t diag_loc);
 ir_node_t *ir_node_make_stmt_if(ir_node_t *condition, ir_node_t *body, ir_node_t *else_body, diag_loc_t diag_loc);
 ir_node_t *ir_node_make_stmt_decl(ir_type_t *type, char *name, ir_node_t *initial, diag_loc_t diag_loc);
-
-void ir_node_recurse(void *ctx, ir_node_t *root, void (* func)(void *ctx, ir_node_t *node, size_t depth));

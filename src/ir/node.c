@@ -1,38 +1,6 @@
 #include "node.h"
 #include <stdlib.h>
 
-static void recurse(void *ctx, ir_node_t *node, size_t depth, void (* func)(void *ctx, ir_node_t *node, size_t depth)) {
-    func(ctx, node, depth);
-    depth++;
-    switch(node->type) {
-        case IR_NODE_TYPE_FUNCTION: recurse(ctx, node->function.body, depth, func); break;
-
-        case IR_NODE_TYPE_EXPR_LITERAL_NUMERIC: break;
-        case IR_NODE_TYPE_EXPR_LITERAL_STRING: break;
-        case IR_NODE_TYPE_EXPR_LITERAL_CHAR: break;
-        case IR_NODE_TYPE_EXPR_BINARY:
-            recurse(ctx, node->expr_binary.left, depth, func);
-            recurse(ctx, node->expr_binary.right, depth, func);
-            break;
-        case IR_NODE_TYPE_EXPR_UNARY: recurse(ctx, node->expr_unary.operand, depth, func); break;
-        case IR_NODE_TYPE_EXPR_VAR: break;
-        case IR_NODE_TYPE_EXPR_CALL:
-            for(size_t i = 0; i < node->expr_call.argument_count; i++) recurse(ctx, node->expr_call.arguments[i], depth, func);
-            break;
-
-        case IR_NODE_TYPE_STMT_BLOCK:
-            for(size_t i = 0; i < node->stmt_block.statement_count; i++) recurse(ctx, node->stmt_block.statements[i], depth, func);
-            break;
-        case IR_NODE_TYPE_STMT_RETURN: if(node->stmt_return.value != NULL) recurse(ctx, node->stmt_return.value, depth, func); break;
-        case IR_NODE_TYPE_STMT_IF:
-            recurse(ctx, node->stmt_if.condition, depth, func);
-            recurse(ctx, node->stmt_if.body, depth, func);
-            if(node->stmt_if.else_body != NULL) recurse(ctx, node->stmt_if.else_body, depth, func);
-            break;
-        case IR_NODE_TYPE_STMT_DECL: if(node->stmt_decl.initial != NULL) recurse(ctx, node->stmt_decl.initial, depth, func); break;
-    }
-}
-
 static ir_node_t *make_node(ir_node_type_t type, diag_loc_t diag_loc) {
     ir_node_t *node = malloc(sizeof(ir_node_t));
     node->type = type;
@@ -124,8 +92,4 @@ ir_node_t *ir_node_make_stmt_decl(ir_type_t *type, char *name, ir_node_t *initia
     node->stmt_decl.name = name;
     node->stmt_decl.initial = initial;
     return node;
-}
-
-void ir_node_recurse(void *ctx, ir_node_t *root, void (* func)(void *ctx, ir_node_t *node, size_t depth)) {
-    recurse(ctx, root, 0, func);
 }
