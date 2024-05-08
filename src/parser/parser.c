@@ -301,10 +301,15 @@ static ir_node_t *parse_function(tokenizer_t *tokenizer) {
     token_t token_identifier = consume(tokenizer, TOKEN_TYPE_IDENTIFIER);
     const char *name = make_text_from_token(tokenizer, token_identifier);
     expect(tokenizer, TOKEN_TYPE_PARENTHESES_LEFT);
+    bool varargs = false;
     size_t argument_count = 0;
     ir_function_argument_t *arguments = NULL;
     if(!try_expect(tokenizer, TOKEN_TYPE_PARENTHESES_RIGHT)) {
         do {
+            if(try_expect(tokenizer, TOKEN_TYPE_TRIPLE_PERIOD)) {
+                varargs = true;
+                break;
+            }
             ir_type_t *argument_type = parse_type(tokenizer);
             const char *argument_name = make_text_from_token(tokenizer, consume(tokenizer, TOKEN_TYPE_IDENTIFIER));
             arguments = realloc(arguments, sizeof(ir_function_argument_t) * ++argument_count);
@@ -312,7 +317,7 @@ static ir_node_t *parse_function(tokenizer_t *tokenizer) {
         } while(try_expect(tokenizer, TOKEN_TYPE_COMMA));
         expect(tokenizer, TOKEN_TYPE_PARENTHESES_RIGHT);
     }
-    return ir_node_make_function(type, name, argument_count, arguments, parse_statement(tokenizer), token_identifier.diag_loc);
+    return ir_node_make_function(type, name, argument_count, arguments, varargs, parse_statement(tokenizer), token_identifier.diag_loc);
 }
 
 static ir_node_t *parse_program(tokenizer_t *tokenizer) {
