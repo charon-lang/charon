@@ -101,6 +101,7 @@ int main(int argc, char **argv) {
 
     print_node(ast, 0);
 
+    typecheck(ast);
 
     free(source);
     return EXIT_SUCCESS;
