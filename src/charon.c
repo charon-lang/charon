@@ -38,6 +38,7 @@ static void print_node(ir_node_t *node, int depth) {
         case IR_NODE_TYPE_EXPR_UNARY: printf("(unary %s)", unary_op_translations[node->expr_unary.operation]); break;
         case IR_NODE_TYPE_EXPR_VAR: printf("(var %s)", node->expr_var.name); break;
         case IR_NODE_TYPE_EXPR_CALL: printf("(call %s)", node->expr_call.name); break;
+        case IR_NODE_TYPE_EXPR_CAST: printf("(cast)"); break;
 
         case IR_NODE_TYPE_STMT_BLOCK: printf("(block)"); break;
         case IR_NODE_TYPE_STMT_RETURN: printf("(return)"); break;
@@ -64,6 +65,9 @@ static void print_node(ir_node_t *node, int depth) {
         case IR_NODE_TYPE_EXPR_VAR: break;
         case IR_NODE_TYPE_EXPR_CALL:
             for(size_t i = 0; i < node->expr_call.argument_count; i++) print_node(node->expr_call.arguments[i], depth);
+            break;
+        case IR_NODE_TYPE_EXPR_CAST:
+            print_node(node->expr_cast.value, depth);
             break;
 
         case IR_NODE_TYPE_STMT_BLOCK:
@@ -103,9 +107,9 @@ int main(int argc, char **argv) {
     ir_node_t *ast = parser_parse(tokenizer);
     tokenizer_free(tokenizer);
 
-    print_node(ast, 0);
-
     typecheck(ast);
+
+    print_node(ast, 0);
 
     free(source);
     return EXIT_SUCCESS;
