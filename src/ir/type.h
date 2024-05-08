@@ -21,7 +21,7 @@ typedef struct type {
 
 bool ir_type_is_kind(ir_type_t *type, ir_type_kind_t kind);
 bool ir_type_is_void(ir_type_t *type);
-bool ir_type_is_eq(ir_type_t *a, ir_type_t *b);
+int ir_type_cmp(ir_type_t *a, ir_type_t *b);
 
 ir_type_t *ir_type_get_void();
 ir_type_t *ir_type_get_u8();
