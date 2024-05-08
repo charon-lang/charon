@@ -1,4 +1,5 @@
 #include "type.h"
+#include <assert.h>
 #include <stdlib.h>
 #include <stdio.h>
 
@@ -25,6 +26,7 @@ bool ir_type_is_eq(ir_type_t *a, ir_type_t *b) {
         case TYPE_KIND_UNSIGNED_INTEGER: return a->integer.bit_size == b->integer.bit_size;
         case TYPE_KIND_POINTER: return ir_type_is_eq(a->pointer.base, b->pointer.base);
     }
+    assert(false);
 }
 
 ir_type_t *ir_type_get_void() {
