@@ -315,6 +315,17 @@ static ir_node_t *parse_function(tokenizer_t *tokenizer) {
     return ir_node_make_function(type, name, argument_count, arguments, parse_statement(tokenizer), token_identifier.diag_loc);
 }
 
+static ir_node_t *parse_program(tokenizer_t *tokenizer) {
+    diag_loc_t diag_loc = tokenizer_peek(tokenizer).diag_loc;
+    size_t function_count = 0;
+    ir_node_t **functions = NULL;
+    while(!tokenizer_is_eof(tokenizer)) {
+        functions = realloc(functions, sizeof(ir_node_t *) * ++function_count);
+        functions[function_count - 1] = parse_function(tokenizer);
+    }
+    return ir_node_make_program(function_count, functions, diag_loc);
+}
+
 ir_node_t *parser_parse(tokenizer_t *tokenizer) {
-    return parse_function(tokenizer);
+    return parse_program(tokenizer);
 }

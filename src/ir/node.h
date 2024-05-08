@@ -4,6 +4,7 @@
 #include "../diag.h"
 
 typedef enum {
+    IR_NODE_TYPE_PROGRAM,
     IR_NODE_TYPE_FUNCTION,
 
     IR_NODE_TYPE_EXPR_LITERAL_NUMERIC,
@@ -49,6 +50,11 @@ typedef struct ir_node {
     ir_node_type_t type;
     diag_loc_t diag_loc;
     union {
+        struct {
+            size_t function_count;
+            struct ir_node **functions;
+        } program;
+
         struct {
             ir_type_t *type;
             const char *name;
@@ -99,6 +105,7 @@ typedef struct ir_node {
     };
 } ir_node_t;
 
+ir_node_t *ir_node_make_program(size_t function_count, ir_node_t **functions, diag_loc_t diag_loc);
 ir_node_t *ir_node_make_function(ir_type_t *type, const char *name, size_t argument_count, ir_function_argument_t *arguments, ir_node_t *body, diag_loc_t diag_loc);
 
 ir_node_t *ir_node_make_expr_literal_numeric(uintmax_t value, diag_loc_t diag_loc);

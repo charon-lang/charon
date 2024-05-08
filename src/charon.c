@@ -28,6 +28,7 @@ static void print_node(ir_node_t *node, int depth) {
 
     printf("%*s", depth * 2, "");
     switch(node->type) {
+        case IR_NODE_TYPE_PROGRAM: printf("(program)"); break;
         case IR_NODE_TYPE_FUNCTION: printf("(function %s)", node->function.name); break;
 
         case IR_NODE_TYPE_EXPR_LITERAL_NUMERIC: printf("(literal_numeric %lu)", node->expr_literal.numeric_value); break;
@@ -47,6 +48,9 @@ static void print_node(ir_node_t *node, int depth) {
 
     depth++;
     switch(node->type) {
+        case IR_NODE_TYPE_PROGRAM:
+            for(size_t i = 0; i < node->program.function_count; i++) print_node(node->program.functions[i], depth);
+            break;
         case IR_NODE_TYPE_FUNCTION: print_node(node->function.body, depth); break;
 
         case IR_NODE_TYPE_EXPR_LITERAL_NUMERIC: break;

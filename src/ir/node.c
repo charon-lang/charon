@@ -8,6 +8,13 @@ static ir_node_t *make_node(ir_node_type_t type, diag_loc_t diag_loc) {
     return node;
 }
 
+ir_node_t *ir_node_make_program(size_t function_count, ir_node_t **functions, diag_loc_t diag_loc) {
+    ir_node_t *node = make_node(IR_NODE_TYPE_PROGRAM, diag_loc);
+    node->program.function_count = function_count;
+    node->program.functions = functions;
+    return node;
+}
+
 ir_node_t *ir_node_make_function(ir_type_t *type, const char *name, size_t argument_count, ir_function_argument_t *arguments, ir_node_t *body, diag_loc_t diag_loc) {
     ir_node_t *node = make_node(IR_NODE_TYPE_FUNCTION, diag_loc);
     node->function.type = type;
