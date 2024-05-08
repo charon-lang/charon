@@ -14,6 +14,7 @@ typedef enum {
     IR_NODE_TYPE_EXPR_UNARY,
     IR_NODE_TYPE_EXPR_VAR,
     IR_NODE_TYPE_EXPR_CALL,
+    IR_NODE_TYPE_EXPR_CAST,
 
     IR_NODE_TYPE_STMT_BLOCK,
     IR_NODE_TYPE_STMT_RETURN,
@@ -84,6 +85,10 @@ typedef struct ir_node {
             size_t argument_count;
             struct ir_node **arguments;
         } expr_call;
+        struct {
+            struct ir_node *value;
+            ir_type_t *type;
+        } expr_cast;
 
         struct {
             size_t statement_count;
@@ -115,6 +120,7 @@ ir_node_t *ir_node_make_expr_binary(ir_binary_operation_t operation, ir_node_t *
 ir_node_t *ir_node_make_expr_unary(ir_unary_operation_t operation, ir_node_t *operand, diag_loc_t diag_loc);
 ir_node_t *ir_node_make_expr_var(const char *name, diag_loc_t diag_loc);
 ir_node_t *ir_node_make_expr_call(const char *name, size_t argument_count, ir_node_t **arguments, diag_loc_t diag_loc);
+ir_node_t *ir_node_make_expr_cast(ir_node_t *value, ir_type_t *type, diag_loc_t diag_loc);
 
 ir_node_t *ir_node_make_stmt_block(size_t statement_count, ir_node_t **statements, diag_loc_t diag_loc);
 ir_node_t *ir_node_make_stmt_return(ir_node_t *value, diag_loc_t diag_loc);
