@@ -4,13 +4,14 @@
 typedef enum {
     TYPE_KIND_VOID,
     TYPE_KIND_POINTER,
-    TYPE_KIND_UNSIGNED_INTEGER
+    TYPE_KIND_INTEGER
 } ir_type_kind_t;
 
 typedef struct type {
     ir_type_kind_t kind;
     union {
         struct {
+            bool is_signed;
             size_t bit_size;
         } integer;
         struct {
