@@ -169,7 +169,7 @@ static ir_type_t *check_expr_binary(scope_t *scope, ir_node_t *node) {
     ir_type_t *type_left = check_common(scope, node->expr_binary.left);
     ir_type_t *type_right = check_common(scope, node->expr_binary.right);
     if(ir_type_is_void(type_left) || ir_type_is_void(type_right)) diag_error(node->diag_loc, "void type in binary expression");
-    if(ir_type_is_kind(type_left, TYPE_KIND_POINTER) || ir_type_is_kind(type_right, TYPE_KIND_POINTER)) diag_error(node->diag_loc, "pointer type in binary expression");
+    if(ir_type_is_kind(type_left, IR_TYPE_KIND_POINTER) || ir_type_is_kind(type_right, IR_TYPE_KIND_POINTER)) diag_error(node->diag_loc, "pointer type in binary expression");
 
     ir_type_t *type = type_left;
     switch(node->expr_binary.operation) {
@@ -194,7 +194,7 @@ static ir_type_t *check_expr_binary(scope_t *scope, ir_node_t *node) {
 static ir_type_t *check_expr_unary(scope_t *scope, ir_node_t *node) {
     ir_type_t *type_operand = check_common(scope, node->expr_unary.operand);
     if(ir_type_is_void(type_operand)) diag_error(node->diag_loc, "void type in unary expression");
-    if(ir_type_is_kind(type_operand, TYPE_KIND_POINTER)) diag_error(node->diag_loc, "pointer type in unary expression");
+    if(ir_type_is_kind(type_operand, IR_TYPE_KIND_POINTER)) diag_error(node->diag_loc, "pointer type in unary expression");
     return type_operand;
 }
 

@@ -2,9 +2,9 @@
 #include <stddef.h>
 
 typedef enum {
-    TYPE_KIND_VOID,
-    TYPE_KIND_POINTER,
-    TYPE_KIND_INTEGER
+    IR_TYPE_KIND_VOID,
+    IR_TYPE_KIND_POINTER,
+    IR_TYPE_KIND_INTEGER
 } ir_type_kind_t;
 
 typedef struct type {
