@@ -310,10 +310,15 @@ static ir_function_decl_t parse_function_declaraion(tokenizer_t *tokenizer, diag
                 varargs = true;
                 break;
             }
+            diag_loc_t diag_loc = tokenizer_peek(tokenizer).diag_loc;
             ir_type_t *argument_type = parse_type(tokenizer);
             const char *argument_name = make_text_from_token(tokenizer, consume(tokenizer, TOKEN_TYPE_IDENTIFIER));
             arguments = realloc(arguments, sizeof(ir_function_decl_argument_t) * ++argument_count);
-            arguments[argument_count - 1] = (ir_function_decl_argument_t) { .type = argument_type, .name = argument_name };
+            arguments[argument_count - 1] = (ir_function_decl_argument_t) {
+                .type = argument_type,
+                .name = argument_name,
+                .diag_loc = diag_loc
+            };
         } while(try_expect(tokenizer, TOKEN_TYPE_COMMA));
         expect(tokenizer, TOKEN_TYPE_PARENTHESES_RIGHT);
     }

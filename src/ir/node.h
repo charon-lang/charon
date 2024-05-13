@@ -47,6 +47,7 @@ typedef enum {
 typedef struct {
     ir_type_t *type;
     const char *name;
+    diag_loc_t diag_loc;
 } ir_function_decl_argument_t;
 
 typedef struct {
