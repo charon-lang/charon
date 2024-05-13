@@ -296,14 +296,14 @@ static ir_node_t *parse_statement(tokenizer_t *tokenizer) {
     }
 }
 
-static ir_node_t *parse_function(tokenizer_t *tokenizer) {
-    ir_type_t *type = parse_type(tokenizer);
+static ir_function_decl_t parse_function_declaraion(tokenizer_t *tokenizer, diag_loc_t *diag_loc) {
+    ir_type_t *return_type = parse_type(tokenizer);
     token_t token_identifier = consume(tokenizer, TOKEN_TYPE_IDENTIFIER);
     const char *name = make_text_from_token(tokenizer, token_identifier);
-    expect(tokenizer, TOKEN_TYPE_PARENTHESES_LEFT);
     bool varargs = false;
     size_t argument_count = 0;
-    ir_function_argument_t *arguments = NULL;
+    ir_function_decl_argument_t *arguments = NULL;
+    expect(tokenizer, TOKEN_TYPE_PARENTHESES_LEFT);
     if(!try_expect(tokenizer, TOKEN_TYPE_PARENTHESES_RIGHT)) {
         do {
             if(try_expect(tokenizer, TOKEN_TYPE_TRIPLE_PERIOD)) {
@@ -312,23 +312,51 @@ static ir_node_t *parse_function(tokenizer_t *tokenizer) {
             }
             ir_type_t *argument_type = parse_type(tokenizer);
             const char *argument_name = make_text_from_token(tokenizer, consume(tokenizer, TOKEN_TYPE_IDENTIFIER));
-            arguments = realloc(arguments, sizeof(ir_function_argument_t) * ++argument_count);
-            arguments[argument_count - 1] = (ir_function_argument_t) { .type = argument_type, .name = argument_name };
+            arguments = realloc(arguments, sizeof(ir_function_decl_argument_t) * ++argument_count);
+            arguments[argument_count - 1] = (ir_function_decl_argument_t) { .type = argument_type, .name = argument_name };
         } while(try_expect(tokenizer, TOKEN_TYPE_COMMA));
         expect(tokenizer, TOKEN_TYPE_PARENTHESES_RIGHT);
     }
-    return ir_node_make_function(type, name, argument_count, arguments, varargs, parse_statement(tokenizer), token_identifier.diag_loc);
+    *diag_loc = token_identifier.diag_loc;
+    return (ir_function_decl_t) {
+        .name = name,
+        .return_type = return_type,
+        .varargs = varargs,
+        .argument_count = argument_count,
+        .arguments = arguments
+    };
+}
+
+static ir_node_t *parse_function(tokenizer_t *tokenizer) {
+    diag_loc_t diag_loc;
+    ir_function_decl_t function_decl = parse_function_declaraion(tokenizer, &diag_loc);
+    return ir_node_make_global_function(function_decl, parse_statement(tokenizer), diag_loc);
+}
+
+static ir_node_t *parse_extern(tokenizer_t *tokenizer) {
+    expect(tokenizer, TOKEN_TYPE_KEYWORD_EXTERN);
+    diag_loc_t diag_loc;
+    ir_function_decl_t function_decl = parse_function_declaraion(tokenizer, &diag_loc);
+    expect(tokenizer, TOKEN_TYPE_SEMI_COLON);
+    return ir_node_make_global_extern(function_decl, diag_loc);
+}
+
+static ir_node_t *parse_global(tokenizer_t *tokenizer) {
+    switch(tokenizer_peek(tokenizer).type) {
+        case TOKEN_TYPE_KEYWORD_EXTERN: return parse_extern(tokenizer);
+        default: return parse_function(tokenizer);
+    }
 }
 
 static ir_node_t *parse_program(tokenizer_t *tokenizer) {
     diag_loc_t diag_loc = tokenizer_peek(tokenizer).diag_loc;
-    size_t function_count = 0;
-    ir_node_t **functions = NULL;
+    size_t global_count = 0;
+    ir_node_t **globals = NULL;
     while(!tokenizer_is_eof(tokenizer)) {
-        functions = realloc(functions, sizeof(ir_node_t *) * ++function_count);
-        functions[function_count - 1] = parse_function(tokenizer);
+        globals = realloc(globals, sizeof(ir_node_t *) * ++global_count);
+        globals[global_count - 1] = parse_global(tokenizer);
     }
-    return ir_node_make_program(function_count, functions, diag_loc);
+    return ir_node_make_program(global_count, globals, diag_loc);
 }
 
 ir_node_t *parser_parse(tokenizer_t *tokenizer) {

@@ -1,4 +1,11 @@
+extern u32 printf(u8 *fmt, ...);
+
+void brr(u8 x) {
+    printf("brr %u\n", x);
+}
+
 u32 main() {
-    printf("hello %x", 0x500);
+    printf("hello %x\n", 0x500);
+    brr(500);
     return 0;
 }

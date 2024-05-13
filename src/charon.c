@@ -29,7 +29,9 @@ static void print_node(ir_node_t *node, int depth) {
     printf("%*s", depth * 2, "");
     switch(node->type) {
         case IR_NODE_TYPE_PROGRAM: printf("(program)"); break;
-        case IR_NODE_TYPE_FUNCTION: printf("(function %s)", node->function.name); break;
+
+        case IR_NODE_TYPE_GLOBAL_FUNCTION: printf("(function %s)", node->global_function.decl.name); break;
+        case IR_NODE_TYPE_GLOBAL_EXTERN: printf("(extern %s)", node->global_extern.decl.name); break;
 
         case IR_NODE_TYPE_EXPR_LITERAL_NUMERIC: printf("(literal_numeric %lu)", node->expr_literal.numeric_value); break;
         case IR_NODE_TYPE_EXPR_LITERAL_STRING: printf("(literal_string \"%s\")", node->expr_literal.string_value); break;
@@ -50,9 +52,10 @@ static void print_node(ir_node_t *node, int depth) {
     depth++;
     switch(node->type) {
         case IR_NODE_TYPE_PROGRAM:
-            for(size_t i = 0; i < node->program.function_count; i++) print_node(node->program.functions[i], depth);
+            for(size_t i = 0; i < node->program.global_count; i++) print_node(node->program.globals[i], depth);
             break;
-        case IR_NODE_TYPE_FUNCTION: print_node(node->function.body, depth); break;
+        case IR_NODE_TYPE_GLOBAL_FUNCTION: print_node(node->global_function.body, depth); break;
+        case IR_NODE_TYPE_GLOBAL_EXTERN: break;
 
         case IR_NODE_TYPE_EXPR_LITERAL_NUMERIC: break;
         case IR_NODE_TYPE_EXPR_LITERAL_STRING: break;
@@ -108,7 +111,6 @@ int main(int argc, char **argv) {
     tokenizer_free(tokenizer);
 
     typecheck(ast);
-
     print_node(ast, 0);
 
     free(source);

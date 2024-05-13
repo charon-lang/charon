@@ -122,26 +122,34 @@ static function_t *scope_get_function(scope_t *scope, const char *name) {
 static ir_type_t *check_common(scope_t *scope, ir_node_t *node);
 
 static ir_type_t *check_program(scope_t *scope, ir_node_t *node) {
-    for(size_t i = 0; i < node->program.function_count; i++) check_common(scope, node->program.functions[i]);
+    for(size_t i = 0; i < node->program.global_count; i++) check_common(scope, node->program.globals[i]);
     return NULL;
 }
 
-static ir_type_t *check_function(scope_t *scope, ir_node_t *node) {
-    size_t argument_count = 0;
-    function_argument_t *arguments = NULL;
-    for(size_t i = 0; i < node->function.argument_count; i++) {
-        arguments = realloc(arguments, sizeof(function_argument_t) * ++argument_count);
-        arguments[argument_count - 1] = (function_argument_t) {
-            .type = node->function.arguments[i].type,
-            .name = node->function.arguments[i].name
-        };
+static ir_type_t *check_global_function(scope_t *scope, ir_node_t *node) {
+    size_t argument_count = node->global_function.decl.argument_count;
+    function_argument_t *arguments = malloc(sizeof(function_argument_t) * argument_count);
+    for(size_t i = 0; i < node->global_function.decl.argument_count; i++) {
+        arguments[i].name = node->global_function.decl.arguments[i].name;
+        arguments[i].type = node->global_function.decl.arguments[i].type;
     }
-    scope_add_function(scope, node->function.name, node->function.type, argument_count, arguments, node->function.varargs);
+    scope_add_function(scope, node->global_function.decl.name, node->global_function.decl.return_type, argument_count, arguments, node->global_function.decl.varargs);
 
     scope = make_scope(scope, SCOPE_TYPE_FUNCTION);
     for(size_t i = 0; i < argument_count; i++) scope_add_local(scope, arguments[i].name, arguments[i].type);
-    check_common(scope, node->function.body);
+    check_common(scope, node->global_function.body);
     free_scope(scope);
+    return NULL;
+}
+
+static ir_type_t *check_global_extern(scope_t *scope, ir_node_t *node) {
+    size_t argument_count = node->global_extern.decl.argument_count;
+    function_argument_t *arguments = malloc(sizeof(function_argument_t) * argument_count);
+    for(size_t i = 0; i < node->global_extern.decl.argument_count; i++) {
+        arguments[i].name = node->global_extern.decl.arguments[i].name;
+        arguments[i].type = node->global_extern.decl.arguments[i].type;
+    }
+    scope_add_function(scope, node->global_extern.decl.name, node->global_extern.decl.return_type, argument_count, arguments, node->global_extern.decl.varargs);
     return NULL;
 }
 
@@ -246,7 +254,8 @@ static ir_type_t *check_stmt_decl(scope_t *scope, ir_node_t *node) {
 static ir_type_t *check_common(scope_t *scope, ir_node_t *node) {
     switch(node->type) {
         case IR_NODE_TYPE_PROGRAM: return check_program(scope, node);
-        case IR_NODE_TYPE_FUNCTION: return check_function(scope, node);
+        case IR_NODE_TYPE_GLOBAL_FUNCTION: return check_global_function(scope, node);
+        case IR_NODE_TYPE_GLOBAL_EXTERN: return check_global_extern(scope, node);
 
         case IR_NODE_TYPE_EXPR_LITERAL_NUMERIC: return check_expr_literal_numeric(scope, node);
         case IR_NODE_TYPE_EXPR_LITERAL_STRING: return check_expr_literal_string(scope, node);
@@ -267,13 +276,6 @@ static ir_type_t *check_common(scope_t *scope, ir_node_t *node) {
 
 void typecheck(ir_node_t *ast) {
     scope_t *global_scope = make_scope(NULL, SCOPE_TYPE_GLOBAL);
-
-    // TODO: remove eventually
-    function_argument_t *printf_args = malloc(sizeof(function_argument_t));
-    printf_args->name = "fmt";
-    printf_args->type = ir_type_make_pointer(ir_type_get_u8());
-    scope_add_function(global_scope, "printf", ir_type_get_uint(), 1, printf_args, true);
-
     check_common(global_scope, ast);
     free_scope(global_scope);
 }

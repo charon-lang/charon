@@ -5,7 +5,9 @@
 
 typedef enum {
     IR_NODE_TYPE_PROGRAM,
-    IR_NODE_TYPE_FUNCTION,
+
+    IR_NODE_TYPE_GLOBAL_FUNCTION,
+    IR_NODE_TYPE_GLOBAL_EXTERN,
 
     IR_NODE_TYPE_EXPR_LITERAL_NUMERIC,
     IR_NODE_TYPE_EXPR_LITERAL_STRING,
@@ -45,24 +47,32 @@ typedef enum {
 typedef struct {
     ir_type_t *type;
     const char *name;
-} ir_function_argument_t;
+} ir_function_decl_argument_t;
+
+typedef struct {
+    ir_type_t *return_type;
+    const char *name;
+    size_t argument_count;
+    ir_function_decl_argument_t *arguments;
+    bool varargs;
+} ir_function_decl_t;
 
 typedef struct ir_node {
     ir_node_type_t type;
     diag_loc_t diag_loc;
     union {
         struct {
-            size_t function_count;
-            struct ir_node **functions;
+            size_t global_count;
+            struct ir_node **globals;
         } program;
+
         struct {
-            ir_type_t *type;
-            const char *name;
-            size_t argument_count;
-            ir_function_argument_t *arguments;
-            bool varargs;
+            ir_function_decl_t decl;
             struct ir_node *body;
-        } function;
+        } global_function;
+        struct {
+            ir_function_decl_t decl;
+        } global_extern;
 
         union {
             uintmax_t numeric_value;
@@ -110,8 +120,10 @@ typedef struct ir_node {
     };
 } ir_node_t;
 
-ir_node_t *ir_node_make_program(size_t function_count, ir_node_t **functions, diag_loc_t diag_loc);
-ir_node_t *ir_node_make_function(ir_type_t *type, const char *name, size_t argument_count, ir_function_argument_t *arguments, bool varargs, ir_node_t *body, diag_loc_t diag_loc);
+ir_node_t *ir_node_make_program(size_t global_count, ir_node_t **globals, diag_loc_t diag_loc);
+
+ir_node_t *ir_node_make_global_function(ir_function_decl_t function_decl, ir_node_t *body, diag_loc_t diag_loc);
+ir_node_t *ir_node_make_global_extern(ir_function_decl_t function_decl, diag_loc_t diag_loc);
 
 ir_node_t *ir_node_make_expr_literal_numeric(uintmax_t value, diag_loc_t diag_loc);
 ir_node_t *ir_node_make_expr_literal_string(const char *value, diag_loc_t diag_loc);

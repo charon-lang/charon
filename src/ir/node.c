@@ -8,21 +8,23 @@ static ir_node_t *make_node(ir_node_type_t type, diag_loc_t diag_loc) {
     return node;
 }
 
-ir_node_t *ir_node_make_program(size_t function_count, ir_node_t **functions, diag_loc_t diag_loc) {
+ir_node_t *ir_node_make_program(size_t global_count, ir_node_t **globals, diag_loc_t diag_loc) {
     ir_node_t *node = make_node(IR_NODE_TYPE_PROGRAM, diag_loc);
-    node->program.function_count = function_count;
-    node->program.functions = functions;
+    node->program.global_count = global_count;
+    node->program.globals = globals;
     return node;
 }
 
-ir_node_t *ir_node_make_function(ir_type_t *type, const char *name, size_t argument_count, ir_function_argument_t *arguments, bool varargs, ir_node_t *body, diag_loc_t diag_loc) {
-    ir_node_t *node = make_node(IR_NODE_TYPE_FUNCTION, diag_loc);
-    node->function.type = type;
-    node->function.name = name;
-    node->function.argument_count = argument_count;
-    node->function.arguments = arguments;
-    node->function.varargs = varargs;
-    node->function.body = body;
+ir_node_t *ir_node_make_global_function(ir_function_decl_t function_decl, ir_node_t *body, diag_loc_t diag_loc) {
+    ir_node_t *node = make_node(IR_NODE_TYPE_GLOBAL_FUNCTION, diag_loc);
+    node->global_function.decl = function_decl;
+    node->global_function.body = body;
+    return node;
+}
+
+ir_node_t *ir_node_make_global_extern(ir_function_decl_t function_decl, diag_loc_t diag_loc) {
+    ir_node_t *node = make_node(IR_NODE_TYPE_GLOBAL_EXTERN, diag_loc);
+    node->global_extern.decl = function_decl;
     return node;
 }
 
