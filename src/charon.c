@@ -7,6 +7,7 @@
 #include "lexer/tokenizer.h"
 #include "parser/parser.h"
 #include "semantics/typecheck.h"
+#include "gen/gen.h"
 
 [[noreturn]] void exit_perror() {
     perror("ERROR(main): ");
@@ -112,6 +113,7 @@ int main(int argc, char **argv) {
 
     typecheck(ast);
     print_node(ast, 0);
+    gen(ast, "build/test.ll", "");
 
     free(source);
     return EXIT_SUCCESS;

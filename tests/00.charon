@@ -2,9 +2,10 @@ extern u32 printf(u8 *fmt, ...);
 
 void brr(u8 x) {
     printf("brr %u\n", x);
+    return;
 }
 
-u32 main() {
+u64 main() {
     printf("hello %x\n", 0x500);
     brr(500);
     return 0;
