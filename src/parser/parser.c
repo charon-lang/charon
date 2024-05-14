@@ -63,6 +63,7 @@ static const char *string_escape(diag_loc_t diag_loc, const char *src, size_t sr
         if(escaped) {
             switch(c) {
                 case 'n': dest[dest_index++] = '\n'; break;
+                case 't': dest[dest_index++] = '\t'; break;
                 case '\\': dest[dest_index++] = '\\'; break;
                 default:
                     diag_warn(diag_loc, "unknown escape sequence `\\%c`", c);
