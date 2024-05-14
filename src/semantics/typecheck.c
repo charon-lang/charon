@@ -77,7 +77,7 @@ static void free_scope(scope_t *scope) {
     free(scope);
 }
 
-static void scope_add_local(scope_t *scope, const char *name, ir_type_t *type) {
+static void scope_add_variable(scope_t *scope, const char *name, ir_type_t *type) {
     assert(scope != NULL);
     scope->variables = realloc(scope->variables, sizeof(variable_t) * ++scope->variable_count);
     scope->variables[scope->variable_count - 1] = (variable_t) { .name = name, .type = type };
@@ -119,6 +119,12 @@ static function_t *scope_get_function(scope_t *scope, const char *name) {
     return scope_get_function(scope->outer, name);
 }
 
+static ir_node_t *implicit_cast(ir_node_t *value, ir_type_t *from, ir_type_t *to) {
+    if(from->kind != to->kind) diag_error(value->diag_loc, "cannot cast %i to %i", from->kind, to->kind);
+    if(ir_type_cmp(from, to) == 0) return value;
+    return ir_node_make_expr_cast(value, to);
+}
+
 static ir_type_t *check_common(scope_t *scope, ir_node_t *node);
 
 static ir_type_t *check_program(scope_t *scope, ir_node_t *node) {
@@ -136,7 +142,7 @@ static ir_type_t *check_global_function(scope_t *scope, ir_node_t *node) {
     scope_add_function(scope, node->global_function.decl.name, node->global_function.decl.return_type, argument_count, arguments, node->global_function.decl.varargs);
 
     scope = make_scope(scope, SCOPE_TYPE_FUNCTION);
-    for(size_t i = 0; i < argument_count; i++) scope_add_local(scope, arguments[i].name, arguments[i].type);
+    for(size_t i = 0; i < argument_count; i++) scope_add_variable(scope, arguments[i].name, arguments[i].type);
     check_common(scope, node->global_function.body);
     free_scope(scope);
     return NULL;
@@ -174,17 +180,16 @@ static ir_type_t *check_expr_binary(scope_t *scope, ir_node_t *node) {
     ir_type_t *type = type_left;
     switch(node->expr_binary.operation) {
         case IR_BINARY_OPERATION_ASSIGN:
-            if(node->expr_binary.left->type != IR_NODE_TYPE_EXPR_BINARY) diag_error(node->diag_loc, "invalid left operand of assignment");
-            // TODO: unsafe cast
-            if(!ir_type_cmp(type_left, type_right) != 0) node->expr_binary.left = ir_node_make_expr_cast(node->expr_binary.right, type);
+            if(node->expr_binary.left->type != IR_NODE_TYPE_EXPR_VAR) diag_error(node->diag_loc, "invalid left operand of assignment");
+            node->expr_binary.right = implicit_cast(node->expr_binary.right, type_right, type);
             break;
         default:
-            // TODO: unsafe cast
-            if(ir_type_cmp(type_left, type_right) > 0) node->expr_binary.right = ir_node_make_expr_cast(node->expr_binary.right, type);
+            if(ir_type_cmp(type_left, type_right) > 0) {
+                node->expr_binary.right = implicit_cast(node->expr_binary.right, type_right, type);
+            }
             if(ir_type_cmp(type_left, type_right) < 0) {
                 type = type_right;
-                // TODO: unsafe cast
-                node->expr_binary.left = ir_node_make_expr_cast(node->expr_binary.left, type);
+                node->expr_binary.left = implicit_cast(node->expr_binary.left, type_left, type);
             }
             break;
     }
@@ -210,11 +215,8 @@ static ir_type_t *check_expr_call(scope_t *scope, ir_node_t *node) {
     if(!function->varargs && function->argument_count != node->expr_call.argument_count) diag_error(node->diag_loc, "invalid number of arguments");
     for(size_t i = 0; i < node->expr_call.argument_count; i++) {
         ir_type_t *type_argument = check_common(scope, node->expr_call.arguments[i]);
-        if(ir_type_is_void(type_argument)) diag_error(node->expr_call.arguments[i]->diag_loc, "cannot pass void as an argument");
         if(function->argument_count <= i) continue;
-        if(ir_type_cmp(function->arguments[i].type, type_argument) == 0) continue;
-        // TODO unsafe cast
-        node->expr_call.arguments[i] = ir_node_make_expr_cast(node->expr_call.arguments[i], type_argument);
+        node->expr_call.arguments[i] = implicit_cast(node->expr_call.arguments[i], type_argument, function->arguments[i].type);
     }
     return function->return_type;
 }
@@ -243,11 +245,9 @@ static ir_type_t *check_stmt_decl(scope_t *scope, ir_node_t *node) {
     if(ir_type_is_void(node->stmt_decl.type)) diag_error(node->diag_loc, "cannot declare a variable as void");
     if(node->stmt_decl.initial != NULL) {
         ir_type_t *initial_type = check_common(scope, node->stmt_decl.initial);
-        if(ir_type_is_void(initial_type)) diag_error(node->diag_loc, "cannot initialize variable with void");
-        // TODO: unsafe cast
-        if(ir_type_cmp(node->stmt_decl.type, initial_type) == 0) node->stmt_decl.initial = ir_node_make_expr_cast(node->stmt_decl.initial, node->stmt_decl.type);
+        node->stmt_decl.initial = implicit_cast(node->stmt_decl.initial, initial_type, node->stmt_decl.type);
     }
-    scope_add_local(scope, node->stmt_decl.name, node->stmt_decl.type);
+    scope_add_variable(scope, node->stmt_decl.name, node->stmt_decl.type);
     return NULL;
 }
 
