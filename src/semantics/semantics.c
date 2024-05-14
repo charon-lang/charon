@@ -1,4 +1,4 @@
-#include "typecheck.h"
+#include "semantics.h"
 #include <assert.h>
 #include <string.h>
 #include <stdlib.h>
@@ -274,7 +274,7 @@ static ir_type_t *check_common(scope_t *scope, ir_node_t *node) {
     assert(false);
 }
 
-void typecheck(ir_node_t *ast) {
+void semantics_validate(ir_node_t *ast) {
     scope_t *global_scope = make_scope(NULL, SCOPE_TYPE_GLOBAL);
     check_common(global_scope, ast);
     free_scope(global_scope);

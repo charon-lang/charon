@@ -6,7 +6,7 @@
 #include "lexer/token.h"
 #include "lexer/tokenizer.h"
 #include "parser/parser.h"
-#include "semantics/typecheck.h"
+#include "semantics/semantics.h"
 #include "gen/gen.h"
 
 [[noreturn]] void exit_perror() {
@@ -122,7 +122,7 @@ int main(int argc, char **argv) {
     ir_node_t *ast = parser_parse(tokenizer);
     tokenizer_free(tokenizer);
 
-    typecheck(ast);
+    semantics_validate(ast);
     print_node(ast, 0);
     gen(ast, "build/test.ll", "");
 
