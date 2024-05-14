@@ -3,13 +3,9 @@
 #include <string.h>
 #include <stdlib.h>
 #include <stdio.h>
+#include "scope.h"
 #include "../ir/type.h"
 #include "../diag.h"
-
-typedef struct {
-    const char *name;
-    ir_type_t *type;
-} variable_t;
 
 typedef struct {
     const char *name;
@@ -24,82 +20,15 @@ typedef struct {
     bool varargs;
 } function_t;
 
-typedef enum {
-    SCOPE_TYPE_BLOCK,
-    SCOPE_TYPE_GLOBAL,
-    SCOPE_TYPE_FUNCTION
-} scope_type_t;
+typedef struct {
+    scope_t *scope;
+    size_t function_count;
+    function_t *functions;
+} semantics_context_t;
 
-typedef struct scope {
-    struct scope *outer;
-    scope_type_t type;
-    size_t variable_count;
-    variable_t *variables;
-    union {
-        struct {
-            size_t function_count;
-            function_t *functions;
-        } global;
-    };
-} scope_t;
-
-static scope_t *make_scope(scope_t *outer, scope_type_t type) {
-    scope_t *scope = malloc(sizeof(scope_t));
-    scope->outer = outer;
-    scope->type = type;
-    scope->variable_count = 0;
-    scope->variables = NULL;
-    switch(scope->type) {
-        case SCOPE_TYPE_BLOCK: break;
-        case SCOPE_TYPE_GLOBAL:
-            scope->global.function_count = 0;
-            scope->global.functions = NULL;
-            break;
-        case SCOPE_TYPE_FUNCTION: break;
-    }
-    return scope;
-}
-
-static void free_scope(scope_t *scope) {
-    if(scope->variables != NULL) free(scope->variables);
-    switch(scope->type) {
-        case SCOPE_TYPE_BLOCK: break;
-        case SCOPE_TYPE_GLOBAL:
-            if(scope->global.functions == NULL) break;
-            for(size_t i = 0; i < scope->global.function_count; i++) {
-                if(scope->global.functions[i].arguments == NULL) continue;
-                free(scope->global.functions[i].arguments);
-            }
-            free(scope->global.functions);
-            break;
-        case SCOPE_TYPE_FUNCTION: break;
-    }
-    free(scope);
-}
-
-static void scope_add_variable(scope_t *scope, const char *name, ir_type_t *type) {
-    assert(scope != NULL);
-    scope->variables = realloc(scope->variables, sizeof(variable_t) * ++scope->variable_count);
-    scope->variables[scope->variable_count - 1] = (variable_t) { .name = name, .type = type };
-}
-
-static variable_t *scope_get_variable(scope_t *scope, const char *name) {
-    if(scope == NULL) return NULL;
-    for(size_t i = 0; i < scope->variable_count; i++) {
-        if(strcmp(name, scope->variables[i].name) != 0) continue;
-        return &scope->variables[i];
-    }
-    return scope_get_variable(scope->outer, name);
-}
-
-static void scope_add_function(scope_t *scope, const char *name, ir_type_t *return_type, size_t argument_count, function_argument_t *arguments, bool varargs) {
-    assert(scope != NULL);
-    while(scope->type != SCOPE_TYPE_GLOBAL) {
-        scope = scope->outer;
-        assert(scope != NULL);
-    }
-    scope->global.functions = realloc(scope->global.functions, sizeof(function_t) * ++scope->global.function_count);
-    scope->global.functions[scope->global.function_count - 1] = (function_t) {
+static void ctx_add_function(semantics_context_t *ctx, const char *name, ir_type_t *return_type, size_t argument_count, function_argument_t *arguments, bool varargs) {
+    ctx->functions = realloc(ctx->functions, sizeof(function_t) * ++ctx->function_count);
+    ctx->functions[ctx->function_count - 1] = (function_t) {
         .name = name,
         .return_type = return_type,
         .argument_count = argument_count,
@@ -108,15 +37,12 @@ static void scope_add_function(scope_t *scope, const char *name, ir_type_t *retu
     };
 }
 
-static function_t *scope_get_function(scope_t *scope, const char *name) {
-    if(scope == NULL) return NULL;
-    if(scope->type == SCOPE_TYPE_GLOBAL) {
-        for(size_t i = 0; i < scope->global.function_count; i++) {
-            if(strcmp(name, scope->global.functions[i].name) != 0) continue;
-            return &scope->global.functions[i];
-        }
+static function_t *ctx_get_function(semantics_context_t *ctx, const char *name) {
+    for(size_t i = 0; i < ctx->function_count; i++) {
+        if(strcmp(name, ctx->functions[i].name) != 0) continue;
+        return &ctx->functions[i];
     }
-    return scope_get_function(scope->outer, name);
+    return NULL;
 }
 
 static ir_node_t *implicit_cast(ir_node_t *value, ir_type_t *from, ir_type_t *to) {
@@ -125,55 +51,55 @@ static ir_node_t *implicit_cast(ir_node_t *value, ir_type_t *from, ir_type_t *to
     return ir_node_make_expr_cast(value, to);
 }
 
-static ir_type_t *check_common(scope_t *scope, ir_node_t *node);
+static ir_type_t *check_common(semantics_context_t *ctx, ir_node_t *node);
 
-static ir_type_t *check_program(scope_t *scope, ir_node_t *node) {
-    for(size_t i = 0; i < node->program.global_count; i++) check_common(scope, node->program.globals[i]);
+static ir_type_t *check_program(semantics_context_t *ctx, ir_node_t *node) {
+    for(size_t i = 0; i < node->program.global_count; i++) check_common(ctx, node->program.globals[i]);
     return NULL;
 }
 
-static ir_type_t *check_global_function(scope_t *scope, ir_node_t *node) {
+static ir_type_t *check_global_function(semantics_context_t *ctx, ir_node_t *node) {
     size_t argument_count = node->global_function.decl.argument_count;
     function_argument_t *arguments = malloc(sizeof(function_argument_t) * argument_count);
     for(size_t i = 0; i < node->global_function.decl.argument_count; i++) {
         arguments[i].name = node->global_function.decl.arguments[i].name;
         arguments[i].type = node->global_function.decl.arguments[i].type;
     }
-    scope_add_function(scope, node->global_function.decl.name, node->global_function.decl.return_type, argument_count, arguments, node->global_function.decl.varargs);
+    ctx_add_function(ctx, node->global_function.decl.name, node->global_function.decl.return_type, argument_count, arguments, node->global_function.decl.varargs);
 
-    scope = make_scope(scope, SCOPE_TYPE_FUNCTION);
-    for(size_t i = 0; i < argument_count; i++) scope_add_variable(scope, arguments[i].name, arguments[i].type);
-    check_common(scope, node->global_function.body);
-    free_scope(scope);
+    ctx->scope = scope_make(ctx->scope, SCOPE_TYPE_FUNCTION);
+    for(size_t i = 0; i < argument_count; i++) scope_add_variable(ctx->scope, arguments[i].name, arguments[i].type);
+    check_common(ctx, node->global_function.body);
+    ctx->scope = scope_free(ctx->scope);
     return NULL;
 }
 
-static ir_type_t *check_global_extern(scope_t *scope, ir_node_t *node) {
+static ir_type_t *check_global_extern(semantics_context_t *ctx, ir_node_t *node) {
     size_t argument_count = node->global_extern.decl.argument_count;
     function_argument_t *arguments = malloc(sizeof(function_argument_t) * argument_count);
     for(size_t i = 0; i < node->global_extern.decl.argument_count; i++) {
         arguments[i].name = node->global_extern.decl.arguments[i].name;
         arguments[i].type = node->global_extern.decl.arguments[i].type;
     }
-    scope_add_function(scope, node->global_extern.decl.name, node->global_extern.decl.return_type, argument_count, arguments, node->global_extern.decl.varargs);
+    ctx_add_function(ctx, node->global_extern.decl.name, node->global_extern.decl.return_type, argument_count, arguments, node->global_extern.decl.varargs);
     return NULL;
 }
 
-static ir_type_t *check_expr_literal_numeric(scope_t *scope, ir_node_t *node) {
+static ir_type_t *check_expr_literal_numeric(semantics_context_t *ctx, ir_node_t *node) {
     return ir_type_get_uint();
 }
 
-static ir_type_t *check_expr_literal_string(scope_t *scope, ir_node_t *node) {
+static ir_type_t *check_expr_literal_string(semantics_context_t *ctx, ir_node_t *node) {
     return ir_type_make_pointer(ir_type_get_u8());
 }
 
-static ir_type_t *check_expr_literal_char(scope_t *scope, ir_node_t *node) {
+static ir_type_t *check_expr_literal_char(semantics_context_t *ctx, ir_node_t *node) {
     return ir_type_get_u8();
 }
 
-static ir_type_t *check_expr_binary(scope_t *scope, ir_node_t *node) {
-    ir_type_t *type_left = check_common(scope, node->expr_binary.left);
-    ir_type_t *type_right = check_common(scope, node->expr_binary.right);
+static ir_type_t *check_expr_binary(semantics_context_t *ctx, ir_node_t *node) {
+    ir_type_t *type_left = check_common(ctx, node->expr_binary.left);
+    ir_type_t *type_right = check_common(ctx, node->expr_binary.right);
     if(ir_type_is_void(type_left) || ir_type_is_void(type_right)) diag_error(node->diag_loc, "void type in binary expression");
     if(ir_type_is_kind(type_left, IR_TYPE_KIND_POINTER) || ir_type_is_kind(type_right, IR_TYPE_KIND_POINTER)) diag_error(node->diag_loc, "pointer type in binary expression");
 
@@ -196,86 +122,89 @@ static ir_type_t *check_expr_binary(scope_t *scope, ir_node_t *node) {
     return type;
 }
 
-static ir_type_t *check_expr_unary(scope_t *scope, ir_node_t *node) {
-    ir_type_t *type_operand = check_common(scope, node->expr_unary.operand);
+static ir_type_t *check_expr_unary(semantics_context_t *ctx, ir_node_t *node) {
+    ir_type_t *type_operand = check_common(ctx, node->expr_unary.operand);
     if(ir_type_is_void(type_operand)) diag_error(node->diag_loc, "void type in unary expression");
     if(ir_type_is_kind(type_operand, IR_TYPE_KIND_POINTER)) diag_error(node->diag_loc, "pointer type in unary expression");
     return type_operand;
 }
 
-static ir_type_t *check_expr_var(scope_t *scope, ir_node_t *node) {
-    variable_t *variable = scope_get_variable(scope, node->expr_var.name);
+static ir_type_t *check_expr_var(semantics_context_t *ctx, ir_node_t *node) {
+    scope_var_t *variable = scope_get_variable(ctx->scope, node->expr_var.name);
     if(variable == NULL) diag_error(node->diag_loc, "reference to an undefined variable `%s`", node->expr_var.name);
     return variable->type;
 }
 
-static ir_type_t *check_expr_call(scope_t *scope, ir_node_t *node) {
-    function_t *function = scope_get_function(scope, node->expr_call.name);
+static ir_type_t *check_expr_call(semantics_context_t *ctx, ir_node_t *node) {
+    function_t *function = ctx_get_function(ctx, node->expr_call.name);
     if(function == NULL) diag_error(node->diag_loc, "reference to an undefined function `%s`", node->expr_call.name);
     if(!function->varargs && function->argument_count != node->expr_call.argument_count) diag_error(node->diag_loc, "invalid number of arguments");
     for(size_t i = 0; i < node->expr_call.argument_count; i++) {
-        ir_type_t *type_argument = check_common(scope, node->expr_call.arguments[i]);
+        ir_type_t *type_argument = check_common(ctx, node->expr_call.arguments[i]);
         if(function->argument_count <= i) continue;
         node->expr_call.arguments[i] = implicit_cast(node->expr_call.arguments[i], type_argument, function->arguments[i].type);
     }
     return function->return_type;
 }
 
-static ir_type_t *check_stmt_block(scope_t *scope, ir_node_t *node) {
-    scope = make_scope(scope, SCOPE_TYPE_BLOCK);
-    for(size_t i = 0; i < node->stmt_block.statement_count; i++) check_common(scope, node->stmt_block.statements[i]);
-    free_scope(scope);
+static ir_type_t *check_stmt_block(semantics_context_t *ctx, ir_node_t *node) {
+    ctx->scope = scope_make(ctx->scope, SCOPE_TYPE_BLOCK);
+    for(size_t i = 0; i < node->stmt_block.statement_count; i++) check_common(ctx, node->stmt_block.statements[i]);
+    ctx->scope = scope_free(ctx->scope);
     return NULL;
 }
 
-static ir_type_t *check_stmt_return(scope_t *scope, ir_node_t *node) {
-    if(node->stmt_return.value != NULL) check_common(scope, node->stmt_return.value);
+static ir_type_t *check_stmt_return(semantics_context_t *ctx, ir_node_t *node) {
+    if(node->stmt_return.value != NULL) check_common(ctx, node->stmt_return.value);
     return NULL;
 }
 
-static ir_type_t *check_stmt_if(scope_t *scope, ir_node_t *node) {
-    check_common(scope, node->stmt_if.condition);
-    check_common(scope, node->stmt_if.body);
-    if(node->stmt_if.else_body != NULL) check_common(scope, node->stmt_if.else_body);
+static ir_type_t *check_stmt_if(semantics_context_t *ctx, ir_node_t *node) {
+    check_common(ctx, node->stmt_if.condition);
+    check_common(ctx, node->stmt_if.body);
+    if(node->stmt_if.else_body != NULL) check_common(ctx, node->stmt_if.else_body);
     return NULL;
 }
 
-static ir_type_t *check_stmt_decl(scope_t *scope, ir_node_t *node) {
-    if(scope_get_variable(scope, node->stmt_decl.name)) diag_error(node->diag_loc, "redeclaration of `%s`", node->stmt_decl.name);
+static ir_type_t *check_stmt_decl(semantics_context_t *ctx, ir_node_t *node) {
+    if(scope_get_variable(ctx->scope, node->stmt_decl.name)) diag_error(node->diag_loc, "redeclaration of `%s`", node->stmt_decl.name);
     if(ir_type_is_void(node->stmt_decl.type)) diag_error(node->diag_loc, "cannot declare a variable as void");
     if(node->stmt_decl.initial != NULL) {
-        ir_type_t *initial_type = check_common(scope, node->stmt_decl.initial);
+        ir_type_t *initial_type = check_common(ctx, node->stmt_decl.initial);
         node->stmt_decl.initial = implicit_cast(node->stmt_decl.initial, initial_type, node->stmt_decl.type);
     }
-    scope_add_variable(scope, node->stmt_decl.name, node->stmt_decl.type);
+    scope_add_variable(ctx->scope, node->stmt_decl.name, node->stmt_decl.type);
     return NULL;
 }
 
-static ir_type_t *check_common(scope_t *scope, ir_node_t *node) {
+static ir_type_t *check_common(semantics_context_t *ctx, ir_node_t *node) {
     switch(node->type) {
-        case IR_NODE_TYPE_PROGRAM: return check_program(scope, node);
-        case IR_NODE_TYPE_GLOBAL_FUNCTION: return check_global_function(scope, node);
-        case IR_NODE_TYPE_GLOBAL_EXTERN: return check_global_extern(scope, node);
+        case IR_NODE_TYPE_PROGRAM: return check_program(ctx, node);
+        case IR_NODE_TYPE_GLOBAL_FUNCTION: return check_global_function(ctx, node);
+        case IR_NODE_TYPE_GLOBAL_EXTERN: return check_global_extern(ctx, node);
 
-        case IR_NODE_TYPE_EXPR_LITERAL_NUMERIC: return check_expr_literal_numeric(scope, node);
-        case IR_NODE_TYPE_EXPR_LITERAL_STRING: return check_expr_literal_string(scope, node);
-        case IR_NODE_TYPE_EXPR_LITERAL_CHAR: return check_expr_literal_char(scope, node);
-        case IR_NODE_TYPE_EXPR_BINARY: return check_expr_binary(scope, node);
-        case IR_NODE_TYPE_EXPR_UNARY: return check_expr_unary(scope, node);
-        case IR_NODE_TYPE_EXPR_VAR: return check_expr_var(scope, node);
-        case IR_NODE_TYPE_EXPR_CALL: return check_expr_call(scope, node);
+        case IR_NODE_TYPE_EXPR_LITERAL_NUMERIC: return check_expr_literal_numeric(ctx, node);
+        case IR_NODE_TYPE_EXPR_LITERAL_STRING: return check_expr_literal_string(ctx, node);
+        case IR_NODE_TYPE_EXPR_LITERAL_CHAR: return check_expr_literal_char(ctx, node);
+        case IR_NODE_TYPE_EXPR_BINARY: return check_expr_binary(ctx, node);
+        case IR_NODE_TYPE_EXPR_UNARY: return check_expr_unary(ctx, node);
+        case IR_NODE_TYPE_EXPR_VAR: return check_expr_var(ctx, node);
+        case IR_NODE_TYPE_EXPR_CALL: return check_expr_call(ctx, node);
         case IR_NODE_TYPE_EXPR_CAST: assert(false);
 
-        case IR_NODE_TYPE_STMT_BLOCK: return check_stmt_block(scope, node);
-        case IR_NODE_TYPE_STMT_RETURN: return check_stmt_return(scope, node);
-        case IR_NODE_TYPE_STMT_IF: return check_stmt_if(scope, node);
-        case IR_NODE_TYPE_STMT_DECL: return check_stmt_decl(scope, node);
+        case IR_NODE_TYPE_STMT_BLOCK: return check_stmt_block(ctx, node);
+        case IR_NODE_TYPE_STMT_RETURN: return check_stmt_return(ctx, node);
+        case IR_NODE_TYPE_STMT_IF: return check_stmt_if(ctx, node);
+        case IR_NODE_TYPE_STMT_DECL: return check_stmt_decl(ctx, node);
     }
     assert(false);
 }
 
 void semantics_validate(ir_node_t *ast) {
-    scope_t *global_scope = make_scope(NULL, SCOPE_TYPE_GLOBAL);
-    check_common(global_scope, ast);
-    free_scope(global_scope);
+    semantics_context_t ctx = {
+        .scope = NULL,
+        .function_count = 0,
+        .functions = NULL
+    };
+    check_common(&ctx, ast);
 }
