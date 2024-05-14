@@ -19,6 +19,17 @@
     exit(EXIT_FAILURE);
 }
 
+static void print_string(const char *str) {
+    while(*str != '\0') {
+        switch(*str) {
+            case '\n': printf("\\n"); break;
+            case '\t': printf("\\t"); break;
+            default: printf("%c", *str); break;
+        }
+        str++;
+    }
+}
+
 static void print_node(ir_node_t *node, int depth) {
     static const char *binary_op_translations[] = {
         "+", "-", "*", "/", "%", ">", ">=", "<", "<=", "==", "!=", "="
@@ -35,7 +46,7 @@ static void print_node(ir_node_t *node, int depth) {
         case IR_NODE_TYPE_GLOBAL_EXTERN: printf("(extern %s)", node->global_extern.decl.name); break;
 
         case IR_NODE_TYPE_EXPR_LITERAL_NUMERIC: printf("(literal_numeric %lu)", node->expr_literal.numeric_value); break;
-        case IR_NODE_TYPE_EXPR_LITERAL_STRING: printf("(literal_string \"%s\")", node->expr_literal.string_value); break;
+        case IR_NODE_TYPE_EXPR_LITERAL_STRING: printf("(literal_string \""); print_string(node->expr_literal.string_value); printf("\")"); break;
         case IR_NODE_TYPE_EXPR_LITERAL_CHAR: printf("(literal_char '%c')", node->expr_literal.char_value); break;
         case IR_NODE_TYPE_EXPR_BINARY: printf("(binary %s)", binary_op_translations[node->expr_binary.operation]); break;
         case IR_NODE_TYPE_EXPR_UNARY: printf("(unary %s)", unary_op_translations[node->expr_unary.operation]); break;
