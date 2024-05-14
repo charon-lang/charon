@@ -126,14 +126,14 @@ static LLVMValueRef gen_expr_literal_numeric(gen_context_t *ctx, ir_node_t *node
 }
 
 static LLVMValueRef gen_expr_literal_string(gen_context_t *ctx, ir_node_t *node) {
-    return LLVMBuildGlobalString(ctx->builder, node->expr_literal.string_value, ""); // TODO: Constant string?
+    return LLVMBuildGlobalString(ctx->builder, node->expr_literal.string_value, "");
 }
 
 static LLVMValueRef gen_expr_literal_char(gen_context_t *ctx, ir_node_t *node) {
     return LLVMConstInt(ctx->types.int8, node->expr_literal.char_value, false);
 }
 
-static LLVMValueRef gen_expr_binary_operation(gen_context_t *ctx, ir_node_t *node) {
+static LLVMValueRef gen_expr_binary(gen_context_t *ctx, ir_node_t *node) {
     LLVMValueRef right = gen_common(ctx, node->expr_binary.right);
 
     // TODO: re-investigate this generation. its a bit scuffed imo.
@@ -163,7 +163,15 @@ static LLVMValueRef gen_expr_binary_operation(gen_context_t *ctx, ir_node_t *nod
         case IR_BINARY_OPERATION_LESS_EQUAL: return LLVMBuildICmp(ctx->builder, LLVMIntULE, left, right, "");
         default: diag_error(node->diag_loc, "unimplemented binary operation %i", node->expr_binary.operation); break;
     }
-    __builtin_unreachable();
+}
+
+static LLVMValueRef gen_expr_unary(gen_context_t *ctx, ir_node_t *node) {
+    LLVMValueRef operand = gen_common(ctx, node->expr_unary.operand);
+    switch(node->expr_unary.operation) {
+        case IR_UNARY_OPERATION_NOT: return LLVMBuildICmp(ctx->builder, LLVMIntEQ, operand, LLVMConstInt(LLVMTypeOf(operand), 0, false), "");
+        case IR_UNARY_OPERATION_NEGATIVE: return LLVMBuildNeg(ctx->builder, operand, "");
+        default: diag_error(node->diag_loc, "unimplemented unary operation %i", node->expr_unary.operation); break;
+    }
 }
 
 static LLVMValueRef gen_expr_var(gen_context_t *ctx, ir_node_t *node) {
@@ -207,10 +215,65 @@ static LLVMValueRef gen_stmt_block(gen_context_t *ctx, ir_node_t *node) {
 static LLVMValueRef gen_stmt_return(gen_context_t *ctx, ir_node_t *node) {
     if(node->stmt_return.value == NULL) {
         LLVMBuildRetVoid(ctx->builder);
-    } else {
-        LLVMBuildRet(ctx->builder, gen_common(ctx, node->stmt_return.value));
+        return NULL;
+    }
+    LLVMBuildRet(ctx->builder, gen_common(ctx, node->stmt_return.value));
+    return NULL;
+}
+
+static LLVMValueRef gen_stmt_if(gen_context_t *ctx, ir_node_t *node) {
+    LLVMValueRef condition = gen_common(ctx, node->stmt_if.condition);
+    condition = LLVMBuildICmp(ctx->builder, LLVMIntNE, condition, LLVMConstInt(LLVMTypeOf(condition), 0, false), "");
+
+    LLVMValueRef func = LLVMGetBasicBlockParent(LLVMGetInsertBlock(ctx->builder));
+    LLVMBasicBlockRef bb_then = LLVMAppendBasicBlockInContext(ctx->context, func, "if.then");
+    LLVMBasicBlockRef bb_else = LLVMCreateBasicBlockInContext(ctx->context, "if.else");
+    LLVMBasicBlockRef bb_end = LLVMCreateBasicBlockInContext(ctx->context, "if.end");
+
+    LLVMBuildCondBr(ctx->builder, condition, bb_then, node->stmt_if.else_body != NULL ? bb_else : bb_end);
+    bool create_end = false;
+
+    // Create then, aka body
+    LLVMPositionBuilderAtEnd(ctx->builder, bb_then);
+    gen_common(ctx, node->stmt_if.body);
+    if(LLVMGetBasicBlockTerminator(bb_then) == NULL) {
+        LLVMBuildBr(ctx->builder, bb_end);
+        create_end = true;
+    }
+
+    // Create else body
+    if(node->stmt_if.else_body != NULL) {
+        LLVMAppendExistingBasicBlock(func, bb_else);
+        LLVMPositionBuilderAtEnd(ctx->builder, bb_else);
+        gen_common(ctx, node->stmt_if.else_body);
+        if(LLVMGetBasicBlockTerminator(bb_else) == NULL) {
+            LLVMBuildBr(ctx->builder, bb_end);
+            create_end = true;
+        }
+    }
+
+    // Setup end block
+    if(create_end) {
+        LLVMAppendExistingBasicBlock(func, bb_end);
+        LLVMPositionBuilderAtEnd(ctx->builder, bb_end);
     }
     return NULL;
+}
+
+static LLVMValueRef gen_stmt_decl(gen_context_t *ctx, ir_node_t *node) {
+    if(scope_get_variable(ctx->scope, node->stmt_decl.name, node->diag_loc) != NULL) diag_error(node->diag_loc, "redeclared variable `%s`", node->stmt_decl.name);
+    LLVMTypeRef type = get_llvm_type(ctx, node->stmt_decl.type, node->diag_loc);
+
+    LLVMValueRef parent_func = LLVMGetBasicBlockParent(LLVMGetInsertBlock(ctx->builder));
+    LLVMBuilderRef entry_builder = LLVMCreateBuilderInContext(ctx->context);
+    LLVMBasicBlockRef bb_entry = LLVMGetEntryBasicBlock(parent_func);
+    LLVMPositionBuilder(entry_builder, bb_entry, LLVMGetFirstInstruction(bb_entry));
+    LLVMValueRef value = LLVMBuildAlloca(entry_builder, type, node->stmt_decl.name);
+    LLVMDisposeBuilder(entry_builder);
+
+    if(node->stmt_decl.initial != NULL) LLVMBuildStore(ctx->builder, gen_common(ctx, node->stmt_decl.initial), value);
+    scope_add_variable(ctx->scope, value, node->stmt_decl.name, node->diag_loc);
+    return value;
 }
 
 static LLVMValueRef gen_common(gen_context_t *ctx, ir_node_t *node) {
@@ -222,16 +285,16 @@ static LLVMValueRef gen_common(gen_context_t *ctx, ir_node_t *node) {
         case IR_NODE_TYPE_EXPR_LITERAL_NUMERIC: return gen_expr_literal_numeric(ctx, node);
         case IR_NODE_TYPE_EXPR_LITERAL_STRING: return gen_expr_literal_string(ctx, node);
         case IR_NODE_TYPE_EXPR_LITERAL_CHAR: return gen_expr_literal_char(ctx, node);
-        case IR_NODE_TYPE_EXPR_BINARY: return gen_expr_binary_operation(ctx, node);
-        // case IR_NODE_TYPE_EXPR_UNARY: return check_expr_unary(node);
+        case IR_NODE_TYPE_EXPR_BINARY: return gen_expr_binary(ctx, node);
+        case IR_NODE_TYPE_EXPR_UNARY: return gen_expr_unary(ctx, node);
         case IR_NODE_TYPE_EXPR_VAR: return gen_expr_var(ctx, node);
         case IR_NODE_TYPE_EXPR_CALL: return gen_expr_call(ctx, node);
         case IR_NODE_TYPE_EXPR_CAST: return gen_expr_cast(ctx, node);
 
         case IR_NODE_TYPE_STMT_BLOCK: return gen_stmt_block(ctx, node);
         case IR_NODE_TYPE_STMT_RETURN: return gen_stmt_return(ctx, node);
-        // case IR_NODE_TYPE_STMT_IF: return check_stmt_if(node);
-        // case IR_NODE_TYPE_STMT_DECL: return check_stmt_decl(node);
+        case IR_NODE_TYPE_STMT_IF: return gen_stmt_if(ctx, node);
+        case IR_NODE_TYPE_STMT_DECL: return gen_stmt_decl(ctx, node);
         default: break;
     }
     assert(false);

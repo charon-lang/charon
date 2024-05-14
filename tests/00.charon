@@ -1,7 +1,8 @@
 extern u32 printf(u8 *fmt, ...);
 
 void brr(u8 x) {
-    printf("brr %u\n", x);
+    printf("brr %u\n", 100 + x);
+    x = 5;
     return;
 }
 
