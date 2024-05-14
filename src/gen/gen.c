@@ -48,22 +48,22 @@ static scope_t *scope_free(scope_t *scope) {
     return new;
 }
 
-static void scope_add_variable(scope_t *scope, LLVMValueRef value, const char *name, diag_loc_t diag_loc) {
-    if(scope == NULL) diag_error(diag_loc, "new variable outside of scope");
+static void scope_add_variable(scope_t *scope, LLVMValueRef value, const char *name) {
+    assert(scope != NULL);
     scope->variables = realloc(scope->variables, sizeof(variable_t) * ++scope->variable_count);
     scope->variables[scope->variable_count - 1] = (variable_t) { .name = name, .value = value };
 }
 
-static variable_t *scope_get_variable(scope_t *scope, const char *name, diag_loc_t diag_loc) {
-    if(scope == NULL) diag_error(diag_loc, "cannot get variable outside of scope");
+static variable_t *scope_get_variable(scope_t *scope, const char *name) {
+    assert(scope != NULL);
     for(size_t i = 0; i < scope->variable_count; i++) {
-        if(strcmp(name, scope->variables[i].name) == 0) return &scope->variables[i];
+        if(strcmp(name, scope->variables[i].name) != 0) continue;
+        return &scope->variables[i];
     }
-    if(scope->outer == NULL) return NULL;
-    return scope_get_variable(scope->outer, name, diag_loc);
+    return scope_get_variable(scope->outer, name);
 }
 
-static LLVMTypeRef get_llvm_type(gen_context_t *ctx, ir_type_t *type, diag_loc_t diag_loc) {
+static LLVMTypeRef get_llvm_type(gen_context_t *ctx, ir_type_t *type) {
     if(ir_type_is_kind(type, IR_TYPE_KIND_VOID)) return ctx->types.void_;
     if(ir_type_is_kind(type, IR_TYPE_KIND_POINTER)) return ctx->types.pointer;
     if(ir_type_is_kind(type, IR_TYPE_KIND_INTEGER)) {
@@ -74,15 +74,13 @@ static LLVMTypeRef get_llvm_type(gen_context_t *ctx, ir_type_t *type, diag_loc_t
             case 64: return ctx->types.int64;
         }
     }
-    diag_error(diag_loc, "unexpected type");
+    assert(false);
 }
 
 static LLVMValueRef add_function(gen_context_t *ctx, ir_function_decl_t *decl, diag_loc_t diag_loc) {
     LLVMTypeRef args[decl->argument_count];
-    for(size_t i = 0; i < decl->argument_count; i++) {
-        args[i] = get_llvm_type(ctx, decl->arguments[i].type, decl->arguments[i].diag_loc);
-    }
-    LLVMTypeRef return_type = get_llvm_type(ctx, decl->return_type, diag_loc);
+    for(size_t i = 0; i < decl->argument_count; i++) args[i] = get_llvm_type(ctx, decl->arguments[i].type);
+    LLVMTypeRef return_type = get_llvm_type(ctx, decl->return_type);
     return LLVMAddFunction(
         ctx->module,
         decl->name,
@@ -114,7 +112,7 @@ static LLVMValueRef gen_global_function(gen_context_t *ctx, ir_node_t *node) {
         LLVMValueRef param_original = LLVMGetParam(func, i);
         LLVMValueRef param_new = LLVMBuildAlloca(ctx->builder, LLVMTypeOf(param_original), param_name);
         LLVMBuildStore(ctx->builder, param_original, param_new);
-        scope_add_variable(ctx->scope, param_new, param_name, node->global_function.decl.arguments[i].diag_loc);
+        scope_add_variable(ctx->scope, param_new, param_name);
     }
     gen_common(ctx, node->global_function.body);
     ctx->scope = scope_free(ctx->scope);
@@ -139,11 +137,8 @@ static LLVMValueRef gen_expr_binary(gen_context_t *ctx, ir_node_t *node) {
     // TODO: re-investigate this generation. its a bit scuffed imo.
     if(node->expr_binary.operation == IR_BINARY_OPERATION_ASSIGN) {
         assert(node->expr_binary.left->type == IR_NODE_TYPE_EXPR_VAR);
-
         const char *name = node->expr_binary.left->expr_var.name;
-        variable_t *var = scope_get_variable(ctx->scope, name, node->diag_loc);
-        if(var == NULL) diag_error(node->diag_loc, "reference to an undefined variable `%s`", name);
-
+        variable_t *var = scope_get_variable(ctx->scope, name);
         LLVMBuildStore(ctx->builder, right, var->value);
         return right;
     }
@@ -175,8 +170,7 @@ static LLVMValueRef gen_expr_unary(gen_context_t *ctx, ir_node_t *node) {
 }
 
 static LLVMValueRef gen_expr_var(gen_context_t *ctx, ir_node_t *node) {
-    variable_t *var = scope_get_variable(ctx->scope, node->expr_var.name, node->diag_loc);
-    if(var == NULL) diag_error(node->diag_loc, "reference to an undefined local `%s`", node->expr_var.name);
+    variable_t *var = scope_get_variable(ctx->scope, node->expr_var.name);
     return LLVMBuildLoad2(ctx->builder, LLVMGetAllocatedType(var->value), var->value, "");
 }
 
@@ -187,12 +181,11 @@ static LLVMValueRef gen_expr_call(gen_context_t *ctx, ir_node_t *node) {
         for(size_t i = 0; i < node->expr_call.argument_count; i++) args[i] = gen_common(ctx, node->expr_call.arguments[i]);
         return LLVMBuildCall2(ctx->builder, LLVMGlobalGetValueType(func_ref), func_ref, args, node->expr_call.argument_count, "");
     }
-    diag_error(node->diag_loc, "reference to an undefined function `%s`", node->expr_call.name);
-    __builtin_unreachable();
+    assert(false);
 }
 
 static LLVMValueRef gen_expr_cast(gen_context_t *ctx, ir_node_t *node) {
-    LLVMTypeRef to_type = get_llvm_type(ctx, node->expr_cast.type, node->diag_loc);
+    LLVMTypeRef to_type = get_llvm_type(ctx, node->expr_cast.type);
     LLVMValueRef value = gen_common(ctx, node->expr_cast.value);
     LLVMTypeRef type = LLVMTypeOf(value);
     if(LLVMGetTypeKind(to_type) != LLVMGetTypeKind(type)) diag_error(node->diag_loc, "cast of incompatible types");
@@ -261,9 +254,7 @@ static LLVMValueRef gen_stmt_if(gen_context_t *ctx, ir_node_t *node) {
 }
 
 static LLVMValueRef gen_stmt_decl(gen_context_t *ctx, ir_node_t *node) {
-    if(scope_get_variable(ctx->scope, node->stmt_decl.name, node->diag_loc) != NULL) diag_error(node->diag_loc, "redeclared variable `%s`", node->stmt_decl.name);
-    LLVMTypeRef type = get_llvm_type(ctx, node->stmt_decl.type, node->diag_loc);
-
+    LLVMTypeRef type = get_llvm_type(ctx, node->stmt_decl.type);
     LLVMValueRef parent_func = LLVMGetBasicBlockParent(LLVMGetInsertBlock(ctx->builder));
     LLVMBuilderRef entry_builder = LLVMCreateBuilderInContext(ctx->context);
     LLVMBasicBlockRef bb_entry = LLVMGetEntryBasicBlock(parent_func);
@@ -271,8 +262,8 @@ static LLVMValueRef gen_stmt_decl(gen_context_t *ctx, ir_node_t *node) {
     LLVMValueRef value = LLVMBuildAlloca(entry_builder, type, node->stmt_decl.name);
     LLVMDisposeBuilder(entry_builder);
 
+    scope_add_variable(ctx->scope, value, node->stmt_decl.name);
     if(node->stmt_decl.initial != NULL) LLVMBuildStore(ctx->builder, gen_common(ctx, node->stmt_decl.initial), value);
-    scope_add_variable(ctx->scope, value, node->stmt_decl.name, node->diag_loc);
     return value;
 }
 
