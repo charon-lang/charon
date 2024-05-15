@@ -297,7 +297,7 @@ static ir_node_t *parse_statement(tokenizer_t *tokenizer) {
     }
 }
 
-static ir_function_decl_t parse_function_declaraion(tokenizer_t *tokenizer, diag_loc_t *diag_loc) {
+static ir_function_decl_t parse_function_declaration(tokenizer_t *tokenizer, diag_loc_t *diag_loc) {
     ir_type_t *return_type = parse_type(tokenizer);
     token_t token_identifier = consume(tokenizer, TOKEN_TYPE_IDENTIFIER);
     const char *name = make_text_from_token(tokenizer, token_identifier);
@@ -335,14 +335,14 @@ static ir_function_decl_t parse_function_declaraion(tokenizer_t *tokenizer, diag
 
 static ir_node_t *parse_function(tokenizer_t *tokenizer) {
     diag_loc_t diag_loc;
-    ir_function_decl_t function_decl = parse_function_declaraion(tokenizer, &diag_loc);
+    ir_function_decl_t function_decl = parse_function_declaration(tokenizer, &diag_loc);
     return ir_node_make_global_function(function_decl, parse_statement(tokenizer), diag_loc);
 }
 
 static ir_node_t *parse_extern(tokenizer_t *tokenizer) {
     expect(tokenizer, TOKEN_TYPE_KEYWORD_EXTERN);
     diag_loc_t diag_loc;
-    ir_function_decl_t function_decl = parse_function_declaraion(tokenizer, &diag_loc);
+    ir_function_decl_t function_decl = parse_function_declaration(tokenizer, &diag_loc);
     expect(tokenizer, TOKEN_TYPE_SEMI_COLON);
     return ir_node_make_global_extern(function_decl, diag_loc);
 }
