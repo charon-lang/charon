@@ -123,8 +123,9 @@ int main(int argc, char **argv) {
     tokenizer_free(tokenizer);
 
     semantics_validate(ast);
-    print_node(ast, 0);
     gen(ast, "build/test.ll", "");
+
+    print_node(ast, 0);
 
     free(source);
     return EXIT_SUCCESS;

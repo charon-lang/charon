@@ -46,7 +46,14 @@ static function_t *ctx_get_function(semantics_context_t *ctx, const char *name) 
 }
 
 static ir_node_t *implicit_cast(ir_node_t *value, ir_type_t *from, ir_type_t *to) {
-    if(from->kind != to->kind) diag_error(value->diag_loc, "cannot cast %i to %i", from->kind, to->kind);
+    if(from->kind != to->kind) diag_error(value->diag_loc, "cannot implicitly cast %i to %i", from->kind, to->kind);
+    if(ir_type_is_kind(from, IR_TYPE_KIND_POINTER)) {
+        while(ir_type_is_kind(from, IR_TYPE_KIND_POINTER) && ir_type_is_kind(to, IR_TYPE_KIND_POINTER)) {
+            from = from->pointer.base;
+            to = to->pointer.base;
+        }
+        if(ir_type_cmp(from, to) != 0) diag_warn(value->diag_loc, "implicit cast of pointers");
+    }
     if(ir_type_cmp(from, to) == 0) return value;
     return ir_node_make_expr_cast(value, to);
 }
@@ -131,6 +138,10 @@ static ir_type_t *check_expr_unary(semantics_context_t *ctx, ir_node_t *node) {
     if(node->expr_unary.operation == IR_UNARY_OPERATION_DEREF) {
         if(!ir_type_is_kind(type_operand, IR_TYPE_KIND_POINTER)) diag_error(node->diag_loc, "cannot dereference a non-pointer");
         return type_operand->pointer.base;
+    }
+    if(node->expr_unary.operation == IR_UNARY_OPERATION_REF) {
+        if(node->expr_unary.operand->type != IR_NODE_TYPE_EXPR_VAR) diag_error(node->diag_loc, "cannot reference a non-variable");
+        return ir_type_make_pointer(type_operand);
     }
     if(ir_type_is_kind(type_operand, IR_TYPE_KIND_POINTER)) diag_error(node->diag_loc, "pointer type in unary expression");
     return type_operand;

@@ -210,11 +210,20 @@ static value_t gen_expr_binary(gen_context_t *ctx, ir_node_t *node) {
             .type = ir_type_get_u8(), // TODO: BOOLEAN
             .value = LLVMBuildICmp(ctx->builder, LLVMIntULE, left.value, right.value, "")
         };
-        default: diag_error(node->diag_loc, "unimplemented binary operation %i", node->expr_binary.operation); break;
+        default: assert(false);
     }
 }
 
 static value_t gen_expr_unary(gen_context_t *ctx, ir_node_t *node) {
+    if(node->expr_unary.operation == IR_UNARY_OPERATION_REF) {
+        assert(node->expr_unary.operand->type == IR_NODE_TYPE_EXPR_VAR);
+        variable_t *var = scope_get_variable(ctx->scope, node->expr_unary.operand->expr_var.name);
+        return (value_t) {
+            .type = ir_type_make_pointer(var->type),
+            .value = var->value
+        };
+    }
+
     value_t operand = gen_common(ctx, node->expr_unary.operand);
     switch(node->expr_unary.operation) {
         case IR_UNARY_OPERATION_DEREF:
@@ -232,7 +241,7 @@ static value_t gen_expr_unary(gen_context_t *ctx, ir_node_t *node) {
             .type = operand.type,
             .value = LLVMBuildNeg(ctx->builder, operand.value, "")
         };
-        default: diag_error(node->diag_loc, "unimplemented unary operation %i", node->expr_unary.operation); break;
+        default: assert(false);
     }
 }
 

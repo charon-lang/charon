@@ -3,12 +3,8 @@ extern void *malloc(uint size);
 extern void free(void *ptr);
 
 u64 main() {
-    void *p = malloc(100);
-    uint *x = p;
-    *x = 5;
-
-    *x *= 10;
-    printf("%p %lu\n", p, *x);
-    free(p);
+    u32 x = 520;
+    u32 *y = &x;
+    printf("%#x, %#lx\n", x, y);
     return 0;
 }

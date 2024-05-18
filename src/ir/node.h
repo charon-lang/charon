@@ -42,7 +42,8 @@ typedef enum {
 typedef enum {
     IR_UNARY_OPERATION_NOT,
     IR_UNARY_OPERATION_NEGATIVE,
-    IR_UNARY_OPERATION_DEREF
+    IR_UNARY_OPERATION_DEREF,
+    IR_UNARY_OPERATION_REF
 } ir_unary_operation_t;
 
 typedef struct {

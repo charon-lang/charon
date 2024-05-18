@@ -59,7 +59,8 @@ static spec_t g_spec[] = {
     { .pattern = "^\\)", .type = TOKEN_TYPE_PARENTHESES_RIGHT },
     { .pattern = "^{", .type = TOKEN_TYPE_BRACE_LEFT },
     { .pattern = "^}", .type = TOKEN_TYPE_BRACE_RIGHT },
-    { .pattern = "^,", .type = TOKEN_TYPE_COMMA }
+    { .pattern = "^,", .type = TOKEN_TYPE_COMMA },
+    { .pattern = "^&", .type = TOKEN_TYPE_AMPERSAND }
 };
 
 static compiled_spec_t g_compiled_spec[sizeof(g_spec) / sizeof(spec_t)];
