@@ -106,7 +106,10 @@ static ir_type_t *check_expr_binary(semantics_context_t *ctx, ir_node_t *node) {
     ir_type_t *type = type_left;
     switch(node->expr_binary.operation) {
         case IR_BINARY_OPERATION_ASSIGN:
-            if(node->expr_binary.left->type != IR_NODE_TYPE_EXPR_VAR) diag_error(node->diag_loc, "invalid left operand of assignment");
+            if(node->expr_binary.left->type != IR_NODE_TYPE_EXPR_VAR && (
+                node->expr_binary.left->type != IR_NODE_TYPE_EXPR_UNARY ||
+                node->expr_binary.left->expr_unary.operation != IR_UNARY_OPERATION_DEREF
+            )) diag_error(node->diag_loc, "invalid left operand of assignment");
             node->expr_binary.right = implicit_cast(node->expr_binary.right, type_right, type);
             break;
         default:
@@ -125,6 +128,10 @@ static ir_type_t *check_expr_binary(semantics_context_t *ctx, ir_node_t *node) {
 static ir_type_t *check_expr_unary(semantics_context_t *ctx, ir_node_t *node) {
     ir_type_t *type_operand = check_common(ctx, node->expr_unary.operand);
     if(ir_type_is_void(type_operand)) diag_error(node->diag_loc, "void type in unary expression");
+    if(node->expr_unary.operation == IR_UNARY_OPERATION_DEREF) {
+        if(!ir_type_is_kind(type_operand, IR_TYPE_KIND_POINTER)) diag_error(node->diag_loc, "cannot dereference a non-pointer");
+        return type_operand->pointer.base;
+    }
     if(ir_type_is_kind(type_operand, IR_TYPE_KIND_POINTER)) diag_error(node->diag_loc, "pointer type in unary expression");
     return type_operand;
 }
