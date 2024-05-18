@@ -1,13 +1,14 @@
 extern u32 printf(u8 *fmt, ...);
-
-void brr(u8 x) {
-    printf("brr %u\n", 100 + x);
-    x = 5;
-    return;
-}
+extern void *malloc(uint size);
+extern void free(void *ptr);
 
 u64 main() {
-    printf("hello %x\n", 0x500);
-    brr(500);
+    void *p = malloc(100);
+    uint *x = p;
+    *x = 5;
+
+    *x *= 10;
+    printf("%p %lu\n", p, *x);
+    free(p);
     return 0;
 }
