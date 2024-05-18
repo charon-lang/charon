@@ -191,10 +191,11 @@ static ir_node_t *parse_primary(tokenizer_t *tokenizer) {
 }
 
 static ir_node_t *parse_unary(tokenizer_t *tokenizer) {
-    if(!token_match(tokenizer_peek(tokenizer), 2, TOKEN_TYPE_MINUS, TOKEN_TYPE_NOT)) return parse_primary(tokenizer);
+    if(!token_match(tokenizer_peek(tokenizer), 3, TOKEN_TYPE_MINUS, TOKEN_TYPE_NOT, TOKEN_TYPE_STAR)) return parse_primary(tokenizer);
     token_t token_operator = tokenizer_advance(tokenizer);
     ir_unary_operation_t operation;
     switch(token_operator.type) {
+        case TOKEN_TYPE_STAR: operation = IR_UNARY_OPERATION_DEREF; break;
         case TOKEN_TYPE_MINUS: operation = IR_UNARY_OPERATION_NEGATIVE; break;
         case TOKEN_TYPE_NOT: operation = IR_UNARY_OPERATION_NOT; break;
         default: diag_error(token_operator.diag_loc, "expected a unary operator");
