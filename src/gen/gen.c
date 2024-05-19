@@ -146,6 +146,13 @@ static value_t gen_expr_literal_char(gen_context_t *ctx, ir_node_t *node) {
     };
 }
 
+static value_t gen_expr_literal_bool(gen_context_t *ctx, ir_node_t *node) {
+    return (value_t) {
+        .type = ir_type_get_bool(),
+        .value = LLVMConstInt(ctx->types.int1, node->expr_literal.bool_value ? 1 : 0, false)
+    };
+}
+
 static value_t gen_expr_binary(gen_context_t *ctx, ir_node_t *node) {
     value_t right = gen_common(ctx, node->expr_binary.right);
 
@@ -390,6 +397,7 @@ static value_t gen_common(gen_context_t *ctx, ir_node_t *node) {
         case IR_NODE_TYPE_EXPR_LITERAL_NUMERIC: return gen_expr_literal_numeric(ctx, node);
         case IR_NODE_TYPE_EXPR_LITERAL_STRING: return gen_expr_literal_string(ctx, node);
         case IR_NODE_TYPE_EXPR_LITERAL_CHAR: return gen_expr_literal_char(ctx, node);
+        case IR_NODE_TYPE_EXPR_LITERAL_BOOL: return gen_expr_literal_bool(ctx, node);
         case IR_NODE_TYPE_EXPR_BINARY: return gen_expr_binary(ctx, node);
         case IR_NODE_TYPE_EXPR_UNARY: return gen_expr_unary(ctx, node);
         case IR_NODE_TYPE_EXPR_VAR: return gen_expr_var(ctx, node);
