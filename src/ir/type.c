@@ -51,6 +51,19 @@ ir_type_t *ir_type_get_void() {
     return g_void;
 }
 
+ir_type_t *ir_type_get_bool() {
+    if(g_bool == NULL) g_bool = make_int_type(1, false);
+    return g_bool;
+}
+
+ir_type_t *ir_type_get_char() {
+    return ir_type_get_u8();
+}
+
+ir_type_t *ir_type_get_uint() {
+    return ir_type_get_u64();
+}
+
 ir_type_t *ir_type_get_u8() {
     if(g_u8 == NULL) g_u8 = make_int_type(8, false);
     return g_u8;
@@ -71,8 +84,8 @@ ir_type_t *ir_type_get_u64() {
     return g_u64;
 }
 
-ir_type_t *ir_type_get_uint() {
-    return ir_type_get_u64();
+ir_type_t *ir_type_get_int() {
+    return ir_type_get_i64();
 }
 
 ir_type_t *ir_type_get_i8() {
@@ -93,15 +106,6 @@ ir_type_t *ir_type_get_i32() {
 ir_type_t *ir_type_get_i64() {
     if(g_i64 == NULL) g_i64 = make_int_type(64, true);
     return g_i64;
-}
-
-ir_type_t *ir_type_get_int() {
-    return ir_type_get_i64();
-}
-
-ir_type_t *ir_type_get_bool() {
-    if(g_bool == NULL) g_bool = make_int_type(1, false);
-    return g_bool;
 }
 
 ir_type_t *ir_type_make_pointer(ir_type_t *base) {

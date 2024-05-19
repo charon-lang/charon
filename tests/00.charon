@@ -1,8 +1,8 @@
-extern u32 printf(u8 *fmt, ...);
+extern u32 printf(char *fmt, ...);
 extern void *malloc(uint size);
 extern void free(void *ptr);
 
-void print_x(u8 *str, uint x) {
+void print_x(char *str, uint x) {
     while {
         printf("%s\n", str);
         x -= 1;
