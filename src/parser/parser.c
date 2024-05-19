@@ -150,10 +150,19 @@ static ir_node_t *parse_literal_char(tokenizer_t *tokenizer) {
     return ir_node_make_expr_literal_char(value, token_char.diag_loc);
 }
 
+static ir_node_t *parse_literal_bool(tokenizer_t *tokenizer) {
+    token_t token_bool = consume(tokenizer, TOKEN_TYPE_BOOL);
+    const char *text = make_text_from_token(tokenizer, token_bool);
+    bool value = strcmp(text, "true") == 0;
+    free_text(tokenizer, text);
+    return ir_node_make_expr_literal_bool(value, token_bool.diag_loc);
+}
+
 static ir_node_t *parse_literal(tokenizer_t *tokenizer) {
     switch(tokenizer_peek(tokenizer).type) {
         case TOKEN_TYPE_STRING: return parse_literal_string(tokenizer);
         case TOKEN_TYPE_CHAR: return parse_literal_char(tokenizer);
+        case TOKEN_TYPE_BOOL: return parse_literal_bool(tokenizer);
         default: return parse_literal_numeric(tokenizer);
     }
 }
