@@ -24,6 +24,7 @@ static spec_t g_spec[] = {
     { .pattern = "^if", .type = TOKEN_TYPE_KEYWORD_IF },
     { .pattern = "^else", .type = TOKEN_TYPE_KEYWORD_ELSE },
     { .pattern = "^extern", .type = TOKEN_TYPE_KEYWORD_EXTERN },
+    { .pattern = "^while", .type = TOKEN_TYPE_KEYWORD_WHILE },
 
     { .pattern = "^0x[a-fA-F\\d]+", .type = TOKEN_TYPE_NUMBER_HEX },
     { .pattern = "^0b[01]+", .type = TOKEN_TYPE_NUMBER_BIN },
