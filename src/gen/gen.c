@@ -1,14 +1,9 @@
 #include "gen.h"
 
-void gen_add_function(gen_context_t *ctx, const char *name, ir_type_t *return_type, size_t argument_count, gen_function_argument_t *arguments, bool varargs) {
+gen_function_t *gen_add_function(gen_context_t *ctx, gen_function_t function) {
     ctx->functions = realloc(ctx->functions, sizeof(gen_function_t) * ++ctx->function_count);
-    ctx->functions[ctx->function_count - 1] = (gen_function_t) {
-        .name = name,
-        .return_type = return_type,
-        .argument_count = argument_count,
-        .arguments = arguments,
-        .varargs = varargs
-    };
+    ctx->functions[ctx->function_count - 1] = function;
+    return &ctx->functions[ctx->function_count - 1];
 }
 
 gen_function_t *gen_get_function(gen_context_t *ctx, const char *name) {

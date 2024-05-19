@@ -15,10 +15,11 @@ gen_scope_t *gen_scope_exit(gen_scope_t *scope) {
     return new;
 }
 
-void gen_scope_add_variable(gen_scope_t *scope, ir_type_t *type, const char *name, LLVMValueRef value) {
+gen_variable_t *gen_scope_add_variable(gen_scope_t *scope, ir_type_t *type, const char *name, LLVMValueRef value) {
     assert(scope != NULL);
     scope->variables = realloc(scope->variables, sizeof(gen_variable_t) * ++scope->variable_count);
     scope->variables[scope->variable_count - 1] = (gen_variable_t) { .type = type, .name = name, .value = value };
+    return &scope->variables[scope->variable_count - 1];
 }
 
 gen_variable_t *gen_scope_get_variable(gen_scope_t *scope, const char *name) {

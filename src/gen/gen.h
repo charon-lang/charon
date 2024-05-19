@@ -27,16 +27,16 @@ typedef struct gen_scope {
 } gen_scope_t;
 
 typedef struct {
-    const char *name;
-    ir_type_t *type;
-} gen_function_argument_t;
-
-typedef struct {
-    const char *name;
     ir_type_t *return_type;
     size_t argument_count;
-    gen_function_argument_t *arguments;
+    ir_type_t **arguments;
     bool varargs;
+} gen_function_type_t;
+
+typedef struct {
+    gen_function_type_t type;
+    const char *name;
+    LLVMValueRef value;
 } gen_function_t;
 
 typedef struct {
@@ -60,10 +60,10 @@ typedef struct {
 gen_scope_t *gen_scope_enter(gen_scope_t *current);
 gen_scope_t *gen_scope_exit(gen_scope_t *scope);
 
-void gen_scope_add_variable(gen_scope_t *scope, ir_type_t *type, const char *name, LLVMValueRef value);
+gen_variable_t *gen_scope_add_variable(gen_scope_t *scope, ir_type_t *type, const char *name, LLVMValueRef value);
 gen_variable_t *gen_scope_get_variable(gen_scope_t *scope, const char *name);
 
-void gen_add_function(gen_context_t *ctx, const char *name, ir_type_t *return_type, size_t argument_count, gen_function_argument_t *arguments, bool varargs);
+gen_function_t *gen_add_function(gen_context_t *ctx, gen_function_t function);
 gen_function_t *gen_get_function(gen_context_t *ctx, const char *name);
 
 LLVMTypeRef gen_llvm_type(gen_context_t *ctx, ir_type_t *type);
