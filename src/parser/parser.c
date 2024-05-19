@@ -42,6 +42,11 @@ static ir_type_t *type_from_text(const char *text) {
     if(strcmp(text, "u16") == 0) return ir_type_get_u16();
     if(strcmp(text, "u32") == 0) return ir_type_get_u32();
     if(strcmp(text, "u64") == 0) return ir_type_get_u64();
+    if(strcmp(text, "int") == 0) return ir_type_get_int();
+    if(strcmp(text, "i8") == 0) return ir_type_get_i8();
+    if(strcmp(text, "i16") == 0) return ir_type_get_i16();
+    if(strcmp(text, "i32") == 0) return ir_type_get_i32();
+    if(strcmp(text, "i64") == 0) return ir_type_get_i64();
     return NULL;
 }
 

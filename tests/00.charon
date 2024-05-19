@@ -11,7 +11,7 @@ void print_x(u8 *str, uint x) {
 }
 
 u64 main() {
-    bool z = 1;
+    bool z = true;
     if(z) {
         print_x("hello", 3);
     } else {

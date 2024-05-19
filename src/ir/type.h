@@ -30,6 +30,11 @@ ir_type_t *ir_type_get_u16();
 ir_type_t *ir_type_get_u32();
 ir_type_t *ir_type_get_u64();
 ir_type_t *ir_type_get_uint();
+ir_type_t *ir_type_get_i8();
+ir_type_t *ir_type_get_i16();
+ir_type_t *ir_type_get_i32();
+ir_type_t *ir_type_get_i64();
+ir_type_t *ir_type_get_int();
 
 ir_type_t *ir_type_get_bool();
 

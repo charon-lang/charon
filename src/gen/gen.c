@@ -156,7 +156,6 @@ static value_t gen_expr_literal_bool(gen_context_t *ctx, ir_node_t *node) {
 static value_t gen_expr_binary(gen_context_t *ctx, ir_node_t *node) {
     value_t right = gen_common(ctx, node->expr_binary.right);
 
-    // TODO: re-investigate this generation. its a bit scuffed imo.
     if(node->expr_binary.operation == IR_BINARY_OPERATION_ASSIGN) {
         switch(node->expr_binary.left->type) {
             case IR_NODE_TYPE_EXPR_VAR:
@@ -192,7 +191,7 @@ static value_t gen_expr_binary(gen_context_t *ctx, ir_node_t *node) {
         };
         case IR_BINARY_OPERATION_MODULO: return (value_t) {
             .type = left.type, // TODO
-            .value = LLVMBuildSRem(ctx->builder, left.value, right.value, "")
+            .value = LLVMBuildURem(ctx->builder, left.value, right.value, "")
         };
         case IR_BINARY_OPERATION_EQUAL: return (value_t) {
             .type = ir_type_get_bool(),
@@ -242,7 +241,7 @@ static value_t gen_expr_unary(gen_context_t *ctx, ir_node_t *node) {
                 .value = LLVMBuildLoad2(ctx->builder, get_llvm_type(ctx, type), operand.value, "")
             };
         case IR_UNARY_OPERATION_NOT: return (value_t) {
-            .type = ir_type_get_u8(), // TODO: BOOLEAN
+            .type = ir_type_get_bool(),
             .value = LLVMBuildICmp(ctx->builder, LLVMIntEQ, operand.value, LLVMConstInt(get_llvm_type(ctx, operand.type), 0, false), "")
         };
         case IR_UNARY_OPERATION_NEGATIVE: return (value_t) {

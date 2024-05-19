@@ -3,11 +3,28 @@
 #include <stdlib.h>
 #include <stdio.h>
 
-static ir_type_t *g_void = NULL, *g_u8 = NULL, *g_u16 = NULL, *g_u32 = NULL, *g_u64 = NULL, *g_bool = NULL;
+static ir_type_t
+    *g_void = NULL,
+    *g_u8 = NULL,
+    *g_u16 = NULL,
+    *g_u32 = NULL,
+    *g_u64 = NULL,
+    *g_i8 = NULL,
+    *g_i16 = NULL,
+    *g_i32 = NULL,
+    *g_i64 = NULL,
+    *g_bool = NULL;
 
 static ir_type_t *make_type(ir_type_kind_t kind) {
     ir_type_t *type = malloc(sizeof(ir_type_t));
     type->kind = kind;
+    return type;
+}
+
+static ir_type_t *make_int_type(size_t bit_size, bool is_signed) {
+    ir_type_t *type = make_type(IR_TYPE_KIND_INTEGER);
+    type->integer.bit_size = bit_size,
+    type->integer.is_signed = is_signed;
     return type;
 }
 
@@ -35,38 +52,22 @@ ir_type_t *ir_type_get_void() {
 }
 
 ir_type_t *ir_type_get_u8() {
-    if(g_u8 == NULL) {
-        g_u8 = make_type(IR_TYPE_KIND_INTEGER);
-        g_u8->integer.is_signed = false;
-        g_u8->integer.bit_size = 8;
-    }
+    if(g_u8 == NULL) g_u8 = make_int_type(8, false);
     return g_u8;
 }
 
 ir_type_t *ir_type_get_u16() {
-    if(g_u16 == NULL) {
-        g_u16 = make_type(IR_TYPE_KIND_INTEGER);
-        g_u16->integer.is_signed = false;
-        g_u16->integer.bit_size = 16;
-    }
+    if(g_u16 == NULL) g_u16 = make_int_type(16, false);
     return g_u16;
 }
 
 ir_type_t *ir_type_get_u32() {
-    if(g_u32 == NULL) {
-        g_u32 = make_type(IR_TYPE_KIND_INTEGER);
-        g_u32->integer.is_signed = false;
-        g_u32->integer.bit_size = 32;
-    }
+    if(g_u32 == NULL) g_u32 = make_int_type(32, false);
     return g_u32;
 }
 
 ir_type_t *ir_type_get_u64() {
-    if(g_u64 == NULL) {
-        g_u64 = make_type(IR_TYPE_KIND_INTEGER);
-        g_u64->integer.is_signed = false;
-        g_u64->integer.bit_size = 64;
-    }
+    if(g_u64 == NULL) g_u64 = make_int_type(64, false);
     return g_u64;
 }
 
@@ -74,12 +75,32 @@ ir_type_t *ir_type_get_uint() {
     return ir_type_get_u64();
 }
 
+ir_type_t *ir_type_get_i8() {
+    if(g_i8 == NULL) g_i8 = make_int_type(8, true);
+    return g_i8;
+}
+
+ir_type_t *ir_type_get_i16() {
+    if(g_i16 == NULL) g_i16 = make_int_type(16, true);
+    return g_i16;
+}
+
+ir_type_t *ir_type_get_i32() {
+    if(g_i32 == NULL) g_i32 = make_int_type(32, true);
+    return g_i32;
+}
+
+ir_type_t *ir_type_get_i64() {
+    if(g_i64 == NULL) g_i64 = make_int_type(64, true);
+    return g_i64;
+}
+
+ir_type_t *ir_type_get_int() {
+    return ir_type_get_i64();
+}
+
 ir_type_t *ir_type_get_bool() {
-    if(g_bool == NULL) {
-        g_bool = make_type(IR_TYPE_KIND_INTEGER);
-        g_bool->integer.is_signed = false;
-        g_bool->integer.bit_size = 1;
-    }
+    if(g_bool == NULL) g_bool = make_int_type(1, false);
     return g_bool;
 }
 
