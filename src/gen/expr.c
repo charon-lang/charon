@@ -1,7 +1,5 @@
 #include "gen.h"
 
-gen_value_t gen_expr(gen_context_t *ctx, ir_node_t *node);
-
 static gen_value_t gen_expr_literal_numeric(gen_context_t *ctx, ir_node_t *node) {
     return (gen_value_t) {
         .type = ir_type_get_u64(),
@@ -72,27 +70,27 @@ static gen_value_t gen_expr_binary(gen_context_t *ctx, ir_node_t *node) {
         };
         case IR_BINARY_OPERATION_EQUAL: return (gen_value_t) {
             .type = ir_type_get_bool(),
-            .value = LLVMBuildICmp(ctx->builder, LLVMIntEQ, left.value, right.value, "binary.eq")
+            .value = LLVMBuildICmp(ctx->builder, LLVMIntEQ, left.value, right.value, "expr.binary.eq")
         };
         case IR_BINARY_OPERATION_NOT_EQUAL: return (gen_value_t) {
             .type = ir_type_get_bool(),
-            .value = LLVMBuildICmp(ctx->builder, LLVMIntNE, left.value, right.value, "binary.ne")
+            .value = LLVMBuildICmp(ctx->builder, LLVMIntNE, left.value, right.value, "expr.binary.ne")
         };
         case IR_BINARY_OPERATION_GREATER: return (gen_value_t) {
             .type = ir_type_get_bool(),
-            .value = LLVMBuildICmp(ctx->builder, LLVMIntUGT, left.value, right.value, "binary.ugt")
+            .value = LLVMBuildICmp(ctx->builder, LLVMIntUGT, left.value, right.value, "expr.binary.ugt")
         };
         case IR_BINARY_OPERATION_GREATER_EQUAL: return (gen_value_t) {
             .type = ir_type_get_bool(),
-            .value = LLVMBuildICmp(ctx->builder, LLVMIntUGE, left.value, right.value, "binary.uge")
+            .value = LLVMBuildICmp(ctx->builder, LLVMIntUGE, left.value, right.value, "expr.binary.uge")
         };
         case IR_BINARY_OPERATION_LESS: return (gen_value_t) {
             .type = ir_type_get_bool(),
-            .value = LLVMBuildICmp(ctx->builder, LLVMIntULT, left.value, right.value, "binary.ult")
+            .value = LLVMBuildICmp(ctx->builder, LLVMIntULT, left.value, right.value, "expr.binary.ult")
         };
         case IR_BINARY_OPERATION_LESS_EQUAL: return (gen_value_t) {
             .type = ir_type_get_bool(),
-            .value = LLVMBuildICmp(ctx->builder, LLVMIntULE, left.value, right.value, "binary.ule")
+            .value = LLVMBuildICmp(ctx->builder, LLVMIntULE, left.value, right.value, "expr.binary.ule")
         };
         default: assert(false);
     }

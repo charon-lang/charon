@@ -1,7 +1,5 @@
 #include "gen.h"
 
-void gen_stmt(gen_context_t *ctx, ir_node_t *node);
-
 static void gen_stmt_block(gen_context_t *ctx, ir_node_t *node) {
     ctx->scope = gen_scope_make(ctx->scope);
     for(size_t i = 0; i < node->stmt_block.statement_count; i++) gen_stmt(ctx, node->stmt_block.statements[i]);
