@@ -36,6 +36,7 @@ static void free_text(tokenizer_t *tokenizer, const char *text) {
 
 static ir_type_t *type_from_text(const char *text) {
     if(strcmp(text, "void") == 0) return ir_type_get_void();
+    if(strcmp(text, "bool") == 0) return ir_type_get_bool();
     if(strcmp(text, "uint") == 0) return ir_type_get_uint();
     if(strcmp(text, "u8") == 0) return ir_type_get_u8();
     if(strcmp(text, "u16") == 0) return ir_type_get_u16();

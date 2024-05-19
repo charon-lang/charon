@@ -33,7 +33,7 @@ static spec_t g_spec[] = {
     { .pattern = "^\"[^\"]*\"", .type = TOKEN_TYPE_STRING },
     { .pattern = "^'[^']'", .type = TOKEN_TYPE_CHAR },
 
-    { .pattern = "^(?:void|uint|u8|u16|u32|u64)", .type = TOKEN_TYPE_TYPE },
+    { .pattern = "^(?:void|bool|uint|u8|u16|u32|u64)", .type = TOKEN_TYPE_TYPE },
     { .pattern = "^[_a-zA-Z][_a-zA-Z0-9]*", .type = TOKEN_TYPE_IDENTIFIER },
 
     { .pattern = "^\\.\\.\\.", .type = TOKEN_TYPE_TRIPLE_PERIOD },

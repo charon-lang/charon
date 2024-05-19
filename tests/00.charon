@@ -11,7 +11,8 @@ void print_x(u8 *str, uint x) {
 }
 
 u64 main() {
-    if(1) {
+    bool z = 1;
+    if(z) {
         print_x("hello", 3);
     } else {
         printf("wee woo wee woo\n");
