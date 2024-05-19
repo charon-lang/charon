@@ -101,6 +101,10 @@ static ir_type_t *check_expr_literal_char(semantics_context_t *ctx, ir_node_t *n
     return ir_type_get_u8();
 }
 
+static ir_type_t *check_expr_literal_bool(semantics_context_t *ctx, ir_node_t *node) {
+    return ir_type_get_bool();
+}
+
 static ir_type_t *check_expr_binary(semantics_context_t *ctx, ir_node_t *node) {
     ir_type_t *type_left = check_common(ctx, node->expr_binary.left);
     ir_type_t *type_right = check_common(ctx, node->expr_binary.right);
@@ -203,6 +207,7 @@ static ir_type_t *check_common(semantics_context_t *ctx, ir_node_t *node) {
         case IR_NODE_TYPE_EXPR_LITERAL_NUMERIC: return check_expr_literal_numeric(ctx, node);
         case IR_NODE_TYPE_EXPR_LITERAL_STRING: return check_expr_literal_string(ctx, node);
         case IR_NODE_TYPE_EXPR_LITERAL_CHAR: return check_expr_literal_char(ctx, node);
+        case IR_NODE_TYPE_EXPR_LITERAL_BOOL: return check_expr_literal_bool(ctx, node);
         case IR_NODE_TYPE_EXPR_BINARY: return check_expr_binary(ctx, node);
         case IR_NODE_TYPE_EXPR_UNARY: return check_expr_unary(ctx, node);
         case IR_NODE_TYPE_EXPR_VAR: return check_expr_var(ctx, node);
