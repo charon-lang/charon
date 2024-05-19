@@ -11,14 +11,14 @@ static gen_value_t gen_expr_literal_numeric(gen_context_t *ctx, ir_node_t *node)
 
 static gen_value_t gen_expr_literal_string(gen_context_t *ctx, ir_node_t *node) {
     return (gen_value_t) {
-        .type = ir_type_make_pointer(ir_type_get_u8()),
+        .type = ir_type_make_pointer(ir_type_get_char()),
         .value = LLVMBuildGlobalString(ctx->builder, node->expr_literal.string_value, "")
     };
 }
 
 static gen_value_t gen_expr_literal_char(gen_context_t *ctx, ir_node_t *node) {
     return (gen_value_t) {
-        .type = ir_type_get_u8(),
+        .type = ir_type_get_char(),
         .value = LLVMConstInt(ctx->types.int8, node->expr_literal.char_value, false)
     };
 }

@@ -94,11 +94,11 @@ static ir_type_t *check_expr_literal_numeric(semantics_context_t *ctx, ir_node_t
 }
 
 static ir_type_t *check_expr_literal_string(semantics_context_t *ctx, ir_node_t *node) {
-    return ir_type_make_pointer(ir_type_get_u8());
+    return ir_type_make_pointer(ir_type_get_char());
 }
 
 static ir_type_t *check_expr_literal_char(semantics_context_t *ctx, ir_node_t *node) {
-    return ir_type_get_u8();
+    return ir_type_get_char();
 }
 
 static ir_type_t *check_expr_literal_bool(semantics_context_t *ctx, ir_node_t *node) {
