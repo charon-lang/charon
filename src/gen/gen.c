@@ -1,5 +1,24 @@
 #include "gen.h"
 
+void gen_add_function(gen_context_t *ctx, const char *name, ir_type_t *return_type, size_t argument_count, gen_function_argument_t *arguments, bool varargs) {
+    ctx->functions = realloc(ctx->functions, sizeof(gen_function_t) * ++ctx->function_count);
+    ctx->functions[ctx->function_count - 1] = (gen_function_t) {
+        .name = name,
+        .return_type = return_type,
+        .argument_count = argument_count,
+        .arguments = arguments,
+        .varargs = varargs
+    };
+}
+
+gen_function_t *gen_get_function(gen_context_t *ctx, const char *name) {
+    for(size_t i = 0; i < ctx->function_count; i++) {
+        if(strcmp(name, ctx->functions[i].name) != 0) continue;
+        return &ctx->functions[i];
+    }
+    return NULL;
+}
+
 LLVMTypeRef gen_llvm_type(gen_context_t *ctx, ir_type_t *type) {
     if(ir_type_is_kind(type, IR_TYPE_KIND_VOID)) return ctx->types.void_;
     if(ir_type_is_kind(type, IR_TYPE_KIND_POINTER)) return ctx->types.pointer;
@@ -13,10 +32,6 @@ LLVMTypeRef gen_llvm_type(gen_context_t *ctx, ir_type_t *type) {
         }
     }
     assert(false);
-}
-
-static void gen_program(gen_context_t *ctx, ir_node_t *node) {
-    for(size_t i = 0; i < node->program.global_count; i++) gen_global(ctx, node->program.globals[i]);
 }
 
 void gen(ir_node_t *ast, const char *dest, const char *passes) {
@@ -34,7 +49,8 @@ void gen(ir_node_t *ast, const char *dest, const char *passes) {
     ctx.types.int64 = LLVMInt64TypeInContext(ctx.context);
     ctx.scope = NULL;
 
-    gen_program(&ctx, ast);
+    assert(ast->type == IR_NODE_TYPE_PROGRAM);
+    for(size_t i = 0; i < ast->program.global_count; i++) gen_global(&ctx, ast->program.globals[i]);
 
     LLVMRunPasses(ctx.module, passes, NULL, LLVMCreatePassBuilderOptions());
     LLVMPrintModuleToFile(ctx.module, dest, NULL);

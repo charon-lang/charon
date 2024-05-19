@@ -1,14 +1,21 @@
 #include "gen.h"
 
 static LLVMValueRef add_function(gen_context_t *ctx, ir_function_decl_t *decl, diag_loc_t diag_loc) {
+    if(gen_get_function(ctx, decl->name) != NULL) diag_error(diag_loc, "redefinition of '%s'", decl->name);
+
+    size_t argument_count = decl->argument_count;
+    gen_function_argument_t *arguments = malloc(sizeof(gen_function_argument_t) * argument_count);
+    for(size_t i = 0; i < argument_count; i++) {
+        arguments[i] = (gen_function_argument_t) {
+            .name = decl->arguments[i].name,
+            .type = decl->arguments[i].type
+        };
+    }
+    gen_add_function(ctx, decl->name, decl->return_type, argument_count, arguments, decl->varargs);
+
     LLVMTypeRef args[decl->argument_count];
     for(size_t i = 0; i < decl->argument_count; i++) args[i] = gen_llvm_type(ctx, decl->arguments[i].type);
-    LLVMTypeRef return_type = gen_llvm_type(ctx, decl->return_type);
-    return LLVMAddFunction(
-        ctx->module,
-        decl->name,
-        LLVMFunctionType(return_type, args, decl->argument_count, decl->varargs)
-    );
+    return LLVMAddFunction(ctx->module, decl->name, LLVMFunctionType(gen_llvm_type(ctx, decl->return_type), args, decl->argument_count, decl->varargs));
 }
 
 static void gen_global_extern(gen_context_t *ctx, ir_node_t *node) {
