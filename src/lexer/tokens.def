@@ -13,6 +13,8 @@ TOKEN(NUMBER_BIN, "number")
 TOKEN(NUMBER_OCT, "number")
 TOKEN(STRING, "string")
 TOKEN(CHAR, "char")
+TOKEN(BOOL, "bool")
+
 TOKEN(TYPE, "type")
 TOKEN(IDENTIFIER, "identifier")
 
