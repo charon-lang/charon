@@ -4,7 +4,7 @@ extern void free(void *ptr);
 
 u64 main() {
     u32 x = 520;
-    u32 *y = &x;
+    u64 *y = &x;
     printf("%#x, %#lx\n", x, y);
     return 0;
 }

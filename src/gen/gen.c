@@ -7,7 +7,6 @@
 #include "../diag.h"
 #include "../ir/type.h"
 
-#include <stdio.h> // TODO
 typedef struct {
     ir_type_t *type;
     LLVMValueRef value;
