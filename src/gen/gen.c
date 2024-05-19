@@ -187,27 +187,27 @@ static value_t gen_expr_binary(gen_context_t *ctx, ir_node_t *node) {
         };
         case IR_BINARY_OPERATION_EQUAL: return (value_t) {
             .type = ir_type_get_u8(), // TODO: BOOLEAN
-            .value = LLVMBuildICmp(ctx->builder, LLVMIntEQ, left.value, right.value, "")
+            .value = LLVMBuildICmp(ctx->builder, LLVMIntEQ, left.value, right.value, "binary.eq")
         };
         case IR_BINARY_OPERATION_NOT_EQUAL: return (value_t) {
             .type = ir_type_get_u8(), // TODO: BOOLEAN
-            .value = LLVMBuildICmp(ctx->builder, LLVMIntNE, left.value, right.value, "")
+            .value = LLVMBuildICmp(ctx->builder, LLVMIntNE, left.value, right.value, "binary.ne")
         };
         case IR_BINARY_OPERATION_GREATER: return (value_t) {
             .type = ir_type_get_u8(), // TODO: BOOLEAN
-            .value = LLVMBuildICmp(ctx->builder, LLVMIntUGT, left.value, right.value, "")
+            .value = LLVMBuildICmp(ctx->builder, LLVMIntUGT, left.value, right.value, "binary.ugt")
         };
         case IR_BINARY_OPERATION_GREATER_EQUAL: return (value_t) {
             .type = ir_type_get_u8(), // TODO: BOOLEAN
-            .value = LLVMBuildICmp(ctx->builder, LLVMIntUGE, left.value, right.value, "")
+            .value = LLVMBuildICmp(ctx->builder, LLVMIntUGE, left.value, right.value, "binary.uge")
         };
         case IR_BINARY_OPERATION_LESS: return (value_t) {
             .type = ir_type_get_u8(), // TODO: BOOLEAN
-            .value = LLVMBuildICmp(ctx->builder, LLVMIntULT, left.value, right.value, "")
+            .value = LLVMBuildICmp(ctx->builder, LLVMIntULT, left.value, right.value, "binary.ult")
         };
         case IR_BINARY_OPERATION_LESS_EQUAL: return (value_t) {
             .type = ir_type_get_u8(), // TODO: BOOLEAN
-            .value = LLVMBuildICmp(ctx->builder, LLVMIntULE, left.value, right.value, "")
+            .value = LLVMBuildICmp(ctx->builder, LLVMIntULE, left.value, right.value, "binary.ule")
         };
         default: assert(false);
     }
@@ -338,6 +338,32 @@ static void gen_stmt_if(gen_context_t *ctx, ir_node_t *node) {
     }
 }
 
+static void gen_stmt_while(gen_context_t *ctx, ir_node_t *node) {
+    bool has_condition = node->stmt_while.condition != NULL;
+
+    LLVMValueRef func = LLVMGetBasicBlockParent(LLVMGetInsertBlock(ctx->builder));
+    LLVMBasicBlockRef bb_condition = NULL;
+    if(has_condition) bb_condition = LLVMAppendBasicBlockInContext(ctx->context, func, "loop.condition");
+    LLVMBasicBlockRef bb_body = LLVMCreateBasicBlockInContext(ctx->context, "loop.body");
+    LLVMBasicBlockRef bb_out = LLVMCreateBasicBlockInContext(ctx->context, "loop.out");
+
+    LLVMBasicBlockRef bb_top = has_condition ? bb_condition : bb_body;
+    LLVMBuildBr(ctx->builder, bb_top);
+    if(has_condition) {
+        LLVMPositionBuilderAtEnd(ctx->builder, bb_condition);
+        value_t condition = gen_common(ctx, node->stmt_while.condition);
+        LLVMBuildCondBr(ctx->builder, condition.value, bb_body, bb_out);
+    }
+
+    LLVMAppendExistingBasicBlock(func, bb_body);
+    LLVMPositionBuilderAtEnd(ctx->builder, bb_body);
+    gen_common(ctx, node->stmt_while.body);
+    LLVMBuildBr(ctx->builder, bb_top);
+
+    LLVMAppendExistingBasicBlock(func, bb_out);
+    LLVMPositionBuilderAtEnd(ctx->builder, bb_out);
+}
+
 static void gen_stmt_decl(gen_context_t *ctx, ir_node_t *node) {
     LLVMValueRef parent_func = LLVMGetBasicBlockParent(LLVMGetInsertBlock(ctx->builder));
     LLVMBuilderRef entry_builder = LLVMCreateBuilderInContext(ctx->context);
@@ -353,6 +379,7 @@ static void gen_stmt_decl(gen_context_t *ctx, ir_node_t *node) {
 static value_t gen_common(gen_context_t *ctx, ir_node_t *node) {
     switch(node->type) {
         case IR_NODE_TYPE_PROGRAM: gen_program(ctx, node); break;
+
         case IR_NODE_TYPE_GLOBAL_FUNCTION: gen_global_function(ctx, node); break;
         case IR_NODE_TYPE_GLOBAL_EXTERN: gen_global_extern(ctx, node); break;
 
@@ -368,6 +395,7 @@ static value_t gen_common(gen_context_t *ctx, ir_node_t *node) {
         case IR_NODE_TYPE_STMT_BLOCK: gen_stmt_block(ctx, node); break;
         case IR_NODE_TYPE_STMT_RETURN: gen_stmt_return(ctx, node); break;
         case IR_NODE_TYPE_STMT_IF: gen_stmt_if(ctx, node); break;
+        case IR_NODE_TYPE_STMT_WHILE: gen_stmt_while(ctx, node); break;
         case IR_NODE_TYPE_STMT_DECL: gen_stmt_decl(ctx, node); break;
     }
     return (value_t) {}; // TODO
