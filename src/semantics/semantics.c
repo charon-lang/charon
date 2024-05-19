@@ -178,6 +178,11 @@ static void check_stmt_if(semantics_context_t *ctx, ir_node_t *node) {
     if(node->stmt_if.else_body != NULL) check_common(ctx, node->stmt_if.else_body);
 }
 
+static void check_stmt_while(semantics_context_t *ctx, ir_node_t *node) {
+    if(node->stmt_while.condition != NULL) check_common(ctx, node->stmt_while.condition);
+    check_common(ctx, node->stmt_while.body);
+}
+
 static void check_stmt_decl(semantics_context_t *ctx, ir_node_t *node) {
     if(scope_get_variable(ctx->scope, node->stmt_decl.name)) diag_error(node->diag_loc, "redeclaration of `%s`", node->stmt_decl.name);
     if(ir_type_is_void(node->stmt_decl.type)) diag_error(node->diag_loc, "cannot declare a variable as void");
@@ -191,6 +196,7 @@ static void check_stmt_decl(semantics_context_t *ctx, ir_node_t *node) {
 static ir_type_t *check_common(semantics_context_t *ctx, ir_node_t *node) {
     switch(node->type) {
         case IR_NODE_TYPE_PROGRAM: check_program(ctx, node); break;
+
         case IR_NODE_TYPE_GLOBAL_FUNCTION: check_global_function(ctx, node); break;
         case IR_NODE_TYPE_GLOBAL_EXTERN: check_global_extern(ctx, node); break;
 
@@ -206,6 +212,7 @@ static ir_type_t *check_common(semantics_context_t *ctx, ir_node_t *node) {
         case IR_NODE_TYPE_STMT_BLOCK: check_stmt_block(ctx, node); break;
         case IR_NODE_TYPE_STMT_RETURN: check_stmt_return(ctx, node); break;
         case IR_NODE_TYPE_STMT_IF: check_stmt_if(ctx, node); break;
+        case IR_NODE_TYPE_STMT_WHILE: check_stmt_while(ctx, node); break;
         case IR_NODE_TYPE_STMT_DECL: check_stmt_decl(ctx, node); break;
     }
     return NULL;
