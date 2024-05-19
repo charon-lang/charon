@@ -28,7 +28,7 @@ static void gen_global_function(gen_context_t *ctx, ir_node_t *node) {
     LLVMBasicBlockRef bb_entry = LLVMAppendBasicBlockInContext(ctx->context, func, "entry");
     LLVMPositionBuilderAtEnd(ctx->builder, bb_entry);
 
-    ctx->scope = gen_scope_make(ctx->scope);
+    ctx->scope = gen_scope_enter(ctx->scope);
     for(size_t i = 0; i < node->global_function.decl.argument_count; i++) {
         ir_type_t *param_type = node->global_function.decl.arguments[i].type;
         const char *param_name = node->global_function.decl.arguments[i].name;
@@ -38,7 +38,7 @@ static void gen_global_function(gen_context_t *ctx, ir_node_t *node) {
         gen_scope_add_variable(ctx->scope, param_type, param_name, param_new);
     }
     gen_stmt(ctx, node->global_function.body);
-    ctx->scope = gen_scope_free(ctx->scope);
+    ctx->scope = gen_scope_exit(ctx->scope);
 }
 
 void gen_global(gen_context_t *ctx, ir_node_t *node) {

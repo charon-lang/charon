@@ -1,9 +1,9 @@
 #include "gen.h"
 
 static void gen_stmt_block(gen_context_t *ctx, ir_node_t *node) {
-    ctx->scope = gen_scope_make(ctx->scope);
+    ctx->scope = gen_scope_enter(ctx->scope);
     for(size_t i = 0; i < node->stmt_block.statement_count; i++) gen_stmt(ctx, node->stmt_block.statements[i]);
-    ctx->scope = gen_scope_free(ctx->scope);
+    ctx->scope = gen_scope_exit(ctx->scope);
 }
 
 static void gen_stmt_return(gen_context_t *ctx, ir_node_t *node) {

@@ -57,8 +57,9 @@ typedef struct {
     gen_function_t *functions;
 } gen_context_t;
 
-gen_scope_t *gen_scope_make(gen_scope_t *current);
-gen_scope_t *gen_scope_free(gen_scope_t *scope);
+gen_scope_t *gen_scope_enter(gen_scope_t *current);
+gen_scope_t *gen_scope_exit(gen_scope_t *scope);
+
 void gen_scope_add_variable(gen_scope_t *scope, ir_type_t *type, const char *name, LLVMValueRef value);
 gen_variable_t *gen_scope_get_variable(gen_scope_t *scope, const char *name);
 
