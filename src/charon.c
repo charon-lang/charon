@@ -57,6 +57,7 @@ static void print_node(ir_node_t *node, int depth) {
         case IR_NODE_TYPE_STMT_BLOCK: printf("(block)"); break;
         case IR_NODE_TYPE_STMT_RETURN: printf("(return)"); break;
         case IR_NODE_TYPE_STMT_IF: printf("(if)"); break;
+        case IR_NODE_TYPE_STMT_WHILE: printf("(while)"); break;
         case IR_NODE_TYPE_STMT_DECL: printf("(decl %s)", node->stmt_decl.name); break;
     }
     printf("\n");
@@ -93,6 +94,10 @@ static void print_node(ir_node_t *node, int depth) {
             print_node(node->stmt_if.condition, depth);
             print_node(node->stmt_if.body, depth);
             if(node->stmt_if.else_body != NULL) print_node(node->stmt_if.else_body, depth);
+            break;
+        case IR_NODE_TYPE_STMT_WHILE:
+            if(node->stmt_while.condition != NULL) print_node(node->stmt_while.condition, depth);
+            print_node(node->stmt_while.body, depth);
             break;
         case IR_NODE_TYPE_STMT_DECL: if(node->stmt_decl.initial != NULL) print_node(node->stmt_decl.initial, depth); break;
     }
