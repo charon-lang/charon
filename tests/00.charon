@@ -2,9 +2,19 @@ extern u32 printf(u8 *fmt, ...);
 extern void *malloc(uint size);
 extern void free(void *ptr);
 
+void print_x(u8 *str, uint x) {
+    while {
+        printf("%s\n", str);
+        x -= 1;
+        if(x == 0) return;
+    }
+}
+
 u64 main() {
-    u32 x = 520;
-    u64 *y = &x;
-    printf("%#x, %#lx\n", x, y);
+    if(1) {
+        print_x("hello", 3);
+    } else {
+        printf("wee woo wee woo\n");
+    }
     return 0;
 }

@@ -30,6 +30,7 @@ typedef struct {
     LLVMModuleRef module;
     struct {
         LLVMTypeRef void_;
+        LLVMTypeRef int1;
         LLVMTypeRef int8;
         LLVMTypeRef int16;
         LLVMTypeRef int32;
@@ -74,6 +75,7 @@ static LLVMTypeRef get_llvm_type(gen_context_t *ctx, ir_type_t *type) {
     if(ir_type_is_kind(type, IR_TYPE_KIND_POINTER)) return ctx->types.pointer;
     if(ir_type_is_kind(type, IR_TYPE_KIND_INTEGER)) {
         switch(type->integer.bit_size) {
+            case 1: return ctx->types.int1;
             case 8: return ctx->types.int8;
             case 16: return ctx->types.int16;
             case 32: return ctx->types.int32;
@@ -186,27 +188,27 @@ static value_t gen_expr_binary(gen_context_t *ctx, ir_node_t *node) {
             .value = LLVMBuildSRem(ctx->builder, left.value, right.value, "")
         };
         case IR_BINARY_OPERATION_EQUAL: return (value_t) {
-            .type = ir_type_get_u8(), // TODO: BOOLEAN
+            .type = ir_type_get_bool(),
             .value = LLVMBuildICmp(ctx->builder, LLVMIntEQ, left.value, right.value, "binary.eq")
         };
         case IR_BINARY_OPERATION_NOT_EQUAL: return (value_t) {
-            .type = ir_type_get_u8(), // TODO: BOOLEAN
+            .type = ir_type_get_bool(),
             .value = LLVMBuildICmp(ctx->builder, LLVMIntNE, left.value, right.value, "binary.ne")
         };
         case IR_BINARY_OPERATION_GREATER: return (value_t) {
-            .type = ir_type_get_u8(), // TODO: BOOLEAN
+            .type = ir_type_get_bool(),
             .value = LLVMBuildICmp(ctx->builder, LLVMIntUGT, left.value, right.value, "binary.ugt")
         };
         case IR_BINARY_OPERATION_GREATER_EQUAL: return (value_t) {
-            .type = ir_type_get_u8(), // TODO: BOOLEAN
+            .type = ir_type_get_bool(),
             .value = LLVMBuildICmp(ctx->builder, LLVMIntUGE, left.value, right.value, "binary.uge")
         };
         case IR_BINARY_OPERATION_LESS: return (value_t) {
-            .type = ir_type_get_u8(), // TODO: BOOLEAN
+            .type = ir_type_get_bool(),
             .value = LLVMBuildICmp(ctx->builder, LLVMIntULT, left.value, right.value, "binary.ult")
         };
         case IR_BINARY_OPERATION_LESS_EQUAL: return (value_t) {
-            .type = ir_type_get_u8(), // TODO: BOOLEAN
+            .type = ir_type_get_bool(),
             .value = LLVMBuildICmp(ctx->builder, LLVMIntULE, left.value, right.value, "binary.ule")
         };
         default: assert(false);
@@ -309,8 +311,8 @@ static void gen_stmt_if(gen_context_t *ctx, ir_node_t *node) {
     LLVMBasicBlockRef bb_else = LLVMCreateBasicBlockInContext(ctx->context, "if.else");
     LLVMBasicBlockRef bb_end = LLVMCreateBasicBlockInContext(ctx->context, "if.end");
 
-    LLVMBuildCondBr(ctx->builder, condition, bb_then, node->stmt_if.else_body != NULL ? bb_else : bb_end);
-    bool create_end = false;
+    bool create_end = node->stmt_if.else_body == NULL;
+    LLVMBuildCondBr(ctx->builder, condition, bb_then, !create_end ? bb_else : bb_end);
 
     // Create then, aka body
     LLVMPositionBuilderAtEnd(ctx->builder, bb_then);
@@ -360,8 +362,10 @@ static void gen_stmt_while(gen_context_t *ctx, ir_node_t *node) {
     gen_common(ctx, node->stmt_while.body);
     LLVMBuildBr(ctx->builder, bb_top);
 
-    LLVMAppendExistingBasicBlock(func, bb_out);
-    LLVMPositionBuilderAtEnd(ctx->builder, bb_out);
+    if(has_condition) {
+        LLVMAppendExistingBasicBlock(func, bb_out);
+        LLVMPositionBuilderAtEnd(ctx->builder, bb_out);
+    }
 }
 
 static void gen_stmt_decl(gen_context_t *ctx, ir_node_t *node) {
@@ -409,6 +413,7 @@ void gen(ir_node_t *ast, const char *dest, const char *passes) {
 
     ctx.types.void_ = LLVMVoidTypeInContext(ctx.context);
     ctx.types.pointer = LLVMPointerTypeInContext(ctx.context, 0);
+    ctx.types.int1 = LLVMInt1TypeInContext(ctx.context);
     ctx.types.int8 = LLVMInt8TypeInContext(ctx.context);
     ctx.types.int16 = LLVMInt16TypeInContext(ctx.context);
     ctx.types.int32 = LLVMInt32TypeInContext(ctx.context);
