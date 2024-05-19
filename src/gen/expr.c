@@ -30,16 +30,19 @@ static gen_value_t gen_expr_literal_bool(gen_context_t *ctx, ir_node_t *node) {
 
 static gen_value_t gen_expr_binary(gen_context_t *ctx, ir_node_t *node) {
     gen_value_t right = gen_expr(ctx, node->expr_binary.right);
+    if(ir_type_is_void(right.type)) diag_error(node->diag_loc, "rhs of binary expression is void");
 
     if(node->expr_binary.operation == IR_BINARY_OPERATION_ASSIGN) {
         switch(node->expr_binary.left->type) {
             case IR_NODE_TYPE_EXPR_VAR:
                 gen_variable_t *var = gen_scope_get_variable(ctx->scope, node->expr_binary.left->expr_var.name);
+                if(!ir_type_is_eq(var->type, right.type)) diag_error(node->diag_loc, "conflicting types in assignment");
                 LLVMBuildStore(ctx->builder, right.value, var->value);
                 return right;
             case IR_NODE_TYPE_EXPR_UNARY:
                 assert(node->expr_binary.left->expr_unary.operation == IR_UNARY_OPERATION_DEREF);
                 gen_value_t value = gen_expr(ctx, node->expr_binary.left->expr_unary.operand);
+                if(!ir_type_is_eq(value.type, right.type)) diag_error(node->diag_loc, "conflicting types in assignment");
                 LLVMBuildStore(ctx->builder, right.value, value.value);
                 return right;
             default: assert(false);
@@ -47,6 +50,7 @@ static gen_value_t gen_expr_binary(gen_context_t *ctx, ir_node_t *node) {
     }
 
     gen_value_t left = gen_expr(ctx, node->expr_binary.left);
+    if(!ir_type_is_eq(right.type, left.type)) diag_error(node->diag_loc, "conflicting types in binary expression");
     switch(node->expr_binary.operation) {
         case IR_BINARY_OPERATION_ADDITION: return (gen_value_t) {
             .type = left.type, // TODO
@@ -136,13 +140,13 @@ static gen_value_t gen_expr_var(gen_context_t *ctx, ir_node_t *node) {
 }
 
 static gen_value_t gen_expr_call(gen_context_t *ctx, ir_node_t *node) {
-    LLVMValueRef func_ref = LLVMGetNamedFunction(ctx->module, node->expr_call.name);
-    if(func_ref == NULL) assert(false);
+    gen_function_t *function = gen_get_function(ctx, node->expr_call.name);
+    if(function == NULL) diag_error(node->diag_loc, "reference to an undefined function '%s'", node->expr_call.name);
     LLVMValueRef args[node->expr_call.argument_count];
     for(size_t i = 0; i < node->expr_call.argument_count; i++) args[i] = gen_expr(ctx, node->expr_call.arguments[i]).value;
     return (gen_value_t) {
-        .type = ir_type_get_uint(), // TODO: need to store functions in context for this
-        .value = LLVMBuildCall2(ctx->builder, LLVMGlobalGetValueType(func_ref), func_ref, args, node->expr_call.argument_count, "")
+        .type = function->type.return_type, // TODO: dont use GlobalGetValueType
+        .value = LLVMBuildCall2(ctx->builder, LLVMGlobalGetValueType(function->value), function->value, args, node->expr_call.argument_count, "")
     };
 }
 

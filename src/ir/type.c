@@ -36,12 +36,12 @@ bool ir_type_is_void(ir_type_t *type) {
     return ir_type_is_kind(type, IR_TYPE_KIND_VOID);
 }
 
-int ir_type_cmp(ir_type_t *a, ir_type_t *b) {
-    if(a->kind != b->kind) return a->kind - b->kind;
+bool ir_type_is_eq(ir_type_t *a, ir_type_t *b) {
+    if(a->kind != b->kind) return false;
     switch(a->kind) {
-        case IR_TYPE_KIND_VOID: return 0;
-        case IR_TYPE_KIND_INTEGER: return a->integer.bit_size - b->integer.bit_size;
-        case IR_TYPE_KIND_POINTER: return ir_type_cmp(a->pointer.base, b->pointer.base);
+        case IR_TYPE_KIND_VOID: return true;
+        case IR_TYPE_KIND_INTEGER: return a->integer.bit_size == b->integer.bit_size && a->integer.is_signed == b->integer.is_signed;
+        case IR_TYPE_KIND_POINTER: return ir_type_is_eq(a->pointer.base, b->pointer.base);
     }
     assert(false);
 }

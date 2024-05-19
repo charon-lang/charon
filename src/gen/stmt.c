@@ -89,7 +89,12 @@ static void gen_stmt_decl(gen_context_t *ctx, ir_node_t *node) {
     LLVMDisposeBuilder(entry_builder);
 
     gen_scope_add_variable(ctx->scope, node->stmt_decl.type, node->stmt_decl.name, value);
-    if(node->stmt_decl.initial != NULL) LLVMBuildStore(ctx->builder, gen_expr(ctx, node->stmt_decl.initial).value, value);
+    if(node->stmt_decl.initial != NULL) {
+        gen_value_t initial_value = gen_expr(ctx, node->stmt_decl.initial);
+        if(ir_type_is_void(initial_value.type)) diag_error(node->diag_loc, "initial value of declaration is void");
+        if(!ir_type_is_eq(node->stmt_decl.type, initial_value.type)) diag_error(node->diag_loc, "initial value of declaration is of conflicting type");
+        LLVMBuildStore(ctx->builder, initial_value.value, value);
+    }
 }
 
 void gen_stmt(gen_context_t *ctx, ir_node_t *node) {

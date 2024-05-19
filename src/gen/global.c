@@ -2,8 +2,8 @@
 
 static bool cmp_functions(gen_function_type_t *a, gen_function_type_t *b) {
     if(a->varargs != b->varargs || a->argument_count != b->argument_count) return false;
-    if(ir_type_cmp(a->return_type, b->return_type) != 0) return false;
-    for(size_t i = 0; i < a->argument_count; i++) if(ir_type_cmp(a->arguments[i], b->arguments[i]) != 0) return false;
+    if(!ir_type_is_eq(a->return_type, b->return_type)) return false;
+    for(size_t i = 0; i < a->argument_count; i++) if(!ir_type_is_eq(a->arguments[i], b->arguments[i])) return false;
     return true;
 }
 

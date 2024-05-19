@@ -129,7 +129,7 @@ int main(int argc, char **argv) {
     ir_node_t *ast = parser_parse(tokenizer);
     tokenizer_free(tokenizer);
 
-    semantics_validate(ast);
+    // semantics_validate(ast);
     gen(ast, "build/test.ll", "");
 
     print_node(ast, 0);

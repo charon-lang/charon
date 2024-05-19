@@ -2,20 +2,26 @@ extern u32 printf(char *fmt, ...);
 extern void *malloc(uint size);
 extern void free(void *ptr);
 
-void print_x(char *str, uint x) {
-    while {
-        printf("%s\n", str);
-        x -= 1;
-        if(x == 0) return;
-    }
-}
+// void print_x(char *str, uint x) {
+//     while {
+//         printf("%s\n", str);
+//         x -= 1;
+//         if(x == 0) return;
+//     }
+// }
 
-u64 main() {
-    bool z = true;
-    if(z) {
-        print_x("hello", 3);
-    } else {
-        printf("wee woo wee woo\n");
-    }
+// u64 main() {
+//     int x = print_x("dsada", 1);
+//     bool z = true;
+//     if(z) {
+//         print_x("hello", 3);
+//     } else {
+//         printf("wee woo wee woo\n");
+//     }
+//     return 0;
+// }
+
+i32 main() {
+    int x = 5;
     return 0;
 }
