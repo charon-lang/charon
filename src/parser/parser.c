@@ -291,10 +291,21 @@ static ir_node_t *parse_if(tokenizer_t *tokenizer) {
     return ir_node_make_stmt_if(condition, body, else_body, token_if.diag_loc);
 }
 
+static ir_node_t *parse_while(tokenizer_t *tokenizer) {
+    ir_node_t *condition = NULL;
+    token_t token_while = consume(tokenizer, TOKEN_TYPE_KEYWORD_WHILE);
+    if(try_expect(tokenizer, TOKEN_TYPE_PARENTHESES_LEFT)) {
+        condition = parse_expression(tokenizer);
+        expect(tokenizer, TOKEN_TYPE_PARENTHESES_RIGHT);
+    }
+    return ir_node_make_stmt_while(condition, parse_statement(tokenizer), token_while.diag_loc);
+}
+
 static ir_node_t *parse_statement(tokenizer_t *tokenizer) {
     switch(tokenizer_peek(tokenizer).type) {
         case TOKEN_TYPE_BRACE_LEFT: return parse_block(tokenizer);
         case TOKEN_TYPE_KEYWORD_IF: return parse_if(tokenizer);
+        case TOKEN_TYPE_KEYWORD_WHILE: return parse_while(tokenizer);
         default: return parse_simple_statement(tokenizer);
     }
 }
