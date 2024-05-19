@@ -103,6 +103,13 @@ ir_node_t *ir_node_make_stmt_if(ir_node_t *condition, ir_node_t *body, ir_node_t
     return node;
 }
 
+ir_node_t *ir_node_make_stmt_while(ir_node_t *condition, ir_node_t *body, diag_loc_t diag_loc) {
+    ir_node_t *node = make_node(IR_NODE_TYPE_STMT_WHILE, diag_loc);
+    node->stmt_while.condition = condition;
+    node->stmt_while.body = body;
+    return node;
+}
+
 ir_node_t *ir_node_make_stmt_decl(ir_type_t *type, const char *name, ir_node_t *initial, diag_loc_t diag_loc) {
     ir_node_t *node = make_node(IR_NODE_TYPE_STMT_DECL, diag_loc);
     node->stmt_decl.type = type;

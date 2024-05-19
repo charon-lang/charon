@@ -21,6 +21,7 @@ typedef enum {
     IR_NODE_TYPE_STMT_BLOCK,
     IR_NODE_TYPE_STMT_RETURN,
     IR_NODE_TYPE_STMT_IF,
+    IR_NODE_TYPE_STMT_WHILE,
     IR_NODE_TYPE_STMT_DECL
 } ir_node_type_t;
 
@@ -116,6 +117,10 @@ typedef struct ir_node {
             struct ir_node *else_body; // OPTIONAL
         } stmt_if;
         struct {
+            struct ir_node *condition; // OPTIONAL
+            struct ir_node *body;
+        } stmt_while;
+        struct {
             ir_type_t *type;
             const char *name;
             struct ir_node *initial; // OPTIONAL
@@ -140,4 +145,5 @@ ir_node_t *ir_node_make_expr_cast(ir_node_t *value, ir_type_t *type);
 ir_node_t *ir_node_make_stmt_block(size_t statement_count, ir_node_t **statements, diag_loc_t diag_loc);
 ir_node_t *ir_node_make_stmt_return(ir_node_t *value, diag_loc_t diag_loc);
 ir_node_t *ir_node_make_stmt_if(ir_node_t *condition, ir_node_t *body, ir_node_t *else_body, diag_loc_t diag_loc);
+ir_node_t *ir_node_make_stmt_while(ir_node_t *condition, ir_node_t *body, diag_loc_t diag_loc);
 ir_node_t *ir_node_make_stmt_decl(ir_type_t *type, const char *name, ir_node_t *initial, diag_loc_t diag_loc);
