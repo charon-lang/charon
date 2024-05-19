@@ -46,6 +46,12 @@ ir_node_t *ir_node_make_expr_literal_char(char value, diag_loc_t diag_loc) {
     return node;
 }
 
+ir_node_t *ir_node_make_expr_literal_bool(bool value, diag_loc_t diag_loc) {
+    ir_node_t *node = make_node(IR_NODE_TYPE_EXPR_LITERAL_BOOL, diag_loc);
+    node->expr_literal.bool_value = value;
+    return node;
+}
+
 ir_node_t *ir_node_make_expr_binary(ir_binary_operation_t operation, ir_node_t *left, ir_node_t *right, diag_loc_t diag_loc) {
     ir_node_t *node = make_node(IR_NODE_TYPE_EXPR_BINARY, diag_loc);
     node->expr_binary.operation = operation;

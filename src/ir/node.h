@@ -12,6 +12,7 @@ typedef enum {
     IR_NODE_TYPE_EXPR_LITERAL_NUMERIC,
     IR_NODE_TYPE_EXPR_LITERAL_STRING,
     IR_NODE_TYPE_EXPR_LITERAL_CHAR,
+    IR_NODE_TYPE_EXPR_LITERAL_BOOL,
     IR_NODE_TYPE_EXPR_BINARY,
     IR_NODE_TYPE_EXPR_UNARY,
     IR_NODE_TYPE_EXPR_VAR,
@@ -82,6 +83,7 @@ typedef struct ir_node {
             uintmax_t numeric_value;
             const char *string_value;
             char char_value;
+            bool bool_value;
         } expr_literal;
         struct {
             ir_binary_operation_t operation;
@@ -136,6 +138,7 @@ ir_node_t *ir_node_make_global_extern(ir_function_decl_t function_decl, diag_loc
 ir_node_t *ir_node_make_expr_literal_numeric(uintmax_t value, diag_loc_t diag_loc);
 ir_node_t *ir_node_make_expr_literal_string(const char *value, diag_loc_t diag_loc);
 ir_node_t *ir_node_make_expr_literal_char(char value, diag_loc_t diag_loc);
+ir_node_t *ir_node_make_expr_literal_bool(bool value, diag_loc_t diag_loc);
 ir_node_t *ir_node_make_expr_binary(ir_binary_operation_t operation, ir_node_t *left, ir_node_t *right, diag_loc_t diag_loc);
 ir_node_t *ir_node_make_expr_unary(ir_unary_operation_t operation, ir_node_t *operand, diag_loc_t diag_loc);
 ir_node_t *ir_node_make_expr_var(const char *name, diag_loc_t diag_loc);
