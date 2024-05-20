@@ -68,7 +68,7 @@ gen_function_t *gen_get_function(gen_context_t *ctx, const char *name);
 
 LLVMTypeRef gen_llvm_type(gen_context_t *ctx, ir_type_t *type);
 
-gen_value_t gen_expr(gen_context_t *ctx, ir_node_t *node);
+gen_value_t gen_expr(gen_context_t *ctx, ir_node_t *node, ir_type_t *type_expected);
 void gen_stmt(gen_context_t *ctx, ir_node_t *node);
 void gen_global(gen_context_t *ctx, ir_node_t *node);
 

@@ -29,7 +29,7 @@ static gen_value_t gen_expr_literal_bool(gen_context_t *ctx, ir_node_t *node) {
 }
 
 static gen_value_t gen_expr_binary(gen_context_t *ctx, ir_node_t *node) {
-    gen_value_t right = gen_expr(ctx, node->expr_binary.right);
+    gen_value_t right = gen_expr(ctx, node->expr_binary.right, NULL); // TODO: NULL?
     if(ir_type_is_void(right.type)) diag_error(node->diag_loc, "rhs of binary expression is void");
 
     if(node->expr_binary.operation == IR_BINARY_OPERATION_ASSIGN) {
@@ -41,15 +41,14 @@ static gen_value_t gen_expr_binary(gen_context_t *ctx, ir_node_t *node) {
                 return right;
             case IR_NODE_TYPE_EXPR_UNARY:
                 assert(node->expr_binary.left->expr_unary.operation == IR_UNARY_OPERATION_DEREF);
-                gen_value_t value = gen_expr(ctx, node->expr_binary.left->expr_unary.operand);
-                if(!ir_type_is_eq(value.type, right.type)) diag_error(node->diag_loc, "conflicting types in assignment");
+                gen_value_t value = gen_expr(ctx, node->expr_binary.left->expr_unary.operand, right.type);
                 LLVMBuildStore(ctx->builder, right.value, value.value);
                 return right;
             default: assert(false);
         }
     }
 
-    gen_value_t left = gen_expr(ctx, node->expr_binary.left);
+    gen_value_t left = gen_expr(ctx, node->expr_binary.left, NULL); // TODO: NULL?
     if(!ir_type_is_eq(right.type, left.type)) diag_error(node->diag_loc, "conflicting types in binary expression");
     switch(node->expr_binary.operation) {
         case IR_BINARY_OPERATION_ADDITION: return (gen_value_t) {
@@ -110,7 +109,7 @@ static gen_value_t gen_expr_unary(gen_context_t *ctx, ir_node_t *node) {
         };
     }
 
-    gen_value_t operand = gen_expr(ctx, node->expr_unary.operand);
+    gen_value_t operand = gen_expr(ctx, node->expr_unary.operand, NULL); // TODO: NULL?
     switch(node->expr_unary.operation) {
         case IR_UNARY_OPERATION_DEREF:
             assert(ir_type_is_kind(operand.type, IR_TYPE_KIND_POINTER));
@@ -142,8 +141,10 @@ static gen_value_t gen_expr_var(gen_context_t *ctx, ir_node_t *node) {
 static gen_value_t gen_expr_call(gen_context_t *ctx, ir_node_t *node) {
     gen_function_t *function = gen_get_function(ctx, node->expr_call.name);
     if(function == NULL) diag_error(node->diag_loc, "reference to an undefined function '%s'", node->expr_call.name);
+    if(node->expr_call.argument_count < function->type.argument_count) diag_error(node->diag_loc, "missing arguments");
+    if(!function->type.varargs && node->expr_call.argument_count > function->type.argument_count) diag_error(node->diag_loc, "invalid number of arguments");
     LLVMValueRef args[node->expr_call.argument_count];
-    for(size_t i = 0; i < node->expr_call.argument_count; i++) args[i] = gen_expr(ctx, node->expr_call.arguments[i]).value;
+    for(size_t i = 0; i < node->expr_call.argument_count; i++) args[i] = gen_expr(ctx, node->expr_call.arguments[i], function->type.arguments[i]).value;
     return (gen_value_t) {
         .type = function->type.return_type, // TODO: dont use GlobalGetValueType
         .value = LLVMBuildCall2(ctx->builder, LLVMGlobalGetValueType(function->value), function->value, args, node->expr_call.argument_count, "")
@@ -151,7 +152,7 @@ static gen_value_t gen_expr_call(gen_context_t *ctx, ir_node_t *node) {
 }
 
 static gen_value_t gen_expr_cast(gen_context_t *ctx, ir_node_t *node) {
-    gen_value_t value = gen_expr(ctx, node->expr_cast.value);
+    gen_value_t value = gen_expr(ctx, node->expr_cast.value, NULL);
 
     ir_type_t *to_type = node->expr_cast.type;
     ir_type_t *from_type = value.type;
@@ -173,17 +174,20 @@ static gen_value_t gen_expr_cast(gen_context_t *ctx, ir_node_t *node) {
     };
 }
 
-gen_value_t gen_expr(gen_context_t *ctx, ir_node_t *node) {
+gen_value_t gen_expr(gen_context_t *ctx, ir_node_t *node, ir_type_t *type_expected) {
+    gen_value_t value;
     switch(node->type) {
-        case IR_NODE_TYPE_EXPR_LITERAL_NUMERIC: return gen_expr_literal_numeric(ctx, node);
-        case IR_NODE_TYPE_EXPR_LITERAL_STRING: return gen_expr_literal_string(ctx, node);
-        case IR_NODE_TYPE_EXPR_LITERAL_CHAR: return gen_expr_literal_char(ctx, node);
-        case IR_NODE_TYPE_EXPR_LITERAL_BOOL: return gen_expr_literal_bool(ctx, node);
-        case IR_NODE_TYPE_EXPR_BINARY: return gen_expr_binary(ctx, node);
-        case IR_NODE_TYPE_EXPR_UNARY: return gen_expr_unary(ctx, node);
-        case IR_NODE_TYPE_EXPR_VAR: return gen_expr_var(ctx, node);
-        case IR_NODE_TYPE_EXPR_CALL: return gen_expr_call(ctx, node);
-        case IR_NODE_TYPE_EXPR_CAST: return gen_expr_cast(ctx, node);
+        case IR_NODE_TYPE_EXPR_LITERAL_NUMERIC: value = gen_expr_literal_numeric(ctx, node); break;
+        case IR_NODE_TYPE_EXPR_LITERAL_STRING: value = gen_expr_literal_string(ctx, node); break;
+        case IR_NODE_TYPE_EXPR_LITERAL_CHAR: value = gen_expr_literal_char(ctx, node); break;
+        case IR_NODE_TYPE_EXPR_LITERAL_BOOL: value = gen_expr_literal_bool(ctx, node); break;
+        case IR_NODE_TYPE_EXPR_BINARY: value = gen_expr_binary(ctx, node); break;
+        case IR_NODE_TYPE_EXPR_UNARY: value = gen_expr_unary(ctx, node); break;
+        case IR_NODE_TYPE_EXPR_VAR: value = gen_expr_var(ctx, node); break;
+        case IR_NODE_TYPE_EXPR_CALL: value = gen_expr_call(ctx, node); break;
+        case IR_NODE_TYPE_EXPR_CAST: value = gen_expr_cast(ctx, node); break;
         default: assert(false); // TODO: possibly separate expressions and statements
     }
+    if(type_expected != NULL && !ir_type_is_eq(value.type, type_expected)) diag_error(node->diag_loc, "conflicting types");
+    return value;
 }

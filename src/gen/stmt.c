@@ -11,20 +11,17 @@ static void gen_stmt_return(gen_context_t *ctx, ir_node_t *node) {
         LLVMBuildRetVoid(ctx->builder);
         return;
     }
-    LLVMBuildRet(ctx->builder, gen_expr(ctx, node->stmt_return.value).value);
+    LLVMBuildRet(ctx->builder, gen_expr(ctx, node->stmt_return.value, NULL).value); // TODO: pass an expected type
 }
 
 static void gen_stmt_if(gen_context_t *ctx, ir_node_t *node) {
-    gen_value_t condition_value = gen_expr(ctx, node->stmt_if.condition);
-    LLVMValueRef condition = LLVMBuildICmp(ctx->builder, LLVMIntNE, condition_value.value, LLVMConstInt(gen_llvm_type(ctx, condition_value.type), 0, false), "");
-
     LLVMValueRef func = LLVMGetBasicBlockParent(LLVMGetInsertBlock(ctx->builder));
     LLVMBasicBlockRef bb_then = LLVMAppendBasicBlockInContext(ctx->context, func, "if.then");
     LLVMBasicBlockRef bb_else = LLVMCreateBasicBlockInContext(ctx->context, "if.else");
     LLVMBasicBlockRef bb_end = LLVMCreateBasicBlockInContext(ctx->context, "if.end");
 
     bool create_end = node->stmt_if.else_body == NULL;
-    LLVMBuildCondBr(ctx->builder, condition, bb_then, !create_end ? bb_else : bb_end);
+    LLVMBuildCondBr(ctx->builder, gen_expr(ctx, node->stmt_if.condition, ir_type_get_bool()).value, bb_then, !create_end ? bb_else : bb_end);
 
     // Create then, aka body
     LLVMPositionBuilderAtEnd(ctx->builder, bb_then);
@@ -65,8 +62,7 @@ static void gen_stmt_while(gen_context_t *ctx, ir_node_t *node) {
     LLVMBuildBr(ctx->builder, bb_top);
     if(has_condition) {
         LLVMPositionBuilderAtEnd(ctx->builder, bb_condition);
-        gen_value_t condition = gen_expr(ctx, node->stmt_while.condition);
-        LLVMBuildCondBr(ctx->builder, condition.value, bb_body, bb_out);
+        LLVMBuildCondBr(ctx->builder, gen_expr(ctx, node->stmt_while.condition, ir_type_get_bool()).value, bb_body, bb_out);
     }
 
     LLVMAppendExistingBasicBlock(func, bb_body);
@@ -89,12 +85,7 @@ static void gen_stmt_decl(gen_context_t *ctx, ir_node_t *node) {
     LLVMDisposeBuilder(entry_builder);
 
     gen_scope_add_variable(ctx->scope, node->stmt_decl.type, node->stmt_decl.name, value);
-    if(node->stmt_decl.initial != NULL) {
-        gen_value_t initial_value = gen_expr(ctx, node->stmt_decl.initial);
-        if(ir_type_is_void(initial_value.type)) diag_error(node->diag_loc, "initial value of declaration is void");
-        if(!ir_type_is_eq(node->stmt_decl.type, initial_value.type)) diag_error(node->diag_loc, "initial value of declaration is of conflicting type");
-        LLVMBuildStore(ctx->builder, initial_value.value, value);
-    }
+    if(node->stmt_decl.initial != NULL) LLVMBuildStore(ctx->builder, gen_expr(ctx, node->stmt_decl.initial, node->stmt_decl.type).value, value);
 }
 
 void gen_stmt(gen_context_t *ctx, ir_node_t *node) {
@@ -108,7 +99,7 @@ void gen_stmt(gen_context_t *ctx, ir_node_t *node) {
         case IR_NODE_TYPE_EXPR_VAR:
         case IR_NODE_TYPE_EXPR_CALL:
         case IR_NODE_TYPE_EXPR_CAST:
-            gen_expr(ctx, node);
+            gen_expr(ctx, node, NULL);
             break;
 
         case IR_NODE_TYPE_STMT_BLOCK: gen_stmt_block(ctx, node); break;
