@@ -22,6 +22,6 @@ extern void free(void *ptr);
 // }
 
 i32 main() {
-    int x = 5;
+    int x = (int) 5;
     return 0;
 }

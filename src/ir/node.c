@@ -81,8 +81,8 @@ ir_node_t *ir_node_make_expr_call(const char *name, size_t argument_count, ir_no
     return node;
 }
 
-ir_node_t *ir_node_make_expr_cast(ir_node_t *value, ir_type_t *type) {
-    ir_node_t *node = make_node(IR_NODE_TYPE_EXPR_CAST, value->diag_loc);
+ir_node_t *ir_node_make_expr_cast(ir_node_t *value, ir_type_t *type, diag_loc_t diag_loc) {
+    ir_node_t *node = make_node(IR_NODE_TYPE_EXPR_CAST, diag_loc);
     node->expr_cast.value = value;
     node->expr_cast.type = type;
     return node;

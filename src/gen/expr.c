@@ -152,26 +152,30 @@ static gen_value_t gen_expr_call(gen_context_t *ctx, ir_node_t *node) {
 }
 
 static gen_value_t gen_expr_cast(gen_context_t *ctx, ir_node_t *node) {
-    gen_value_t value = gen_expr(ctx, node->expr_cast.value, NULL);
+    gen_value_t v = gen_expr(ctx, node->expr_cast.value, NULL);
 
+    LLVMValueRef value = v.value;
     ir_type_t *to_type = node->expr_cast.type;
-    ir_type_t *from_type = value.type;
+    ir_type_t *from_type = v.type;
+    if(to_type->kind != from_type->kind) diag_error(node->diag_loc, "cast of incompatible types");
 
     LLVMTypeRef llvm_to_type = gen_llvm_type(ctx, to_type);
-    LLVMTypeRef llvm_from_type = gen_llvm_type(ctx, from_type);
-    if(LLVMGetTypeKind(llvm_to_type) != LLVMGetTypeKind(llvm_from_type)) diag_error(node->diag_loc, "cast of incompatible types");
 
-    LLVMTargetDataRef data_layout = LLVMGetModuleDataLayout(ctx->module);
-    unsigned long long to_size = LLVMSizeOfTypeInBits(data_layout, llvm_to_type);
-    unsigned long long size = LLVMSizeOfTypeInBits(data_layout, llvm_from_type);
+    switch(to_type->kind) {
+        case IR_TYPE_KIND_VOID: diag_error(node->diag_loc, "void cast");
+        case IR_TYPE_KIND_INTEGER:
+            // TODO: handle signedness
+            if(from_type->integer.bit_size == to_type->integer.bit_size) break;
+            if(from_type->integer.bit_size > to_type->integer.bit_size) {
+                value = LLVMBuildTruncOrBitCast(ctx->builder, value, llvm_to_type, "cast");
+            } else {
+                value = LLVMBuildZExtOrBitCast(ctx->builder, value, llvm_to_type, "cast");
+            }
+            break;
+        case IR_TYPE_KIND_POINTER: break;
+    }
 
-    LLVMValueRef v = value.value;
-    if(size > to_size) v = LLVMBuildTruncOrBitCast(ctx->builder, v, llvm_to_type, "");
-    if(to_size > size) v = LLVMBuildZExtOrBitCast(ctx->builder, v, llvm_to_type, "");
-    return (gen_value_t) {
-        .type = value.type,
-        .value = v
-    };
+    return (gen_value_t) { .type = to_type, .value = value };
 }
 
 gen_value_t gen_expr(gen_context_t *ctx, ir_node_t *node, ir_type_t *type_expected) {
