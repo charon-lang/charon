@@ -40,6 +40,11 @@ typedef struct {
 } gen_function_t;
 
 typedef struct {
+    ir_type_t *return_type;
+    bool has_return;
+} gen_current_function_t;
+
+typedef struct {
     LLVMBuilderRef builder;
     LLVMContextRef context;
     LLVMModuleRef module;
@@ -55,6 +60,7 @@ typedef struct {
     gen_scope_t *scope;
     size_t function_count;
     gen_function_t *functions;
+    gen_current_function_t *current_function;
 } gen_context_t;
 
 gen_scope_t *gen_scope_enter(gen_scope_t *current);
@@ -65,6 +71,10 @@ gen_variable_t *gen_scope_get_variable(gen_scope_t *scope, const char *name);
 
 gen_function_t *gen_add_function(gen_context_t *ctx, gen_function_t function);
 gen_function_t *gen_get_function(gen_context_t *ctx, const char *name);
+
+void gen_enter_function(gen_context_t *ctx, ir_type_t *return_type);
+gen_current_function_t *gen_current_function(gen_context_t *ctx);
+void gen_exit_function(gen_context_t *ctx);
 
 LLVMTypeRef gen_llvm_type(gen_context_t *ctx, ir_type_t *type);
 

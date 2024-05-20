@@ -7,11 +7,16 @@ static void gen_stmt_block(gen_context_t *ctx, ir_node_t *node) {
 }
 
 static void gen_stmt_return(gen_context_t *ctx, ir_node_t *node) {
-    if(node->stmt_return.value == NULL) {
+    gen_current_function_t *current_function = gen_current_function(ctx);
+    if(current_function == NULL) diag_error(node->diag_loc, "return statement outside of function");
+
+    if(ir_type_is_void(current_function->return_type)) {
+        if(node->stmt_return.value != NULL) diag_error(node->diag_loc, "value returned from void function");
         LLVMBuildRetVoid(ctx->builder);
-        return;
+    } else {
+        LLVMBuildRet(ctx->builder, gen_expr(ctx, node->stmt_return.value, current_function->return_type).value);
     }
-    LLVMBuildRet(ctx->builder, gen_expr(ctx, node->stmt_return.value, NULL).value); // TODO: pass an expected type
+    current_function->has_return = true;
 }
 
 static void gen_stmt_if(gen_context_t *ctx, ir_node_t *node) {

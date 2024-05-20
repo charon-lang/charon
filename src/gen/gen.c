@@ -14,6 +14,21 @@ gen_function_t *gen_get_function(gen_context_t *ctx, const char *name) {
     return NULL;
 }
 
+void gen_enter_function(gen_context_t *ctx, ir_type_t *return_type) {
+    ctx->current_function = malloc(sizeof(gen_current_function_t));
+    ctx->current_function->has_return = false;
+    ctx->current_function->return_type = return_type;
+}
+
+gen_current_function_t *gen_current_function(gen_context_t *ctx) {
+    return ctx->current_function;
+}
+
+void gen_exit_function(gen_context_t *ctx) {
+    free(ctx->current_function);
+    ctx->current_function = NULL;
+}
+
 LLVMTypeRef gen_llvm_type(gen_context_t *ctx, ir_type_t *type) {
     if(ir_type_is_kind(type, IR_TYPE_KIND_VOID)) return ctx->types.void_;
     if(ir_type_is_kind(type, IR_TYPE_KIND_POINTER)) return ctx->types.pointer;
@@ -46,6 +61,8 @@ void gen(ir_node_t *ast, const char *dest, const char *passes) {
 
     assert(ast->type == IR_NODE_TYPE_PROGRAM);
     for(size_t i = 0; i < ast->program.global_count; i++) gen_global(&ctx, ast->program.globals[i]);
+
+    ctx.current_function = NULL;
 
     LLVMRunPasses(ctx.module, passes, NULL, LLVMCreatePassBuilderOptions());
     LLVMPrintModuleToFile(ctx.module, dest, NULL);

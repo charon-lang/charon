@@ -50,7 +50,9 @@ static void gen_global_function(gen_context_t *ctx, ir_node_t *node) {
         LLVMBuildStore(ctx->builder, param_original, param_new);
         gen_scope_add_variable(ctx->scope, param_type, param_name, param_new);
     }
+    gen_enter_function(ctx, func->type.return_type);
     gen_stmt(ctx, node->global_function.body);
+    gen_exit_function(ctx);
     ctx->scope = gen_scope_exit(ctx->scope);
 }
 
