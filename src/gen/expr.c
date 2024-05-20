@@ -146,8 +146,8 @@ static gen_value_t gen_expr_call(gen_context_t *ctx, ir_node_t *node) {
     LLVMValueRef args[node->expr_call.argument_count];
     for(size_t i = 0; i < node->expr_call.argument_count; i++) args[i] = gen_expr(ctx, node->expr_call.arguments[i], function->type.arguments[i]).value;
     return (gen_value_t) {
-        .type = function->type.return_type, // TODO: dont use GlobalGetValueType
-        .value = LLVMBuildCall2(ctx->builder, LLVMGlobalGetValueType(function->value), function->value, args, node->expr_call.argument_count, "")
+        .type = function->type.return_type,
+        .value = LLVMBuildCall2(ctx->builder, function->llvm_type, function->value, args, node->expr_call.argument_count, "")
     };
 }
 
@@ -164,17 +164,19 @@ static gen_value_t gen_expr_cast(gen_context_t *ctx, ir_node_t *node) {
     switch(to_type->kind) {
         case IR_TYPE_KIND_VOID: diag_error(node->diag_loc, "void cast");
         case IR_TYPE_KIND_INTEGER:
-            // TODO: handle signedness
             if(from_type->integer.bit_size == to_type->integer.bit_size) break;
             if(from_type->integer.bit_size > to_type->integer.bit_size) {
-                value = LLVMBuildTruncOrBitCast(ctx->builder, value, llvm_to_type, "cast");
+                value = LLVMBuildTrunc(ctx->builder, value, llvm_to_type, "cast.trunc");
             } else {
-                value = LLVMBuildZExtOrBitCast(ctx->builder, value, llvm_to_type, "cast");
+                if(to_type->integer.is_signed) {
+                    value = LLVMBuildSExt(ctx->builder, value, llvm_to_type, "cast.sext");
+                } else {
+                    value = LLVMBuildZExt(ctx->builder, value, llvm_to_type, "cast.zext");
+                }
             }
             break;
         case IR_TYPE_KIND_POINTER: break;
     }
-
     return (gen_value_t) { .type = to_type, .value = value };
 }
 

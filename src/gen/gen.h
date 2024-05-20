@@ -36,6 +36,7 @@ typedef struct {
 typedef struct {
     gen_function_type_t type;
     const char *name;
+    LLVMTypeRef llvm_type;
     LLVMValueRef value;
 } gen_function_t;
 

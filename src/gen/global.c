@@ -22,7 +22,7 @@ static gen_function_t *add_function(gen_context_t *ctx, const char *name, gen_fu
     LLVMTypeRef args[function_type.argument_count];
     for(size_t i = 0; i < function_type.argument_count; i++) args[i] = gen_llvm_type(ctx, function_type.arguments[i]);
     LLVMTypeRef func_type = LLVMFunctionType(gen_llvm_type(ctx, function_type.return_type), args, function_type.argument_count, function_type.varargs);
-    return gen_add_function(ctx, (gen_function_t) { .name = name, .type = function_type, .value = LLVMAddFunction(ctx->module, name, func_type) });
+    return gen_add_function(ctx, (gen_function_t) { .name = name, .type = function_type, .llvm_type = func_type, .value = LLVMAddFunction(ctx->module, name, func_type) });
 }
 
 static void gen_global_extern(gen_context_t *ctx, ir_node_t *node) {

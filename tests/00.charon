@@ -22,6 +22,7 @@ extern void free(void *ptr);
 // }
 
 i32 main() {
-    int x = (int) 5;
+    i8 x = (i8) -5;
+    printf("%i\n", (i32) x);
     return (i32) 0;
 }
