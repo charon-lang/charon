@@ -2,6 +2,7 @@
 #include <assert.h>
 #include <stdlib.h>
 #include <stdio.h>
+#include <string.h>
 
 static ir_type_t
     *g_void = NULL,
@@ -112,4 +113,19 @@ ir_type_t *ir_type_make_pointer(ir_type_t *base) {
     ir_type_t *type = make_type(IR_TYPE_KIND_POINTER);
     type->pointer.base = base;
     return type;
+}
+
+void ir_type_print(ir_type_t *type) {
+    switch(type->kind) {
+        case IR_TYPE_KIND_VOID:
+            printf("void");
+            break;
+        case IR_TYPE_KIND_POINTER:
+            ir_type_print(type->pointer.base);
+            printf("*");
+            break;
+        case IR_TYPE_KIND_INTEGER:
+            printf("%c%lu", type->integer.is_signed ? 'i' : 'u', type->integer.bit_size);
+            break;
+    }
 }

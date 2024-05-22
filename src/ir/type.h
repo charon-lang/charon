@@ -1,5 +1,6 @@
 #pragma once
 #include <stddef.h>
+#include <stdarg.h>
 
 typedef enum {
     IR_TYPE_KIND_VOID,
@@ -41,3 +42,5 @@ ir_type_t *ir_type_get_i32();
 ir_type_t *ir_type_get_i64();
 
 ir_type_t *ir_type_make_pointer(ir_type_t *base);
+
+void ir_type_print(ir_type_t *type);
