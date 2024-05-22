@@ -48,29 +48,13 @@ static gen_value_t gen_expr_binary(gen_context_t *ctx, ir_node_t *node) {
         }
     }
 
+    ir_type_t *type = right.type;
+
     gen_value_t left = gen_expr(ctx, node->expr_binary.left, NULL); // TODO: NULL?
-    if(!ir_type_is_eq(right.type, left.type)) diag_error(node->diag_loc, "conflicting types in binary expression");
+    if(!ir_type_is_eq(type, left.type)) diag_error(node->diag_loc, "conflicting types in binary expression");
+    if(ir_type_is_void(type)) diag_error(node->diag_loc, "void in binary expression");
+
     switch(node->expr_binary.operation) {
-        case IR_BINARY_OPERATION_ADDITION: return (gen_value_t) {
-            .type = left.type, // TODO
-            .value = LLVMBuildAdd(ctx->builder, left.value, right.value, "")
-        };
-        case IR_BINARY_OPERATION_SUBTRACTION: return (gen_value_t) {
-            .type = left.type, // TODO
-            .value = LLVMBuildSub(ctx->builder, left.value, right.value, "")
-        };
-        case IR_BINARY_OPERATION_MULTIPLICATION: return (gen_value_t) {
-            .type = left.type, // TODO
-            .value = LLVMBuildMul(ctx->builder, left.value, right.value, "")
-        };
-        case IR_BINARY_OPERATION_DIVISION: return (gen_value_t) {
-            .type = left.type, // TODO
-            .value = LLVMBuildUDiv(ctx->builder, left.value, right.value, "")
-        };
-        case IR_BINARY_OPERATION_MODULO: return (gen_value_t) {
-            .type = left.type, // TODO
-            .value = LLVMBuildURem(ctx->builder, left.value, right.value, "")
-        };
         case IR_BINARY_OPERATION_EQUAL: return (gen_value_t) {
             .type = ir_type_get_bool(),
             .value = LLVMBuildICmp(ctx->builder, LLVMIntEQ, left.value, right.value, "expr.binary.eq")
@@ -79,21 +63,48 @@ static gen_value_t gen_expr_binary(gen_context_t *ctx, ir_node_t *node) {
             .type = ir_type_get_bool(),
             .value = LLVMBuildICmp(ctx->builder, LLVMIntNE, left.value, right.value, "expr.binary.ne")
         };
+        default: break;
+    }
+
+    if(!ir_type_is_kind(type, IR_TYPE_KIND_INTEGER)) diag_error(node->diag_loc, "invalid type in binary expression");
+    bool is_signed = type->integer.is_signed;
+
+    switch(node->expr_binary.operation) {
+        case IR_BINARY_OPERATION_ADDITION: return (gen_value_t) {
+            .type = type,
+            .value = LLVMBuildAdd(ctx->builder, left.value, right.value, "expr.binary.add")
+        };
+        case IR_BINARY_OPERATION_SUBTRACTION: return (gen_value_t) {
+            .type = type,
+            .value = LLVMBuildSub(ctx->builder, left.value, right.value, "expr.binary.sub")
+        };
+        case IR_BINARY_OPERATION_MULTIPLICATION: return (gen_value_t) {
+            .type = type,
+            .value = LLVMBuildMul(ctx->builder, left.value, right.value, "expr.binary.mul")
+        };
+        case IR_BINARY_OPERATION_DIVISION: return (gen_value_t) {
+            .type = type,
+            .value = is_signed ? LLVMBuildSDiv(ctx->builder, left.value, right.value, "expr.binary.sdiv") : LLVMBuildUDiv(ctx->builder, left.value, right.value, "expr.binary.udiv")
+        };
+        case IR_BINARY_OPERATION_MODULO: return (gen_value_t) {
+            .type = type,
+            .value = is_signed ? LLVMBuildSRem(ctx->builder, left.value, right.value, "expr.binary.srem") : LLVMBuildURem(ctx->builder, left.value, right.value, "expr.binary.urem")
+        };
         case IR_BINARY_OPERATION_GREATER: return (gen_value_t) {
             .type = ir_type_get_bool(),
-            .value = LLVMBuildICmp(ctx->builder, LLVMIntUGT, left.value, right.value, "expr.binary.ugt")
+            .value = LLVMBuildICmp(ctx->builder, is_signed ? LLVMIntSGT : LLVMIntUGT, left.value, right.value, "expr.binary.gt")
         };
         case IR_BINARY_OPERATION_GREATER_EQUAL: return (gen_value_t) {
             .type = ir_type_get_bool(),
-            .value = LLVMBuildICmp(ctx->builder, LLVMIntUGE, left.value, right.value, "expr.binary.uge")
+            .value = LLVMBuildICmp(ctx->builder, is_signed ? LLVMIntSGE : LLVMIntUGE, left.value, right.value, "expr.binary.ge")
         };
         case IR_BINARY_OPERATION_LESS: return (gen_value_t) {
             .type = ir_type_get_bool(),
-            .value = LLVMBuildICmp(ctx->builder, LLVMIntULT, left.value, right.value, "expr.binary.ult")
+            .value = LLVMBuildICmp(ctx->builder, is_signed ? LLVMIntSLT : LLVMIntULT, left.value, right.value, "expr.binary.lt")
         };
         case IR_BINARY_OPERATION_LESS_EQUAL: return (gen_value_t) {
             .type = ir_type_get_bool(),
-            .value = LLVMBuildICmp(ctx->builder, LLVMIntULE, left.value, right.value, "expr.binary.ule")
+            .value = LLVMBuildICmp(ctx->builder, is_signed ? LLVMIntSLE : LLVMIntULE, left.value, right.value, "expr.binary.le")
         };
         default: assert(false);
     }
