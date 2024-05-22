@@ -41,7 +41,7 @@ static gen_value_t gen_expr_binary(gen_context_t *ctx, ir_node_t *node) {
                 return right;
             case IR_NODE_TYPE_EXPR_UNARY:
                 assert(node->expr_binary.left->expr_unary.operation == IR_UNARY_OPERATION_DEREF);
-                gen_value_t value = gen_expr(ctx, node->expr_binary.left->expr_unary.operand, right.type);
+                gen_value_t value = gen_expr(ctx, node->expr_binary.left->expr_unary.operand, ir_type_make_pointer(right.type));
                 LLVMBuildStore(ctx->builder, right.value, value.value);
                 return right;
             default: assert(false);

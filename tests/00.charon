@@ -17,5 +17,10 @@ i32 main() {
     } else {
         printf("wee woo wee woo\n");
     }
+    char x = 'a';
+    printf("%c\n", x);
+    char *b = &x;
+    *b = 'b';
+    printf("%c\n", x);
     return (i32) 0;
 }
