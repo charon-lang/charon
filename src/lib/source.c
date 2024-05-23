@@ -25,7 +25,7 @@ source_t *source_from_path(const char *path) {
     source_t *source = malloc(sizeof(source_t));
     source->name = name;
     source->data_buffer = data;
-    source->buffer_size = st.st_size;
+    source->data_buffer_size = st.st_size;
     return source;
 }
 
