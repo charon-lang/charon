@@ -1,7 +1,7 @@
 #include "tokenizer.h"
 
 #include "lexer/spec.h"
-#include "lib/log.h"
+#include "lib/diag.h"
 
 #include <stddef.h>
 #include <string.h>
@@ -18,7 +18,7 @@ static token_t next_token(tokenizer_t *tokenizer) {
     spec_match_t match = spec_match(sub, sub_length);
     tokenizer->cursor += match.size;
 
-    if(match.size == 0) log_fatal("unexpected symbol `%c`", *sub); // TODO: convert to diagnostics error (remove log.h import too)
+    if(match.size == 0) diag_error((source_location_t) { .source = tokenizer->source, .offset = tokenizer->cursor }, "unexpected symbol `%c`", *sub);
     if(match.kind == TOKEN_KIND_INTERNAL_NONE) return next_token(tokenizer);
 
     return (token_t) { .kind = match.kind, .offset = offset, .size = match.size };
