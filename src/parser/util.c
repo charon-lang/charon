@@ -14,5 +14,5 @@ bool util_try_consume(tokenizer_t *tokenizer, token_kind_t kind) {
 token_t util_consume(tokenizer_t *tokenizer, token_kind_t kind) {
     token_t token = tokenizer_advance(tokenizer);
     if(token.kind == kind) return token;
-    diag_error(UTIL_MAKE_SRCLOC(tokenizer, token), "expected %s got %s", token_kind_tostring(kind), token_kind_tostring(token.kind));
+    diag_error(UTIL_SRCLOC(tokenizer, token), "expected %s got %s", token_kind_tostring(kind), token_kind_tostring(token.kind));
 }
