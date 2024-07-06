@@ -10,7 +10,7 @@ static ir_node_t *make_node(ir_node_type_t type, source_location_t source_locati
     return node;
 }
 
-ir_node_t *ir_node_make_root(size_t tlc_node_count, ir_node_list_t tlc_nodes, source_location_t source_location) {
+ir_node_t *ir_node_make_root(ir_node_list_t tlc_nodes, source_location_t source_location) {
     ir_node_t *node = make_node(IR_NODE_TYPE_ROOT, source_location);
     node->root.tlc_nodes = tlc_nodes;
     return node;
