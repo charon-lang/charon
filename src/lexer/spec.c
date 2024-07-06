@@ -3,7 +3,6 @@
 #include "lib/log.h"
 
 #include <stdint.h>
-#include <stdlib.h>
 #include <pcre2.h>
 
 typedef struct {
@@ -25,15 +24,14 @@ static raw_entry_t g_raw_spec[] = {
     #undef TOKEN
 };
 
-static size_t g_spec_size = 0;
-static entry_t *g_spec_entries = NULL;
+static bool g_spec_compiled = false;
+static size_t g_spec_size = sizeof(g_raw_spec) / sizeof(raw_entry_t);
+static entry_t g_spec_entries[sizeof(g_raw_spec) / sizeof(raw_entry_t)];
 
 void spec_ensure() {
-    if(g_spec_entries != NULL) return;
-    size_t size = sizeof(g_raw_spec) / sizeof(raw_entry_t);
-    entry_t *entries = malloc(sizeof(entry_t) * size);
+    if(g_spec_compiled) return;
 
-    for(size_t i = 0; i < size; i++) {
+    for(size_t i = 0; i < g_spec_size; i++) {
         int error_code;
         PCRE2_SIZE error_offset;
         pcre2_code *code = pcre2_compile((const uint8_t *) g_raw_spec[i].pattern, PCRE2_ZERO_TERMINATED, 0, &error_code, &error_offset, NULL);
@@ -42,11 +40,10 @@ void spec_ensure() {
             pcre2_get_error_message(error_code, (uint8_t *) error_message, 120);
             log_fatal("failed compiling pattern '%s' (%s)", g_raw_spec[i].pattern, error_message);
         }
-        entries[i] = (entry_t) { .token_kind = g_raw_spec[i].kind, .pattern = code };
+        g_spec_entries[i] = (entry_t) { .token_kind = g_raw_spec[i].kind, .pattern = code };
     }
 
-    g_spec_size = size;
-    g_spec_entries = entries;
+    g_spec_compiled = true;
 }
 
 spec_match_t spec_match(const char *string, size_t string_length) {
