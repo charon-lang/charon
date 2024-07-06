@@ -8,4 +8,4 @@
 bool util_try_consume(tokenizer_t *tokenizer, token_kind_t kind);
 token_t util_consume(tokenizer_t *tokenizer, token_kind_t kind);
 
-const char *util_text_make_from_token(tokenizer_t *tokenizer, token_t token);
+char *util_text_make_from_token(tokenizer_t *tokenizer, token_t token);

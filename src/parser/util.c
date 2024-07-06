@@ -20,7 +20,7 @@ token_t util_consume(tokenizer_t *tokenizer, token_kind_t kind) {
     diag_error(UTIL_SRCLOC(tokenizer, token), "expected %s got %s", token_kind_tostring(kind), token_kind_tostring(token.kind));
 }
 
-const char *util_text_make_from_token(tokenizer_t *tokenizer, token_t token) {
+char *util_text_make_from_token(tokenizer_t *tokenizer, token_t token) {
     char *text = malloc(token.size + 1);
     memcpy(text, tokenizer->source->data_buffer + token.offset, token.size);
     text[token.size] = '\0';
