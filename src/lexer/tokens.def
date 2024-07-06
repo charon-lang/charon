@@ -5,6 +5,7 @@ TOKEN(KEYWORD_ELSE,     "else",     "^else"     )
 TOKEN(KEYWORD_EXTERN,   "extern",   "^extern"   )
 TOKEN(KEYWORD_WHILE,    "while",    "^while"    )
 TOKEN(KEYWORD_STRUCT,   "struct",   "^struct"   )
+TOKEN(KEYWORD_FUNCTION, "fn",       "^fn"       )
 
 // Constants
 TOKEN(CONST_NUMBER_DEC, "number",   "^0x[a-fA-F\\d]+"   )
@@ -20,6 +21,7 @@ TOKEN(IDENTIFIER,   "identifier",   "^[_a-zA-Z][_a-zA-Z0-9]*")
 
 // Punctuation
 TOKEN(TRIPLE_PERIOD,        "...",  "^\\.\\.\\."    )
+TOKEN(COLON,                ":",    "^:"            )
 TOKEN(SEMI_COLON,           ";",    "^;"            )
 TOKEN(EQUAL_EQUAL,          "==",   "^=="           )
 TOKEN(EQUAL,                "=",    "^="            )
