@@ -150,24 +150,17 @@ static ir_node_t *parse_literal(tokenizer_t *tokenizer) {
 //     return ir_node_make_expr_var(name, token_identifier.diag_loc);
 // }
 
-// static ir_node_t *parse_group_or_cast(tokenizer_t *tokenizer) {
-//     expect(tokenizer, TOKEN_TYPE_PARENTHESES_LEFT);
-//     if(tokenizer_peek(tokenizer).type == TOKEN_TYPE_TYPE) {
-//         diag_loc_t type_diag_loc = tokenizer_peek(tokenizer).diag_loc;
-//         ir_type_t *type = parse_type(tokenizer);
-//         expect(tokenizer, TOKEN_TYPE_PARENTHESES_RIGHT);
-//         return ir_node_make_expr_cast(parse_expression(tokenizer), type, type_diag_loc);
-//     } else {
-//         ir_node_t *inner = parse_expression(tokenizer);
-//         expect(tokenizer, TOKEN_TYPE_PARENTHESES_RIGHT);
-//         return inner;
-//     }
-// }
+static ir_node_t *parse_group(tokenizer_t *tokenizer) {
+    util_consume(tokenizer, TOKEN_KIND_PARENTHESES_LEFT);
+    ir_node_t *inner = parser_expr(tokenizer);
+    util_consume(tokenizer, TOKEN_KIND_PARENTHESES_RIGHT);
+    return inner;
+}
 
 static ir_node_t *parse_primary(tokenizer_t *tokenizer) {
     switch(tokenizer_peek(tokenizer).kind) {
         // case TOKEN_TYPE_IDENTIFIER: return parse_var_or_call(tokenizer);
-        // case TOKEN_TYPE_PARENTHESES_LEFT: return parse_group_or_cast(tokenizer);
+        case TOKEN_KIND_PARENTHESES_LEFT: return parse_group(tokenizer);
         default: return parse_literal(tokenizer);
     }
 }
