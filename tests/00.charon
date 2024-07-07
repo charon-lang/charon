@@ -1,3 +1,10 @@
-fn main(): i32 {
-    return 0;
+fn main() {
+    500;
+    0x1000;
+    "hello!";
+    '$';
+    false;
+    true;
+
+    5 + 6 * 2 - 3;
 }
