@@ -29,6 +29,12 @@ ir_node_t *ir_node_make_tlc_function(const char *name, ir_node_list_t statements
     return node;
 }
 
+ir_node_t *ir_node_make_stmt_block(ir_node_list_t statements, source_location_t source_location) {
+    ir_node_t *node = make_node(IR_NODE_TYPE_STMT_BLOCK, source_location);
+    node->stmt_block.statements = statements;
+    return node;
+}
+
 ir_node_t *ir_node_make_stmt_expression(ir_node_t *expression, source_location_t source_location) {
     ir_node_t *node = make_node(IR_NODE_TYPE_STMT_EXPRESSION, source_location);
     node->stmt_expression.expression = expression;
