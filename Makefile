@@ -15,8 +15,6 @@ build/charon:
 clean:
 	rm -rf ./build
 
-run-test-%:
-	@ echo -e "\n-- Compiling test $(*)"
-	build/charon -o build/test.ll tests/$(*).charon
-	@ echo -e "\n-- Running test $(*)"
-	@ lli build/test.ll
+export CFLAGS
+run-tests:
+	$(MAKE) -C tests run
