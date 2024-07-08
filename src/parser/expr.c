@@ -86,7 +86,9 @@ static ir_node_t *parse_literal_numeric(tokenizer_t *tokenizer) {
     }
     char *text = util_text_make_from_token(tokenizer, token_numeric);
     errno = 0;
-    uintmax_t value = strtoull(text, NULL, base);
+    char *stripped = text;
+    if(base != 10) stripped += 2;
+    uintmax_t value = strtoull(stripped, NULL, base);
     if(errno == ERANGE) diag_error(UTIL_SRCLOC(tokenizer, token_numeric), "numeric constant too large");
     free(text);
     return ir_node_make_expr_literal_numeric(value, UTIL_SRCLOC(tokenizer, token_numeric));
