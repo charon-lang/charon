@@ -29,7 +29,7 @@ static void print_node(ir_node_t *node, int depth) {
     switch(node->type) {
         case IR_NODE_TYPE_ROOT: printf("(root)"); break;
 
-        case IR_NODE_TYPE_TLC_FUNCTION: printf("(tlc.function %s)", node->tlc_function.name); break;
+        case IR_NODE_TYPE_TLC_FUNCTION: printf("(tlc.function `%s`)", node->tlc_function.name); break;
 
         case IR_NODE_TYPE_STMT_BLOCK: printf("(stmt.block)"); break;
         case IR_NODE_TYPE_STMT_EXPRESSION: printf("(stmt.expression)"); break;
