@@ -35,6 +35,13 @@ ir_node_t *ir_node_make_stmt_block(ir_node_list_t statements, source_location_t 
     return node;
 }
 
+ir_node_t *ir_node_make_stmt_declaration(const char *name, ir_node_t *initial, source_location_t source_location) {
+    ir_node_t *node = make_node(IR_NODE_TYPE_STMT_DECLARATION, source_location);
+    node->stmt_declaration.name = name;
+    node->stmt_declaration.initial = initial;
+    return node;
+}
+
 ir_node_t *ir_node_make_stmt_expression(ir_node_t *expression, source_location_t source_location) {
     ir_node_t *node = make_node(IR_NODE_TYPE_STMT_EXPRESSION, source_location);
     node->stmt_expression.expression = expression;
