@@ -26,3 +26,7 @@ char *util_text_make_from_token(tokenizer_t *tokenizer, token_t token) {
     text[token.size] = '\0';
     return text;
 }
+
+int util_token_cmp(tokenizer_t *tokenizer, token_t token, const char *string) {
+    return strncmp(tokenizer->source->data_buffer + token.offset, string, token.size);
+}

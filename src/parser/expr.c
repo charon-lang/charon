@@ -120,10 +120,7 @@ static ir_node_t *parse_literal_char(tokenizer_t *tokenizer) {
 
 static ir_node_t *parse_literal_bool(tokenizer_t *tokenizer) {
     token_t token_bool = util_consume(tokenizer, TOKEN_KIND_CONST_BOOL);
-    char *text = util_text_make_from_token(tokenizer, token_bool);
-    bool value = strcmp(text, "true") == 0;
-    free(text);
-    return ir_node_make_expr_literal_bool(value, UTIL_SRCLOC(tokenizer, token_bool));
+    return ir_node_make_expr_literal_bool(util_token_cmp(tokenizer, token_bool, "true") == 0, UTIL_SRCLOC(tokenizer, token_bool));
 }
 
 static ir_node_t *parse_literal(tokenizer_t *tokenizer) {
