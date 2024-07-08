@@ -40,6 +40,7 @@ static void print_node(ir_node_t *node, int depth) {
         case IR_NODE_TYPE_EXPR_LITERAL_BOOL: printf("(expr.literal_bool `%s`)", node->expr_literal.bool_value ? "true" : "false"); break;
         case IR_NODE_TYPE_EXPR_BINARY: printf("(expr.binary `%s`)", binary_op_translations[node->expr_binary.operation]); break;
         case IR_NODE_TYPE_EXPR_UNARY: printf("(expr.unary `%s`)", unary_op_translations[node->expr_unary.operation]); break;
+        case IR_NODE_TYPE_EXPR_VARIABLE: printf("(expr.variable `%s`)", node->expr_variable.name); break;
     }
     printf("\n");
 
@@ -58,6 +59,7 @@ static void print_node(ir_node_t *node, int depth) {
         case IR_NODE_TYPE_EXPR_LITERAL_BOOL: break;
         case IR_NODE_TYPE_EXPR_BINARY: print_node(node->expr_binary.left, depth); print_node(node->expr_binary.right, depth); break;
         case IR_NODE_TYPE_EXPR_UNARY: print_node(node->expr_unary.operand, depth); break;
+        case IR_NODE_TYPE_EXPR_VARIABLE: break;
     }
 }
 

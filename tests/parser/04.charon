@@ -1,6 +1,6 @@
 {
     -500;
     !true;
-    *5;
-    &5;
+    *someptr;
+    &somevar;
 }
