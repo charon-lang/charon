@@ -79,3 +79,9 @@ ir_node_t *ir_node_make_expr_unary(ir_node_unary_operation_t operation, ir_node_
     node->expr_unary.operand = operand;
     return node;
 }
+
+ir_node_t *ir_node_make_expr_variable(const char *name, source_location_t source_location) {
+    ir_node_t *node = make_node(IR_NODE_TYPE_EXPR_VARIABLE, source_location);
+    node->expr_variable.name = name;
+    return node;
+}
