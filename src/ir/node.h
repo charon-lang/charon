@@ -1,6 +1,7 @@
 #pragma once
 
 #include "lib/source.h"
+#include "ir/type.h"
 
 #include <stdint.h>
 
@@ -70,6 +71,7 @@ struct ir_node {
         } stmt_block;
         struct {
             const char *name;
+            ir_type_t *type; // OPTIONAL
             ir_node_t *initial; // OPTIONAL
         } stmt_declaration;
         struct {
@@ -104,7 +106,7 @@ ir_node_t *ir_node_make_root(ir_node_list_t tlc_nodes, source_location_t source_
 ir_node_t *ir_node_make_tlc_function(const char *name, ir_node_list_t statements, source_location_t source_location);
 
 ir_node_t *ir_node_make_stmt_block(ir_node_list_t statements, source_location_t source_location);
-ir_node_t *ir_node_make_stmt_declaration(const char *name, ir_node_t *initial, source_location_t source_location);
+ir_node_t *ir_node_make_stmt_declaration(const char *name, ir_type_t *type, ir_node_t *initial, source_location_t source_location);
 ir_node_t *ir_node_make_stmt_expression(ir_node_t *expression, source_location_t source_location);
 
 ir_node_t *ir_node_make_expr_literal_numeric(uintmax_t value, source_location_t source_location);
