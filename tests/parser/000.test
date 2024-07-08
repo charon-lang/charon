@@ -1,3 +1,11 @@
 root
 (root)
   (tlc.function `hello`)
+    (stmt.declaration `x`)
+      (expr.literal_numeric `5`)
+    (stmt.expression)
+      (expr.binary `-`)
+        (expr.binary `+`)
+          (expr.literal_numeric `5`)
+          (expr.literal_numeric `5`)
+        (expr.variable `x`)
