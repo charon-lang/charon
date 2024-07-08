@@ -8,7 +8,7 @@
 #include <errno.h>
 #include <stdlib.h>
 
-static const char *helper_string_escape(const char *src, size_t src_length, source_location_t source_location) {
+static char *helper_string_escape(const char *src, size_t src_length, source_location_t source_location) {
     char *dest = malloc(src_length + 1);
     int dest_index = 0;
     bool escaped = false;
@@ -97,7 +97,15 @@ static ir_node_t *parse_literal_numeric(tokenizer_t *tokenizer) {
 static ir_node_t *parse_literal_string(tokenizer_t *tokenizer) {
     token_t token_string = util_consume(tokenizer, TOKEN_KIND_CONST_STRING);
     char *text = util_text_make_from_token(tokenizer, token_string);
-    const char *value = helper_string_escape(&text[1], strlen(text) - 2, UTIL_SRCLOC(tokenizer, token_string));
+    char *value = helper_string_escape(&text[1], strlen(text) - 2, UTIL_SRCLOC(tokenizer, token_string));
+    free(text);
+    return ir_node_make_expr_literal_string(value, UTIL_SRCLOC(tokenizer, token_string));
+}
+
+static ir_node_t *parse_literal_string_raw(tokenizer_t *tokenizer) {
+    token_t token_string = util_consume(tokenizer, TOKEN_KIND_CONST_STRING_RAW);
+    char *text = util_text_make_from_token(tokenizer, token_string);
+    char *value = strndup(text + 2, strlen(text) - 4);
     free(text);
     return ir_node_make_expr_literal_string(value, UTIL_SRCLOC(tokenizer, token_string));
 }
@@ -122,6 +130,7 @@ static ir_node_t *parse_literal(tokenizer_t *tokenizer) {
     token_t token_literal = tokenizer_peek(tokenizer);
     switch(token_literal.kind) {
         case TOKEN_KIND_CONST_STRING: return parse_literal_string(tokenizer);
+        case TOKEN_KIND_CONST_STRING_RAW: return parse_literal_string_raw(tokenizer);
         case TOKEN_KIND_CONST_CHAR: return parse_literal_char(tokenizer);
         case TOKEN_KIND_CONST_BOOL: return parse_literal_bool(tokenizer);
         case TOKEN_KIND_CONST_NUMBER_DEC:
