@@ -10,7 +10,7 @@ typedef struct {
 
 typedef struct {
     source_t *source;
-    size_t offset;
+    size_t offset, size;
 } source_location_t;
 
 source_t *source_from_path(const char *path);
