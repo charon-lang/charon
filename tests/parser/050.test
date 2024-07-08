@@ -1,0 +1,5 @@
+stmt
+(stmt.block)
+  (stmt.declaration `test`)
+  (stmt.declaration `test2`)
+    (expr.literal_numeric `500`)

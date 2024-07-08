@@ -18,6 +18,8 @@ static void print_list(ir_node_list_t *list, int depth) {
 }
 
 static void print_node(ir_node_t *node, int depth) {
+    if(node == NULL) return;
+
     static const char *binary_op_translations[] = {
         "+", "-", "*", "/", "%", ">", ">=", "<", "<=", "==", "!=", "="
     };
@@ -32,6 +34,7 @@ static void print_node(ir_node_t *node, int depth) {
         case IR_NODE_TYPE_TLC_FUNCTION: printf("(tlc.function `%s`)", node->tlc_function.name); break;
 
         case IR_NODE_TYPE_STMT_BLOCK: printf("(stmt.block)"); break;
+        case IR_NODE_TYPE_STMT_DECLARATION: printf("(stmt.declaration `%s`)", node->stmt_declaration.name); break;
         case IR_NODE_TYPE_STMT_EXPRESSION: printf("(stmt.expression)"); break;
 
         case IR_NODE_TYPE_EXPR_LITERAL_NUMERIC: printf("(expr.literal_numeric `%lu`)", node->expr_literal.numeric_value); break;
@@ -51,6 +54,7 @@ static void print_node(ir_node_t *node, int depth) {
         case IR_NODE_TYPE_TLC_FUNCTION: print_list(&node->tlc_function.statements, depth); break;
 
         case IR_NODE_TYPE_STMT_BLOCK: print_list(&node->stmt_block.statements, depth); break;
+        case IR_NODE_TYPE_STMT_DECLARATION: print_node(node->stmt_declaration.initial, depth); break;
         case IR_NODE_TYPE_STMT_EXPRESSION: print_node(node->stmt_expression.expression, depth); break;
 
         case IR_NODE_TYPE_EXPR_LITERAL_NUMERIC: break;
