@@ -134,23 +134,10 @@ static ir_node_t *parse_literal(tokenizer_t *tokenizer) {
     __builtin_unreachable();
 }
 
-// static ir_node_t *parse_var_or_call(tokenizer_t *tokenizer) {
-//     token_t token_identifier = consume(tokenizer, TOKEN_TYPE_IDENTIFIER);
-//     const char *name = make_text_from_token(tokenizer, token_identifier);
-//     if(try_expect(tokenizer, TOKEN_TYPE_PARENTHESES_LEFT)) {
-//         size_t argument_count = 0;
-//         ir_node_t **arguments = NULL;
-//         if(!try_expect(tokenizer, TOKEN_TYPE_PARENTHESES_RIGHT)) {
-//             do {
-//                 arguments = realloc(arguments, sizeof(ir_node_t *) * ++argument_count);
-//                 arguments[argument_count - 1] = parse_expression(tokenizer);
-//             } while(try_expect(tokenizer, TOKEN_TYPE_COMMA));
-//             expect(tokenizer, TOKEN_TYPE_PARENTHESES_RIGHT);
-//         }
-//         return ir_node_make_expr_call(name, argument_count, arguments, token_identifier.diag_loc);
-//     }
-//     return ir_node_make_expr_var(name, token_identifier.diag_loc);
-// }
+static ir_node_t *parse_variable(tokenizer_t *tokenizer) {
+    token_t token_name = util_consume(tokenizer, TOKEN_KIND_IDENTIFIER);
+    return ir_node_make_expr_variable(util_text_make_from_token(tokenizer, token_name), UTIL_SRCLOC(tokenizer, token_name));
+}
 
 static ir_node_t *parse_group(tokenizer_t *tokenizer) {
     util_consume(tokenizer, TOKEN_KIND_PARENTHESES_LEFT);
@@ -161,7 +148,7 @@ static ir_node_t *parse_group(tokenizer_t *tokenizer) {
 
 static ir_node_t *parse_primary(tokenizer_t *tokenizer) {
     switch(tokenizer_peek(tokenizer).kind) {
-        // case TOKEN_TYPE_IDENTIFIER: return parse_var_or_call(tokenizer);
+        case TOKEN_KIND_IDENTIFIER: return parse_variable(tokenizer);
         case TOKEN_KIND_PARENTHESES_LEFT: return parse_group(tokenizer);
         default: return parse_literal(tokenizer);
     }
