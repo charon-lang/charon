@@ -5,7 +5,6 @@
 #include <string.h>
 
 static ir_type_t
-    *g_void = NULL,
     *g_u8 = NULL,
     *g_u16 = NULL,
     *g_u32 = NULL,
