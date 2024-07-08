@@ -11,7 +11,7 @@ static ir_node_t *parse_declaration(tokenizer_t *tokenizer) {
     source_location_t source_location = UTIL_SRCLOC(tokenizer, util_consume(tokenizer, TOKEN_KIND_KEYWORD_LET));
     token_t token_name = util_consume(tokenizer, TOKEN_KIND_IDENTIFIER);
     ir_node_t *initial = NULL;
-    if(util_try_consume(tokenizer, TOKEN_KIND_EQUAL)) initial = parse_expression(tokenizer);
+    if(util_try_consume(tokenizer, TOKEN_KIND_EQUAL)) initial = parser_expr(tokenizer);
     return ir_node_make_stmt_declaration(util_text_make_from_token(tokenizer, token_name), initial, source_location);
 }
 
