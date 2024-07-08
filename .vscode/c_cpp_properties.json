@@ -1,0 +1,22 @@
+{
+    "configurations": [
+        {
+            "name": "Charon",
+            "includePath": [
+                "${workspaceFolder}/src/**"
+            ],
+            "defines": [
+                /* Unsupported C23 features work-around */
+                /* https://github.com/microsoft/vscode-cpptools/issues/10696 */
+                "true=1",
+                "false=0",
+                "bool=_Bool",
+                "static_assert=_Static_assert"
+            ],
+            "compilerPath": "/run/current-system/sw/bin/gcc",
+            "cStandard": "c23",
+            "intelliSenseMode": "linux-gcc-x64"
+        }
+    ],
+    "version": 4
+}
