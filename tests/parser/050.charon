@@ -1,4 +1,6 @@
 {
-    let test;
+    let test: u64;
     let test2 = 500;
+    let test3: i32 = 750;
+    let test4: bool = true;
 }

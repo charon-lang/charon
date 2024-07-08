@@ -1,5 +1,9 @@
 stmt
 (stmt.block)
-  (stmt.declaration `test`)
-  (stmt.declaration `test2`)
+  (stmt.declaration `test` `uint64`)
+  (stmt.declaration `test2` `null`)
     (expr.literal_numeric `500`)
+  (stmt.declaration `test3` `int32`)
+    (expr.literal_numeric `750`)
+  (stmt.declaration `test4` `uint1`)
+    (expr.literal_bool `true`)

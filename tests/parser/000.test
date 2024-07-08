@@ -1,7 +1,7 @@
 root
 (root)
   (tlc.function `hello`)
-    (stmt.declaration `x`)
+    (stmt.declaration `x` `null`)
       (expr.literal_numeric `5`)
     (stmt.expression)
       (expr.binary `-`)
