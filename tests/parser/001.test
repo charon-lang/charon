@@ -16,3 +16,11 @@ stmt
     (expr.literal_bool `true`)
   (stmt.expression)
     (expr.literal_bool `false`)
+  (stmt.expression)
+    (expr.literal_string `hello world`)
+  (stmt.expression)
+    (expr.literal_string `1
+2
+  3
+    4
+5`)

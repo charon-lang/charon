@@ -27,8 +27,9 @@ for TEST_FILE in parser/*.test; do
     fi
 
     RESULT="$(./parse_tester $CHARON_FILE $(sed -n -e 1p $TEST_FILE))"
-    if [ $? -ne 0 ]; then
-        print_result 0 $TEST_NAME "parse_tester exited with \`$?\`"
+    EXIT_CODE=$?
+    if [ $EXIT_CODE -ne 0 ]; then
+        print_result 0 $TEST_NAME "parse_tester exited with $EXIT_CODE"
         continue
     fi
 
