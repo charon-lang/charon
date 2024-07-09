@@ -54,6 +54,6 @@ static void diag(source_location_t *source_location, char *fmt, va_list list, ch
 void diag_warn(source_location_t source_location, char *fmt, ...) {
     va_list list;
     va_start(list, fmt);
-    diag(&source_location, fmt, list, "\e[93mwarn", stdout);
+    diag(&source_location, fmt, list, "\e[93mwarn", stderr);
     va_end(list);
 }
