@@ -93,3 +93,10 @@ ir_node_t *ir_node_make_expr_variable(const char *name, source_location_t source
     node->expr_variable.name = name;
     return node;
 }
+
+ir_node_t *ir_node_make_expr_call(const char *function_name, ir_node_list_t arguments, source_location_t source_location) {
+    ir_node_t *node = make_node(IR_NODE_TYPE_EXPR_CALL, source_location);
+    node->expr_call.function_name = function_name;
+    node->expr_call.arguments = arguments;
+    return node;
+}
