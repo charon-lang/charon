@@ -21,9 +21,10 @@ typedef struct ir_type {
 
 bool ir_type_eq(ir_type_t *a, ir_type_t *b);
 
+ir_type_t *ir_type_pointer_make(ir_type_t *referred);
+
 ir_type_t *ir_type_get_bool();
 ir_type_t *ir_type_get_char();
-ir_type_t *ir_type_get_char_ptr();
 
 ir_type_t *ir_type_get_uint();
 ir_type_t *ir_type_get_u8();

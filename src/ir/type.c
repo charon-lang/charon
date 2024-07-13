@@ -21,6 +21,12 @@ static ir_type_t *make_type(ir_type_kind_t kind) {
     return type;
 }
 
+ir_type_t *ir_type_pointer_make(ir_type_t *referred) {
+    ir_type_t *type = make_type(IR_TYPE_KIND_POINTER);
+    type->pointer.referred = referred;
+    return type;
+}
+
 static ir_type_t *make_int_type(size_t bit_size, bool is_signed) {
     ir_type_t *type = make_type(IR_TYPE_KIND_INTEGER);
     type->integer.bit_size = bit_size,
