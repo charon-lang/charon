@@ -44,26 +44,26 @@ static void print_node(ir_node_t *node, int depth) {
         "!", "-", "*", "&"
     };
 
-    printf("%*s", depth * 2, "");
+    printf("%*s(", depth * 2, "");
     switch(node->type) {
-        case IR_NODE_TYPE_ROOT: printf("(root)"); break;
+        case IR_NODE_TYPE_ROOT: printf("root"); break;
 
-        case IR_NODE_TYPE_TLC_FUNCTION: printf("(tlc.function `%s`)", node->tlc_function.name); break;
+        case IR_NODE_TYPE_TLC_FUNCTION: printf("tlc.function `%s`", node->tlc_function.name); break;
 
-        case IR_NODE_TYPE_STMT_BLOCK: printf("(stmt.block)"); break;
-        case IR_NODE_TYPE_STMT_DECLARATION: printf("(stmt.declaration `%s` `", node->stmt_declaration.name); print_type(node->stmt_declaration.type); printf("`)"); break;
-        case IR_NODE_TYPE_STMT_EXPRESSION: printf("(stmt.expression)"); break;
+        case IR_NODE_TYPE_STMT_BLOCK: printf("stmt.block"); break;
+        case IR_NODE_TYPE_STMT_DECLARATION: printf("stmt.declaration `%s` `", node->stmt_declaration.name); print_type(node->stmt_declaration.type); printf("`"); break;
+        case IR_NODE_TYPE_STMT_EXPRESSION: printf("stmt.expression"); break;
 
-        case IR_NODE_TYPE_EXPR_LITERAL_NUMERIC: printf("(expr.literal_numeric `%lu`)", node->expr_literal.numeric_value); break;
-        case IR_NODE_TYPE_EXPR_LITERAL_STRING: printf("(expr.literal_string `%s`)", node->expr_literal.string_value); break;
-        case IR_NODE_TYPE_EXPR_LITERAL_CHAR: printf("(expr.literal_char `%c`)", node->expr_literal.char_value); break;
-        case IR_NODE_TYPE_EXPR_LITERAL_BOOL: printf("(expr.literal_bool `%s`)", node->expr_literal.bool_value ? "true" : "false"); break;
-        case IR_NODE_TYPE_EXPR_BINARY: printf("(expr.binary `%s`)", binary_op_translations[node->expr_binary.operation]); break;
-        case IR_NODE_TYPE_EXPR_UNARY: printf("(expr.unary `%s`)", unary_op_translations[node->expr_unary.operation]); break;
-        case IR_NODE_TYPE_EXPR_VARIABLE: printf("(expr.variable `%s`)", node->expr_variable.name); break;
-        case IR_NODE_TYPE_EXPR_CALL: printf("(expr.call `%s`)", node->expr_call.function_name); break;
+        case IR_NODE_TYPE_EXPR_LITERAL_NUMERIC: printf("expr.literal_numeric `%lu`", node->expr_literal.numeric_value); break;
+        case IR_NODE_TYPE_EXPR_LITERAL_STRING: printf("expr.literal_string `%s`", node->expr_literal.string_value); break;
+        case IR_NODE_TYPE_EXPR_LITERAL_CHAR: printf("expr.literal_char `%c`", node->expr_literal.char_value); break;
+        case IR_NODE_TYPE_EXPR_LITERAL_BOOL: printf("expr.literal_bool `%s`", node->expr_literal.bool_value ? "true" : "false"); break;
+        case IR_NODE_TYPE_EXPR_BINARY: printf("expr.binary `%s`", binary_op_translations[node->expr_binary.operation]); break;
+        case IR_NODE_TYPE_EXPR_UNARY: printf("expr.unary `%s`", unary_op_translations[node->expr_unary.operation]); break;
+        case IR_NODE_TYPE_EXPR_VARIABLE: printf("expr.variable `%s`", node->expr_variable.name); break;
+        case IR_NODE_TYPE_EXPR_CALL: printf("expr.call `%s`", node->expr_call.function_name); break;
     }
-    printf("\n");
+    printf(")\n");
 
     depth++;
     switch(node->type) {
