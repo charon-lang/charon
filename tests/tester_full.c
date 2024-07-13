@@ -7,17 +7,20 @@
 #include <stdlib.h>
 
 int main(int argc, char **argv) {
-    printf("Charon (dev)\n");
+    if(argc < 3) {
+        printf("missing arguments\n");
+        return EXIT_FAILURE;
+    }
 
-    source_t *source = source_from_path("test.charon");
+    source_t *source = source_from_path(argv[1]);
     tokenizer_t *tokenizer = tokenizer_make(source);
 
-    ir_node_t *root = parser_root(tokenizer);
+    ir_node_t *node = parser_root(tokenizer);
 
     tokenizer_free(tokenizer);
     source_free(source);
 
-    codegen(root);
+    codegen(node, argv[2], "");
 
     return EXIT_SUCCESS;
 }

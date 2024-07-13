@@ -1,8 +1,17 @@
-.PHONY: run
+.PHONY: run run-parse run-full
 
 C_SOURCES := $(shell find ../src -type f -name "*.c" -not -name "charon.c")
 
-run:
-	@ gcc -I../src $(CFLAGS) -o parse_tester parse_tester.c $(C_SOURCES)
-	@ ./run_tests.sh
-	@ rm -f parse_tester
+run-parse:
+	@ gcc -I../src $(CFLAGS) -o tester_parse tester_parse.c $(C_SOURCES)
+	@ ./run_parse_tests.sh
+	@ rm -f tester_parse
+
+run-full:
+	@ rm -f out.ll
+	@ gcc -I../src $(CFLAGS) -o tester_full tester_full.c $(C_SOURCES)
+	@ ./tester_full full/test.charon out.ll
+	@ lli out.ll
+	@ rm -f tester_full
+
+run: run-parse run-full

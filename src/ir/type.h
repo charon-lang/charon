@@ -15,6 +15,8 @@ typedef struct {
     };
 } ir_type_t;
 
+bool ir_type_eq(ir_type_t *a, ir_type_t *b);
+
 ir_type_t *ir_type_get_bool();
 ir_type_t *ir_type_get_char();
 

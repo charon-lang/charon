@@ -3,15 +3,29 @@
         {
             "name": "Charon",
             "includePath": [
-                "${workspaceFolder}/src/**"
+                "${workspaceFolder}/src/**",
+                "/nix/store/y7vaibbp97dvg0pbfqnaa1cigc7wzfy7-llvm-18.1.7-dev/include",
+                "/nix/store/12wjv5kcy4kkdqj924m15g5n8q109m73-pcre2-10.43-dev/include"
             ],
             "defines": [
+                "PCRE2_CODE_UNIT_WIDTH=8",
+                "_GNU_SOURCE",
+                "__STDC_CONSTANT_MACROS",
+                "__STDC_FORMAT_MACROS",
+                "__STDC_LIMIT_MACROS",
+
                 /* Unsupported C23 features work-around */
                 /* https://github.com/microsoft/vscode-cpptools/issues/10696 */
                 "true=1",
                 "false=0",
                 "bool=_Bool",
                 "static_assert=_Static_assert"
+            ],
+            "compilerArgs": [
+                "-L/nix/store/dj26c77c6sig8w6vbhigvwki1a12vqdj-llvm-18.1.7-lib/lib",
+                "-lLLVM-18",
+                "-L/nix/store/8sl1gzpbl1dh23ypnpzs4hirnq2vdrj0-pcre2-10.43/lib",
+                "-lpcre2-8"
             ],
             "compilerPath": "/run/current-system/sw/bin/gcc",
             "cStandard": "c23",

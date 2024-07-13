@@ -28,6 +28,14 @@ static ir_type_t *make_int_type(size_t bit_size, bool is_signed) {
     return type;
 }
 
+bool ir_type_eq(ir_type_t *a, ir_type_t *b) {
+    if(a->kind != b->kind) return false;
+    switch(a->kind) {
+        case IR_TYPE_KIND_INTEGER: return a->integer.bit_size == b->integer.bit_size && a->integer.is_signed == b->integer.is_signed;
+    }
+    assert(false);
+}
+
 ir_type_t *ir_type_get_bool() {
     if(g_bool == NULL) g_bool = make_int_type(1, false);
     return g_bool;
