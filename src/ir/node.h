@@ -2,6 +2,7 @@
 
 #include "lib/source.h"
 #include "ir/type.h"
+#include "ir/function.h"
 
 #include <stdint.h>
 
@@ -64,7 +65,7 @@ struct ir_node {
         } root;
 
         struct {
-            const char *name;
+            ir_function_t *prototype;
             ir_node_list_t statements;
         } tlc_function;
 
@@ -110,7 +111,7 @@ size_t ir_node_list_count(ir_node_list_t *list);
 
 ir_node_t *ir_node_make_root(ir_node_list_t tlc_nodes, source_location_t source_location);
 
-ir_node_t *ir_node_make_tlc_function(const char *name, ir_node_list_t statements, source_location_t source_location);
+ir_node_t *ir_node_make_tlc_function(ir_function_t *prototype, ir_node_list_t statements, source_location_t source_location);
 
 ir_node_t *ir_node_make_stmt_block(ir_node_list_t statements, source_location_t source_location);
 ir_node_t *ir_node_make_stmt_declaration(const char *name, ir_type_t *type, ir_node_t *initial, source_location_t source_location);
