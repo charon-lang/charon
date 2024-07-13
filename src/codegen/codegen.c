@@ -250,6 +250,7 @@ static codegen_value_t cg_expr(codegen_state_t *state, codegen_scope_t *scope, i
         case IR_NODE_TYPE_EXPR_BINARY: return cg_expr_binary(state, scope, node);
         case IR_NODE_TYPE_EXPR_UNARY: assert(false);
         case IR_NODE_TYPE_EXPR_VARIABLE: return cg_expr_variable(state, scope, node);
+        case IR_NODE_TYPE_EXPR_CALL: assert(false);
     }
     assert(false);
 }
@@ -271,6 +272,7 @@ static void cg(codegen_state_t *state, codegen_scope_t *scope, ir_node_t *node) 
         case IR_NODE_TYPE_EXPR_BINARY:
         case IR_NODE_TYPE_EXPR_UNARY:
         case IR_NODE_TYPE_EXPR_VARIABLE:
+        case IR_NODE_TYPE_EXPR_CALL:
             assert(false);
     }
 }
