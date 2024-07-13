@@ -16,7 +16,7 @@ print_result() {
 }
 
 echo "| Running Tests"
-for TEST_FILE in parser/*.test; do
+for TEST_FILE in parse/*.test; do
     TEST_PATH="${TEST_FILE%.test}"
     TEST_NAME="${TEST_PATH##*/}"
 
@@ -26,10 +26,10 @@ for TEST_FILE in parser/*.test; do
         continue
     fi
 
-    RESULT="$(./parse_tester $CHARON_FILE $(sed -n -e 1p $TEST_FILE))"
+    RESULT="$(./tester_parse $CHARON_FILE $(sed -n -e 1p $TEST_FILE))"
     EXIT_CODE=$?
     if [ $EXIT_CODE -ne 0 ]; then
-        print_result 0 $TEST_NAME "parse_tester exited with $EXIT_CODE"
+        print_result 0 $TEST_NAME "tester_parse exited with $EXIT_CODE"
         continue
     fi
 

@@ -1,0 +1,4 @@
+fn main() {
+    let x: uint = 100;
+    let y: uint = 5 + x * 2;
+}
