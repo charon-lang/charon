@@ -14,6 +14,7 @@ void ir_node_list_append(ir_node_list_t *list, ir_node_t *node) {
     if(list->first == NULL) list->first = node;
     if(list->last != NULL) list->last->next = node;
     list->last = node;
+    list->count++;
 }
 
 size_t ir_node_list_count(ir_node_list_t *list) {
