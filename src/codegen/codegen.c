@@ -144,6 +144,14 @@ static codegen_value_t cg_expr_literal_char(codegen_state_t *state, codegen_scop
     };
 }
 
+static codegen_value_t cg_expr_literal_string(codegen_state_t *state, codegen_scope_t *scope, ir_node_t *node) {
+    ir_type_t *type = ir_type_pointer_make(ir_type_get_char());
+    return (codegen_value_t) {
+        .type = type,
+        .value = LLVMBuildGlobalString(state->builder, node->expr_literal.string_value, "expr.literal_string") //   TODO: does this mean only one can be defined
+    };
+}
+
 static codegen_value_t cg_expr_literal_bool(codegen_state_t *state, codegen_scope_t *scope, ir_node_t *node) {
     ir_type_t *type = ir_type_get_bool();
     return (codegen_value_t) {
@@ -236,7 +244,7 @@ static codegen_value_t cg_expr(codegen_state_t *state, codegen_scope_t *scope, i
             assert(false);
 
         case IR_NODE_TYPE_EXPR_LITERAL_NUMERIC: return cg_expr_literal_numeric(state, scope, node);
-        case IR_NODE_TYPE_EXPR_LITERAL_STRING: assert(false);
+        case IR_NODE_TYPE_EXPR_LITERAL_STRING: return cg_expr_literal_string(state, scope, node);
         case IR_NODE_TYPE_EXPR_LITERAL_CHAR: return cg_expr_literal_char(state, scope, node);
         case IR_NODE_TYPE_EXPR_LITERAL_BOOL: return cg_expr_literal_bool(state, scope, node);
         case IR_NODE_TYPE_EXPR_BINARY: return cg_expr_binary(state, scope, node);
