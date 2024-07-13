@@ -32,6 +32,7 @@ bool ir_type_eq(ir_type_t *a, ir_type_t *b) {
     if(a->kind != b->kind) return false;
     switch(a->kind) {
         case IR_TYPE_KIND_INTEGER: return a->integer.bit_size == b->integer.bit_size && a->integer.is_signed == b->integer.is_signed;
+        case IR_TYPE_KIND_POINTER: return ir_type_eq(a->pointer.referred, b->pointer.referred);
     }
     assert(false);
 }

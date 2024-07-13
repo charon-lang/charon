@@ -2,16 +2,20 @@
 #include <stddef.h>
 
 typedef enum {
-    IR_TYPE_KIND_INTEGER
+    IR_TYPE_KIND_INTEGER,
+    IR_TYPE_KIND_POINTER
 } ir_type_kind_t;
 
-typedef struct {
+typedef struct ir_type {
     ir_type_kind_t kind;
     union {
         struct {
             bool is_signed;
             size_t bit_size;
         } integer;
+        struct {
+            struct ir_type *referred;
+        } pointer;
     };
 } ir_type_t;
 
@@ -19,6 +23,7 @@ bool ir_type_eq(ir_type_t *a, ir_type_t *b);
 
 ir_type_t *ir_type_get_bool();
 ir_type_t *ir_type_get_char();
+ir_type_t *ir_type_get_char_ptr();
 
 ir_type_t *ir_type_get_uint();
 ir_type_t *ir_type_get_u8();
