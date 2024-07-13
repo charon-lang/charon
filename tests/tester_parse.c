@@ -27,6 +27,10 @@ static void print_type(ir_type_t *type) {
             if(!type->integer.is_signed) printf("u");
             printf("int%lu", type->integer.bit_size);
             break;
+        case IR_TYPE_KIND_POINTER:
+            printf("*");
+            print_type(type->pointer.referred);
+            break;
     }
 }
 
