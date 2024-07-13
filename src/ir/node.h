@@ -6,6 +6,7 @@
 #include <stdint.h>
 
 #define IR_NODE_LIST_INIT ((ir_node_list_t) { .count = 0, .first = NULL, .last = NULL })
+#define IR_NODE_LIST_FOREACH(LIST, BODY) { ir_node_t *node = (LIST)->first; for(size_t i = 0; i < ir_node_list_count(LIST); i++) { assert(node != NULL); BODY; node = node->next; }; assert(node == NULL); }
 
 typedef enum {
     IR_NODE_TYPE_ROOT,
@@ -105,6 +106,7 @@ struct ir_node {
 };
 
 void ir_node_list_append(ir_node_list_t *list, ir_node_t *node);
+size_t ir_node_list_count(ir_node_list_t *list);
 
 ir_node_t *ir_node_make_root(ir_node_list_t tlc_nodes, source_location_t source_location);
 
