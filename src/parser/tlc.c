@@ -1,18 +1,20 @@
 #include "parser.h"
 
 #include "lib/diag.h"
+#include "ir/function.h"
 #include "parser/util.h"
 
 static ir_node_t *parse_function(tokenizer_t *tokenizer) {
     source_location_t source_location = UTIL_SRCLOC(tokenizer, util_consume(tokenizer, TOKEN_KIND_KEYWORD_FUNCTION));
-    token_t token_name = util_consume(tokenizer, TOKEN_KIND_IDENTIFIER);
+
+    ir_function_t *prototype = ir_function_make(util_text_make_from_token(tokenizer, util_consume(tokenizer, TOKEN_KIND_IDENTIFIER)));
     util_consume(tokenizer, TOKEN_KIND_PARENTHESES_LEFT);
     util_consume(tokenizer, TOKEN_KIND_PARENTHESES_RIGHT);
 
     ir_node_list_t statements = IR_NODE_LIST_INIT;
     util_consume(tokenizer, TOKEN_KIND_BRACE_LEFT);
     while(!util_try_consume(tokenizer, TOKEN_KIND_BRACE_RIGHT)) ir_node_list_append(&statements, parser_stmt(tokenizer));
-    return ir_node_make_tlc_function(util_text_make_from_token(tokenizer, token_name), statements, source_location);
+    return ir_node_make_tlc_function(prototype, statements, source_location);
 }
 
 ir_node_t *parser_tlc(tokenizer_t *tokenizer) {
