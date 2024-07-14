@@ -11,7 +11,7 @@ run-full:
 	@ rm -f out.ll
 	@ gcc -I../src $(CFLAGS) -o tester_full tester_full.c $(C_SOURCES)
 	@ ./tester_full full/test.charon out.ll
-	@ lli out.ll
 	@ rm -f tester_full
+	@ lli out.ll
 
 run: run-parse run-full
