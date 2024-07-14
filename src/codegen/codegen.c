@@ -88,9 +88,11 @@ static void cg_list(codegen_state_t *state, codegen_scope_t *scope, ir_node_list
 
 static void cg_tlc_function(codegen_state_t *state, codegen_scope_t *scope, ir_node_t *node) {
     LLVMTypeRef type_fn = LLVMFunctionType(LLVMVoidTypeInContext(state->context), NULL, 0, false);
-    LLVMValueRef fn = LLVMAddFunction(state->module, node->tlc_function.name, type_fn);
-    LLVMBasicBlockRef bb_entry = LLVMAppendBasicBlockInContext(state->context, fn, node->tlc_function.name);
+    LLVMValueRef fn = LLVMAddFunction(state->module, node->tlc_function.prototype->name, type_fn);
+    LLVMBasicBlockRef bb_entry = LLVMAppendBasicBlockInContext(state->context, fn, "tlc.function");
     LLVMPositionBuilderAtEnd(state->builder, bb_entry);
+
+    // TODO: params etc
 
     scope = scope_enter(scope);
     cg_list(state, scope, &node->tlc_function.statements);
@@ -232,6 +234,25 @@ static codegen_value_t cg_expr_variable(codegen_state_t *state, codegen_scope_t 
     };
 }
 
+static codegen_value_t cg_expr_call(codegen_state_t *state, codegen_scope_t *scope, ir_node_t *node) {
+    // TODO: check the function exists, and make sure the call matches the prototype
+    // For now we just generate the function call, ignoring any checking
+    // This code is written at a stage where I am unsure how codegen & semantic analysis will settle
+
+    size_t argument_count = ir_node_list_count(&node->expr_call.arguments);
+    LLVMValueRef arguments[node->expr_call.arguments.count];
+    IR_NODE_LIST_FOREACH(&node->expr_call.arguments, arguments[i] = cg_expr(state, scope, node).value);
+
+    LLVMValueRef fn = LLVMGetNamedFunction(state->module, node->expr_call.function_name);
+    LLVMBuildCall2(state->builder, LLVMGlobalGetValueType(fn), fn, arguments, argument_count, "expr.call");
+
+    // TODO: this return is completely placeholder. we need the prototype for a proper return :)
+    return (codegen_value_t) {
+        .type = ir_type_get_uint(),
+        .value = LLVMConstInt(llvm_type(state, ir_type_get_uint()), 0, false)
+    };
+}
+
 static codegen_value_t cg_expr(codegen_state_t *state, codegen_scope_t *scope, ir_node_t *node) {
     switch(node->type) {
         case IR_NODE_TYPE_ROOT:
@@ -250,7 +271,7 @@ static codegen_value_t cg_expr(codegen_state_t *state, codegen_scope_t *scope, i
         case IR_NODE_TYPE_EXPR_BINARY: return cg_expr_binary(state, scope, node);
         case IR_NODE_TYPE_EXPR_UNARY: assert(false);
         case IR_NODE_TYPE_EXPR_VARIABLE: return cg_expr_variable(state, scope, node);
-        case IR_NODE_TYPE_EXPR_CALL: assert(false);
+        case IR_NODE_TYPE_EXPR_CALL: return cg_expr_call(state, scope, node);
     }
     assert(false);
 }
@@ -282,6 +303,10 @@ void codegen(ir_node_t *node, const char *dest, const char *passes) {
     state.context = LLVMContextCreate();
     state.module = LLVMModuleCreateWithNameInContext("CharonModule", state.context);
     state.builder = LLVMCreateBuilderInContext(state.context);
+
+    // TODO: temporarily add printf
+    LLVMAddFunction(state.module, "printf", LLVMFunctionType(LLVMIntTypeInContext(state.context, 32), (LLVMTypeRef[]) { LLVMPointerTypeInContext(state.context, 0) }, 1, true));
+
     cg(&state, NULL, node);
 
     LLVMRunPasses(state.module, passes, NULL, LLVMCreatePassBuilderOptions());
