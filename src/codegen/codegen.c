@@ -36,19 +36,21 @@ typedef struct {
 
     codegen_function_t *functions;
     size_t function_count;
+
+    bool current_function_returned;
 } codegen_state_t;
 
 static LLVMTypeRef llvm_type(codegen_state_t *state, ir_type_t *type) {
     assert(type != NULL);
     switch(type->kind) {
         case IR_TYPE_KIND_INTEGER:
-        switch(type->integer.bit_size) {
-            case 1: return LLVMInt1TypeInContext(state->context);
-            case 8: return LLVMInt8TypeInContext(state->context);
-            case 16: return LLVMInt16TypeInContext(state->context);
-            case 32: return LLVMInt32TypeInContext(state->context);
-            case 64: return LLVMInt64TypeInContext(state->context);
-        }
+            switch(type->integer.bit_size) {
+                case 1: return LLVMInt1TypeInContext(state->context);
+                case 8: return LLVMInt8TypeInContext(state->context);
+                case 16: return LLVMInt16TypeInContext(state->context);
+                case 32: return LLVMInt32TypeInContext(state->context);
+                case 64: return LLVMInt64TypeInContext(state->context);
+            }
             break;
         case IR_TYPE_KIND_POINTER: return LLVMPointerTypeInContext(state->context, 0);
     }
@@ -127,6 +129,7 @@ static void cg_tlc_function(codegen_state_t *state, codegen_scope_t *scope, ir_n
     LLVMBasicBlockRef bb_entry = LLVMAppendBasicBlockInContext(state->context, fn->ref, "tlc.function");
     LLVMPositionBuilderAtEnd(state->builder, bb_entry);
 
+    state->current_function_returned = false;
     scope = scope_enter(scope);
     for(size_t i = 0; i < node->tlc_function.prototype->argument_count; i++) {
         ir_function_argument_t *argument = &node->tlc_function.prototype->arguments[i];
@@ -138,7 +141,9 @@ static void cg_tlc_function(codegen_state_t *state, codegen_scope_t *scope, ir_n
     cg_list(state, scope, &node->tlc_function.statements);
     scope = scope_exit(scope);
 
-    LLVMBuildRetVoid(state->builder); // TODO
+    if(state->current_function_returned) return;
+    if(fn->prototype->return_type != NULL) diag_error(node->source_location, "missing return");
+    LLVMBuildRetVoid(state->builder);
 }
 
 static void cg_stmt_block(codegen_state_t *state, codegen_scope_t *scope, ir_node_t *node) {
