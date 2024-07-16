@@ -13,14 +13,13 @@ int main(int argc, char **argv) {
     }
 
     source_t *source = source_from_path(argv[1]);
+
     tokenizer_t *tokenizer = tokenizer_make(source);
-
     ir_node_t *node = parser_root(tokenizer);
-
     tokenizer_free(tokenizer);
-    source_free(source);
 
     codegen(node, argv[2], "");
 
+    source_free(source);
     return EXIT_SUCCESS;
 }

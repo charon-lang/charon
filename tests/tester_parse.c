@@ -123,8 +123,9 @@ int main(int argc, char **argv) {
     }
 
     tokenizer_free(tokenizer);
-    source_free(source);
 
     print_node(node, 0);
+
+    source_free(source);
     return EXIT_SUCCESS;
 }
