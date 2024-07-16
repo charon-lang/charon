@@ -1,3 +1,4 @@
+.ccls-cache/
 build/
 .vscode/settings.json
 tests/out.ll
