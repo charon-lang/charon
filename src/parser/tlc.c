@@ -19,6 +19,7 @@ static ir_node_t *parse_function(tokenizer_t *tokenizer) {
             }
 
             token_t token_identifier = util_consume(tokenizer, TOKEN_KIND_IDENTIFIER);
+            util_consume(tokenizer, TOKEN_KIND_COLON);
             ir_type_t *type = util_parse_type(tokenizer);
             prototype->arguments = realloc(prototype->arguments, ++prototype->argument_count * sizeof(ir_function_argument_t));
             prototype->arguments[prototype->argument_count - 1] = (ir_function_argument_t) { .type = type, .name = util_text_make_from_token(tokenizer, token_identifier) };
