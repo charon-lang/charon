@@ -40,7 +40,8 @@ typedef struct {
 
 static LLVMTypeRef llvm_type(codegen_state_t *state, ir_type_t *type) {
     assert(type != NULL);
-    if(type->kind == IR_TYPE_KIND_INTEGER) {
+    switch(type->kind) {
+        case IR_TYPE_KIND_INTEGER:
         switch(type->integer.bit_size) {
             case 1: return LLVMInt1TypeInContext(state->context);
             case 8: return LLVMInt8TypeInContext(state->context);
@@ -48,6 +49,8 @@ static LLVMTypeRef llvm_type(codegen_state_t *state, ir_type_t *type) {
             case 32: return LLVMInt32TypeInContext(state->context);
             case 64: return LLVMInt64TypeInContext(state->context);
         }
+            break;
+        case IR_TYPE_KIND_POINTER: return LLVMPointerTypeInContext(state->context, 0);
     }
     assert(false);
 }
