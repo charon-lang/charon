@@ -8,12 +8,6 @@
 #include <stdlib.h>
 
 typedef struct {
-    LLVMModuleRef module;
-    LLVMContextRef context;
-    LLVMBuilderRef builder;
-} codegen_state_t;
-
-typedef struct {
     ir_type_t *type;
     LLVMValueRef value;
 } codegen_value_t;
@@ -24,14 +18,28 @@ typedef struct {
     LLVMValueRef ref;
 } codegen_variable_t;
 
+typedef struct {
+    ir_function_t *prototype;
+    LLVMValueRef ref;
+} codegen_function_t;
+
 typedef struct codegen_scope {
+    struct codegen_scope *parent;
     codegen_variable_t *variables;
     size_t variable_count;
-
-    struct codegen_scope *parent;
 } codegen_scope_t;
 
+typedef struct {
+    LLVMModuleRef module;
+    LLVMContextRef context;
+    LLVMBuilderRef builder;
+
+    codegen_function_t *functions;
+    size_t function_count;
+} codegen_state_t;
+
 static LLVMTypeRef llvm_type(codegen_state_t *state, ir_type_t *type) {
+    assert(type != NULL);
     if(type->kind == IR_TYPE_KIND_INTEGER) {
         switch(type->integer.bit_size) {
             case 1: return LLVMInt1TypeInContext(state->context);
@@ -75,6 +83,29 @@ static codegen_scope_t *scope_exit(codegen_scope_t *scope) {
     return parent;
 }
 
+static codegen_function_t *state_add_function(codegen_state_t *state, ir_function_t *prototype) {
+    LLVMTypeRef fn_arguments[prototype->argument_count];
+    for(size_t i = 0; i < prototype->argument_count; i++) fn_arguments[i] = llvm_type(state, prototype->arguments[i].type);
+    LLVMTypeRef fn_return_type = LLVMVoidTypeInContext(state->context);
+    if(prototype->return_type != NULL) fn_return_type = llvm_type(state, prototype->return_type);
+    LLVMTypeRef fn_type = LLVMFunctionType(fn_return_type, fn_arguments, prototype->argument_count, prototype->varargs);
+    LLVMValueRef fn = LLVMAddFunction(state->module, prototype->name, fn_type);
+
+    state->functions = realloc(state->functions, ++state->function_count * sizeof(codegen_function_t));
+    codegen_function_t *function = &state->functions[state->function_count - 1];
+    function->prototype = prototype;
+    function->ref = fn;
+    return function;
+}
+
+static codegen_function_t *state_get_function(codegen_state_t *state, const char *name) {
+    for(size_t i = 0; state->function_count; i++) {
+        if(strcmp(state->functions[i].prototype->name, name) != 0) continue;
+        return &state->functions[i];
+    }
+    return NULL;
+}
+
 static void cg(codegen_state_t *state, codegen_scope_t *scope, ir_node_t *node);
 static codegen_value_t cg_expr(codegen_state_t *state, codegen_scope_t *scope, ir_node_t *node);
 
@@ -87,14 +118,20 @@ static void cg_list(codegen_state_t *state, codegen_scope_t *scope, ir_node_list
 }
 
 static void cg_tlc_function(codegen_state_t *state, codegen_scope_t *scope, ir_node_t *node) {
-    LLVMTypeRef type_fn = LLVMFunctionType(LLVMVoidTypeInContext(state->context), NULL, 0, false);
-    LLVMValueRef fn = LLVMAddFunction(state->module, node->tlc_function.prototype->name, type_fn);
-    LLVMBasicBlockRef bb_entry = LLVMAppendBasicBlockInContext(state->context, fn, "tlc.function");
+    if(state_get_function(state, node->tlc_function.prototype->name) != NULL) diag_error(node->source_location, "redefinition of `%s`", node->tlc_function.prototype->name);
+    codegen_function_t *fn = state_add_function(state, node->tlc_function.prototype);
+
+    LLVMBasicBlockRef bb_entry = LLVMAppendBasicBlockInContext(state->context, fn->ref, "tlc.function");
     LLVMPositionBuilderAtEnd(state->builder, bb_entry);
 
-    // TODO: params etc
-
     scope = scope_enter(scope);
+    for(size_t i = 0; i < node->tlc_function.prototype->argument_count; i++) {
+        ir_function_argument_t *argument = &node->tlc_function.prototype->arguments[i];
+        LLVMValueRef param_original = LLVMGetParam(fn->ref, i);
+        LLVMValueRef param_new = LLVMBuildAlloca(state->builder, llvm_type(state, argument->type), argument->name);
+        LLVMBuildStore(state->builder, param_original, param_new);
+        scope_add_variable(scope, argument->name, argument->type, param_new);
+    }
     cg_list(state, scope, &node->tlc_function.statements);
     scope = scope_exit(scope);
 
@@ -303,6 +340,8 @@ void codegen(ir_node_t *node, const char *dest, const char *passes) {
     state.context = LLVMContextCreate();
     state.module = LLVMModuleCreateWithNameInContext("CharonModule", state.context);
     state.builder = LLVMCreateBuilderInContext(state.context);
+    state.function_count = 0;
+    state.functions = NULL;
 
     // TODO: temporarily add printf
     LLVMAddFunction(state.module, "printf", LLVMFunctionType(LLVMIntTypeInContext(state.context, 32), (LLVMTypeRef[]) { LLVMPointerTypeInContext(state.context, 0) }, 1, true));
@@ -312,6 +351,7 @@ void codegen(ir_node_t *node, const char *dest, const char *passes) {
     LLVMRunPasses(state.module, passes, NULL, LLVMCreatePassBuilderOptions());
     LLVMPrintModuleToFile(state.module, dest, NULL);
 
+    free(state.functions);
     LLVMDisposeBuilder(state.builder);
     LLVMDisposeModule(state.module);
     LLVMContextDispose(state.context);
