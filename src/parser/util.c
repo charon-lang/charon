@@ -32,6 +32,7 @@ int util_token_cmp(tokenizer_t *tokenizer, token_t token, const char *string) {
 }
 
 ir_type_t *util_parse_type(tokenizer_t *tokenizer) {
+    if(util_try_consume(tokenizer, TOKEN_KIND_STAR)) return ir_type_pointer_make(util_parse_type(tokenizer));
     token_t token_primitive_type = util_consume(tokenizer, TOKEN_KIND_IDENTIFIER);
     if(util_token_cmp(tokenizer, token_primitive_type, "bool") == 0) return ir_type_get_bool();
     if(util_token_cmp(tokenizer, token_primitive_type, "char") == 0) return ir_type_get_char();
@@ -45,5 +46,5 @@ ir_type_t *util_parse_type(tokenizer_t *tokenizer) {
     if(util_token_cmp(tokenizer, token_primitive_type, "i16") == 0) return ir_type_get_i16();
     if(util_token_cmp(tokenizer, token_primitive_type, "i32") == 0) return ir_type_get_i32();
     if(util_token_cmp(tokenizer, token_primitive_type, "i64") == 0) return ir_type_get_i64();
-    return NULL;
+    diag_error(UTIL_SRCLOC(tokenizer, token_primitive_type), "invalid type `%s`", util_text_make_from_token(tokenizer, token_primitive_type));
 }
