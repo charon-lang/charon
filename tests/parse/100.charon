@@ -1,2 +1,5 @@
-fn hello() {
-}
+fn hello() {}
+
+fn world(): u64 {}
+
+fn hello_world(a: u64, b: char, ...): u64 {}

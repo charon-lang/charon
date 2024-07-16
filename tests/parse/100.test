@@ -1,2 +1,8 @@
-tlc
-(tlc.function `hello` `null`)
+root
+(root)
+  (tlc.function `hello` `null`)
+  (tlc.function `world` `uint64`)
+  (tlc.function `hello_world` `uint64` varargs)
+    args:
+      - a `uint64`
+      - b `uint8`
