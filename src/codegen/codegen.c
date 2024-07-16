@@ -133,10 +133,9 @@ static void cg_tlc_function(codegen_state_t *state, codegen_scope_t *scope, ir_n
     scope = scope_enter(scope);
     for(size_t i = 0; i < node->tlc_function.prototype->argument_count; i++) {
         ir_function_argument_t *argument = &node->tlc_function.prototype->arguments[i];
-        LLVMValueRef param_original = LLVMGetParam(fn->ref, i);
-        LLVMValueRef param_new = LLVMBuildAlloca(state->builder, llvm_type(state, argument->type), argument->name);
-        LLVMBuildStore(state->builder, param_original, param_new);
-        scope_add_variable(scope, argument->name, argument->type, param_new);
+        LLVMValueRef param = LLVMBuildAlloca(state->builder, llvm_type(state, argument->type), argument->name);
+        LLVMBuildStore(state->builder, LLVMGetParam(fn->ref, i), param);
+        scope_add_variable(scope, argument->name, argument->type, param);
     }
     cg_list(state, scope, &node->tlc_function.statements);
     scope = scope_exit(scope);
@@ -158,8 +157,8 @@ static void cg_stmt_declaration(codegen_state_t *state, codegen_scope_t *scope, 
     LLVMValueRef value = NULL;
     ir_type_t *type = node->stmt_declaration.type;
     if(node->stmt_declaration.initial != NULL) {
-        // TODO: if type is explicitly defined, ENFORCE!!
         codegen_value_t cg_value = cg_expr(state, scope, node->stmt_declaration.initial);
+        if(cg_value.type != type) diag_error(node->source_location, "declarations initial value does not match its explicit type");
         value = cg_value.value;
         if(type == NULL) type = cg_value.type;
     }
