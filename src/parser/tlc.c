@@ -13,14 +13,19 @@ static ir_node_t *parse_function(tokenizer_t *tokenizer) {
     util_consume(tokenizer, TOKEN_KIND_PARENTHESES_LEFT);
     if(tokenizer_peek(tokenizer).kind != TOKEN_KIND_PARENTHESES_RIGHT) {
         do {
+            if(util_try_consume(tokenizer, TOKEN_KIND_TRIPLE_PERIOD)) {
+                prototype->varargs = true;
+                break;
+            }
+
             token_t token_identifier = util_consume(tokenizer, TOKEN_KIND_IDENTIFIER);
             ir_type_t *type = util_parse_type(tokenizer);
-
             prototype->arguments = realloc(prototype->arguments, ++prototype->argument_count * sizeof(ir_function_argument_t));
             prototype->arguments[prototype->argument_count - 1] = (ir_function_argument_t) { .type = type, .name = util_text_make_from_token(tokenizer, token_identifier) };
         } while(util_try_consume(tokenizer, TOKEN_KIND_COMMA));
     }
     util_consume(tokenizer, TOKEN_KIND_PARENTHESES_RIGHT);
+    if(util_try_consume(tokenizer, TOKEN_KIND_COLON)) prototype->return_type = util_parse_type(tokenizer);
 
     ir_node_list_t statements = IR_NODE_LIST_INIT;
     util_consume(tokenizer, TOKEN_KIND_BRACE_LEFT);
