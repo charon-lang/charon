@@ -16,6 +16,7 @@
                     llvmPackages_18.libllvm
                     gcc14
                     gnumake
+                    gdb
                 ];
             };
         }
