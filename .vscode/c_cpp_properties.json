@@ -27,9 +27,9 @@
                 "-L/nix/store/8sl1gzpbl1dh23ypnpzs4hirnq2vdrj0-pcre2-10.43/lib",
                 "-lpcre2-8"
             ],
-            "compilerPath": "/run/current-system/sw/bin/gcc",
-            "cStandard": "c23",
-            "intelliSenseMode": "linux-gcc-x64"
+            "compilerPath": "/nix/store/yrynqy3jb708d4499k6c22cz1p2a778q-clang-wrapper-18.1.7/bin/clang",
+            "cStandard": "gnu23",
+            "intelliSenseMode": "linux-clang-x64"
         }
     ],
     "version": 4
