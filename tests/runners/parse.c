@@ -1,9 +1,9 @@
 #include <stdint.h>
 #include <string.h>
+#include <assert.h>
 #include <stdio.h>
 #include <stdlib.h>
 
-#include "lexer/token.h"
 #include "lexer/tokenizer.h"
 #include "parser/parser.h"
 
@@ -18,11 +18,9 @@ static void print_list(ir_node_list_t *list, int depth) {
 }
 
 static void print_type(ir_type_t *type) {
-    if(type == NULL) {
-        printf("null");
-        return;
-    }
+    assert(type != NULL);
     switch(type->kind) {
+        case IR_TYPE_KIND_VOID: printf("void"); break;
         case IR_TYPE_KIND_INTEGER:
             if(!type->integer.is_signed) printf("u");
             printf("int%lu", type->integer.bit_size);
@@ -30,6 +28,14 @@ static void print_type(ir_type_t *type) {
         case IR_TYPE_KIND_POINTER:
             printf("*");
             print_type(type->pointer.referred);
+            break;
+        case IR_TYPE_KIND_TUPLE:
+            printf("(");
+            for(size_t i = 0; i < type->tuple.type_count; i++) {
+                print_type(type->tuple.types[i]);
+                if(i < type->tuple.type_count - 1) printf(", ");
+            }
+            printf(")");
             break;
     }
 }
@@ -51,7 +57,14 @@ static void print_node(ir_node_t *node, int depth) {
         case IR_NODE_TYPE_TLC_FUNCTION: printf("tlc.function `%s` `", node->tlc_function.prototype->name); print_type(node->tlc_function.prototype->return_type); printf("`"); if(node->tlc_function.prototype->varargs) printf(" varargs"); break;
 
         case IR_NODE_TYPE_STMT_BLOCK: printf("stmt.block"); break;
-        case IR_NODE_TYPE_STMT_DECLARATION: printf("stmt.declaration `%s` `", node->stmt_declaration.name); print_type(node->stmt_declaration.type); printf("`"); break;
+        case IR_NODE_TYPE_STMT_DECLARATION:
+            printf("stmt.declaration `%s`", node->stmt_declaration.name);
+            if(node->stmt_declaration.type != NULL) {
+                printf(" `");
+                print_type(node->stmt_declaration.type);
+                printf("`");
+            }
+            break;
         case IR_NODE_TYPE_STMT_EXPRESSION: printf("stmt.expression"); break;
 
         case IR_NODE_TYPE_EXPR_LITERAL_NUMERIC: printf("expr.literal_numeric `%lu`", node->expr_literal.numeric_value); break;

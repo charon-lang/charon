@@ -1,4 +1,9 @@
-.ccls-cache/
-build/
 .vscode/settings.json
+.ccls-cache/
+compile_commands.json
+
+build/
 tests/out.ll
+
+tests/runners/*
+!tests/runners/*.c
