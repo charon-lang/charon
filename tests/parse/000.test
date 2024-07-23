@@ -1,8 +1,8 @@
 root
 (root)
-  (tlc.function `hello` `null`)
+  (tlc.function `hello` `void`)
     body:
-      (stmt.declaration `x` `null`)
+      (stmt.declaration `x`)
         (expr.literal_numeric `5`)
       (stmt.expression)
         (expr.binary `-`)

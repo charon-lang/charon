@@ -1,6 +1,6 @@
 root
 (root)
-  (tlc.function `hello` `null`)
+  (tlc.function `hello` `void`)
   (tlc.function `world` `uint64`)
   (tlc.function `hello_world` `uint64` varargs)
     args:
