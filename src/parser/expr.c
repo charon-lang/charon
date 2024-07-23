@@ -170,7 +170,8 @@ static ir_node_t *parse_unary(tokenizer_t *tokenizer) {
         case TOKEN_KIND_AMPERSAND: operation = IR_NODE_UNARY_OPERATION_REF; break;
         default: return parse_primary(tokenizer);
     }
-    return ir_node_make_expr_unary(operation, parse_unary(tokenizer), UTIL_SRCLOC(tokenizer, tokenizer_advance(tokenizer)));
+    token_t token_operator = tokenizer_advance(tokenizer);
+    return ir_node_make_expr_unary(operation, parse_unary(tokenizer), UTIL_SRCLOC(tokenizer, token_operator));
 }
 
 static ir_node_t *parse_factor(tokenizer_t *tokenizer) {
