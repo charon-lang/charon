@@ -14,9 +14,12 @@
                 nativeBuildInputs = with pkgs; [
                     pcre2
                     llvmPackages_18.libllvm
-                    gcc14
+                    clang_18
+                    clang-tools_18
                     gnumake
                     gdb
+                    bear
+                    gcc14
                 ];
             };
         }
