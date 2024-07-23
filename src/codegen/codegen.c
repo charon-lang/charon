@@ -20,6 +20,7 @@ typedef struct {
 
 typedef struct {
     ir_function_t *prototype;
+    LLVMTypeRef type;
     LLVMValueRef ref;
 } codegen_function_t;
 
@@ -100,6 +101,7 @@ static codegen_function_t *state_add_function(codegen_state_t *state, ir_functio
     state->functions = realloc(state->functions, ++state->function_count * sizeof(codegen_function_t));
     codegen_function_t *function = &state->functions[state->function_count - 1];
     function->prototype = prototype;
+    function->type = fn_type;
     function->ref = fn;
     return function;
 }
@@ -280,21 +282,23 @@ static codegen_value_t cg_expr_variable(codegen_state_t *state, codegen_scope_t 
 }
 
 static codegen_value_t cg_expr_call(codegen_state_t *state, codegen_scope_t *scope, ir_node_t *node) {
-    // TODO: check the function exists, and make sure the call matches the prototype
-    // For now we just generate the function call, ignoring any checking
-    // This code is written at a stage where I am unsure how codegen & semantic analysis will settle
+    codegen_function_t *fn = state_get_function(state, node->expr_call.function_name);
+    if(fn == NULL) diag_error(node->source_location, "call to an unknown function `%s`", node->expr_call.function_name);
+
+    if(node->expr_call.arguments.count < fn->prototype->argument_count) diag_error(node->source_location, "missing arguments");
+    if(!fn->prototype->varargs && node->expr_call.arguments.count > fn->prototype->argument_count) diag_error(node->source_location, "invalid number of arguments");
 
     size_t argument_count = ir_node_list_count(&node->expr_call.arguments);
     LLVMValueRef arguments[node->expr_call.arguments.count];
-    IR_NODE_LIST_FOREACH(&node->expr_call.arguments, arguments[i] = cg_expr(state, scope, node).value);
+    IR_NODE_LIST_FOREACH(&node->expr_call.arguments, {
+        codegen_value_t argument = cg_expr(state, scope, node);
+        if(!ir_type_eq(argument.type, fn->prototype->arguments[i].type)) diag_error(node->source_location, "argument has invalid type");
+        arguments[i] = argument.value;
+    });
 
-    LLVMValueRef fn = LLVMGetNamedFunction(state->module, node->expr_call.function_name);
-    LLVMBuildCall2(state->builder, LLVMGlobalGetValueType(fn), fn, arguments, argument_count, "expr.call");
-
-    // TODO: this return is completely placeholder. we need the prototype for a proper return :)
     return (codegen_value_t) {
-        .type = ir_type_get_uint(),
-        .value = LLVMConstInt(llvm_type(state, ir_type_get_uint()), 0, false)
+        .type = fn->prototype->return_type,
+        .value = LLVMBuildCall2(state->builder, fn->type, fn->ref, arguments, argument_count, "expr.call")
     };
 }
 
