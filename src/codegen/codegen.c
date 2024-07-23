@@ -43,6 +43,7 @@ typedef struct {
 static LLVMTypeRef llvm_type(codegen_state_t *state, ir_type_t *type) {
     assert(type != NULL);
     switch(type->kind) {
+        case IR_TYPE_KIND_VOID: return LLVMVoidTypeInContext(state->context);
         case IR_TYPE_KIND_INTEGER:
             switch(type->integer.bit_size) {
                 case 1: return LLVMInt1TypeInContext(state->context);
@@ -50,8 +51,8 @@ static LLVMTypeRef llvm_type(codegen_state_t *state, ir_type_t *type) {
                 case 16: return LLVMInt16TypeInContext(state->context);
                 case 32: return LLVMInt32TypeInContext(state->context);
                 case 64: return LLVMInt64TypeInContext(state->context);
+                default: assert(false);
             }
-            break;
         case IR_TYPE_KIND_POINTER: return LLVMPointerTypeInContext(state->context, 0);
     }
     assert(false);
@@ -141,7 +142,7 @@ static void cg_tlc_function(codegen_state_t *state, codegen_scope_t *scope, ir_n
     scope = scope_exit(scope);
 
     if(state->current_function_returned) return;
-    if(fn->prototype->return_type != NULL) diag_error(node->source_location, "missing return");
+    if(fn->prototype->return_type->kind != IR_TYPE_KIND_VOID) diag_error(node->source_location, "missing return");
     LLVMBuildRetVoid(state->builder);
 }
 
@@ -158,7 +159,7 @@ static void cg_stmt_declaration(codegen_state_t *state, codegen_scope_t *scope, 
     ir_type_t *type = node->stmt_declaration.type;
     if(node->stmt_declaration.initial != NULL) {
         codegen_value_t cg_value = cg_expr(state, scope, node->stmt_declaration.initial);
-        if(cg_value.type != type) diag_error(node->source_location, "declarations initial value does not match its explicit type");
+        if(!ir_type_eq(cg_value.type, type)) diag_error(node->source_location, "declarations initial value does not match its explicit type");
         value = cg_value.value;
         if(type == NULL) type = cg_value.type;
     }

@@ -2,7 +2,6 @@
 
 #include "parser/util.h"
 
-
 static ir_node_t *parse_expression(tokenizer_t *tokenizer) {
     ir_node_t *expression = parser_expr(tokenizer);
     return ir_node_make_stmt_expression(expression, expression->source_location);

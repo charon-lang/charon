@@ -26,7 +26,11 @@ static ir_node_t *parse_function(tokenizer_t *tokenizer) {
         } while(util_try_consume(tokenizer, TOKEN_KIND_COMMA));
     }
     util_consume(tokenizer, TOKEN_KIND_PARENTHESES_RIGHT);
-    if(util_try_consume(tokenizer, TOKEN_KIND_COLON)) prototype->return_type = util_parse_type(tokenizer);
+    if(util_try_consume(tokenizer, TOKEN_KIND_COLON)) {
+        prototype->return_type = util_parse_type(tokenizer);
+    } else {
+        prototype->return_type = ir_type_get_void();
+    }
 
     ir_node_list_t statements = IR_NODE_LIST_INIT;
     util_consume(tokenizer, TOKEN_KIND_BRACE_LEFT);
