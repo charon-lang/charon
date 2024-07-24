@@ -32,6 +32,16 @@ int util_token_cmp(tokenizer_t *tokenizer, token_t token, const char *string) {
 }
 
 ir_type_t *util_parse_type(tokenizer_t *tokenizer) {
+    if(util_try_consume(tokenizer, TOKEN_KIND_PARENTHESES_LEFT)) {
+        size_t count = 0;
+        ir_type_t **types = NULL;
+        do {
+            types = realloc(types, ++count * sizeof(ir_type_t *));
+            types[count - 1] = util_parse_type(tokenizer);
+        } while(util_try_consume(tokenizer, TOKEN_KIND_COMMA));
+        util_consume(tokenizer, TOKEN_KIND_PARENTHESES_RIGHT);
+        return ir_type_tuple_make(count, types);
+    }
     if(util_try_consume(tokenizer, TOKEN_KIND_STAR)) return ir_type_pointer_make(util_parse_type(tokenizer));
     token_t token_primitive_type = util_consume(tokenizer, TOKEN_KIND_IDENTIFIER);
     if(util_token_cmp(tokenizer, token_primitive_type, "bool") == 0) return ir_type_get_bool();
