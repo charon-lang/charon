@@ -28,6 +28,13 @@ ir_type_t *ir_type_pointer_make(ir_type_t *referred) {
     return type;
 }
 
+ir_type_t *ir_type_tuple_make(size_t type_count, ir_type_t **types) {
+    ir_type_t *type = make_type(IR_TYPE_KIND_TUPLE);
+    type->tuple.type_count = type_count;
+    type->tuple.types = types;
+    return type;
+}
+
 static ir_type_t *make_int_type(size_t bit_size, bool is_signed) {
     ir_type_t *type = make_type(IR_TYPE_KIND_INTEGER);
     type->integer.bit_size = bit_size,
@@ -41,6 +48,10 @@ bool ir_type_eq(ir_type_t *a, ir_type_t *b) {
         case IR_TYPE_KIND_VOID: return true;
         case IR_TYPE_KIND_INTEGER: return a->integer.bit_size == b->integer.bit_size && a->integer.is_signed == b->integer.is_signed;
         case IR_TYPE_KIND_POINTER: return ir_type_eq(a->pointer.referred, b->pointer.referred);
+        case IR_TYPE_KIND_TUPLE:
+            if(a->tuple.type_count != b->tuple.type_count) return false;
+            for(size_t i = 0; i < a->tuple.type_count; i++) if(!ir_type_eq(a->tuple.types[i], b->tuple.types[i])) return false;
+            return true;
     }
     assert(false);
 }

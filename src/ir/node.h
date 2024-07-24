@@ -25,7 +25,8 @@ typedef enum {
     IR_NODE_TYPE_EXPR_BINARY,
     IR_NODE_TYPE_EXPR_UNARY,
     IR_NODE_TYPE_EXPR_VARIABLE,
-    IR_NODE_TYPE_EXPR_CALL
+    IR_NODE_TYPE_EXPR_CALL,
+    IR_NODE_TYPE_EXPR_TUPLE
 } ir_node_type_t;
 
 typedef enum {
@@ -102,6 +103,9 @@ struct ir_node {
             const char *function_name;
             ir_node_list_t arguments;
         } expr_call;
+        struct {
+            ir_node_list_t values;
+        } expr_tuple;
     };
     struct ir_node *next;
 };
@@ -125,3 +129,4 @@ ir_node_t *ir_node_make_expr_binary(ir_node_binary_operation_t operation, ir_nod
 ir_node_t *ir_node_make_expr_unary(ir_node_unary_operation_t operation, ir_node_t *operand, source_location_t source_location);
 ir_node_t *ir_node_make_expr_variable(const char *name, source_location_t source_location);
 ir_node_t *ir_node_make_expr_call(const char *function_name, ir_node_list_t arguments, source_location_t source_location);
+ir_node_t *ir_node_make_expr_tuple(ir_node_list_t values, source_location_t source_location);

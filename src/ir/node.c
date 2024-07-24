@@ -105,3 +105,9 @@ ir_node_t *ir_node_make_expr_call(const char *function_name, ir_node_list_t argu
     node->expr_call.arguments = arguments;
     return node;
 }
+
+ir_node_t *ir_node_make_expr_tuple(ir_node_list_t values, source_location_t source_location) {
+    ir_node_t *node = make_node(IR_NODE_TYPE_EXPR_TUPLE, source_location);
+    node->expr_tuple.values = values;
+    return node;
+}
