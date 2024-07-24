@@ -9,8 +9,12 @@ while [[ $# -gt 0 ]]; do
             MODE="all"
             shift
             ;;
-        -s|--single)
-            MODE="single"
+        -e|--exec)
+            MODE="exec"
+            shift
+            ;;
+        -p|--parse)
+            MODE="parse"
             shift
             ;;
         -*|--*)
@@ -27,6 +31,7 @@ done
 set -- "${POSITIONAL_ARGS[@]}"
 
 print_result() {
+    echo -n "| "
     if [ $1 -eq 0 ]; then
         echo -ne "\e[41;30mFAIL"
     else
@@ -40,7 +45,7 @@ print_result() {
     echo -ne "\n"
 }
 
-run_test_parse() {
+run_parse() {
     TEST_PATH="${1%.test}"
     TEST_NAME="${TEST_PATH##*/}"
 
@@ -66,18 +71,52 @@ run_test_parse() {
     fi
 }
 
+run_exec() {
+    TEST_PATH="${1%.test}"
+    TEST_NAME="${TEST_PATH##*/}"
+
+    CHARON_FILE="$TEST_PATH.charon"
+    if ! [ -f "$CHARON_FILE" ]; then
+        print_result 0 $TEST_NAME "Missing $TEST_NAME.charon file"
+        return
+    fi
+
+    ./tests/runners/full $CHARON_FILE out.ll
+    EXIT_CODE=$?
+    if [ $EXIT_CODE -ne 0 ]; then
+        print_result 0 $TEST_NAME "tester exited with $EXIT_CODE"
+        return
+    fi
+
+    RESULT="$(lli out.ll)"
+    EXPECTED="$(cat $1)"
+    if [[ "$RESULT" == "$EXPECTED" ]]; then
+        print_result 1 $TEST_NAME
+    else
+        print_result 0 $TEST_NAME
+        diff --color <(echo "$RESULT") <(echo "$EXPECTED")
+    fi
+}
+
+run_all_parse() {
+    make clean tests/runners/parse
+    echo "| Running Parse Tests"
+    for TEST_FILE in tests/parse/*.test; do run_parse $TEST_FILE; done
+    echo "| Done"
+}
+
+run_all_exec() {
+    make clean tests/runners/full
+    echo "| Running Execution Tests"
+    for TEST_FILE in tests/exec/*.test; do run_exec $TEST_FILE; done
+    echo "| Done"
+}
+
 case $MODE in
-    single)
-        make clean tests/runners/parse
-        run_test_parse tests/parse/$1.test
-        ;;
+    parse) run_all_parse ;;
+    exec) run_all_exec;;
     all)
-        make clean tests/runners/parse
-        echo "| Running All Tests"
-        for TEST_FILE in tests/parse/*.test; do
-            echo -n "| "
-            run_test_parse $TEST_FILE
-        done
-        echo "| Done"
+        run_all_parse
+        run_all_exec
         ;;
 esac
