@@ -55,6 +55,10 @@ static LLVMTypeRef llvm_type(codegen_state_t *state, ir_type_t *type) {
                 default: assert(false);
             }
         case IR_TYPE_KIND_POINTER: return LLVMPointerTypeInContext(state->context, 0);
+        case IR_TYPE_KIND_TUPLE:
+            LLVMTypeRef types[type->tuple.type_count];
+            for(size_t i = 0; i < type->tuple.type_count; i++) types[i] = llvm_type(state, type->tuple.types[i]);
+            return LLVMStructTypeInContext(state->context, types, type->tuple.type_count, false);
     }
     assert(false);
 }
@@ -321,6 +325,7 @@ static codegen_value_t cg_expr(codegen_state_t *state, codegen_scope_t *scope, i
         case IR_NODE_TYPE_EXPR_UNARY: assert(false);
         case IR_NODE_TYPE_EXPR_VARIABLE: return cg_expr_variable(state, scope, node);
         case IR_NODE_TYPE_EXPR_CALL: return cg_expr_call(state, scope, node);
+        case IR_NODE_TYPE_EXPR_TUPLE: assert(false);
     }
     assert(false);
 }
@@ -342,6 +347,7 @@ static void cg(codegen_state_t *state, codegen_scope_t *scope, ir_node_t *node) 
         case IR_NODE_TYPE_EXPR_BINARY:
         case IR_NODE_TYPE_EXPR_UNARY:
         case IR_NODE_TYPE_EXPR_VARIABLE:
+        case IR_NODE_TYPE_EXPR_TUPLE:
         case IR_NODE_TYPE_EXPR_CALL:
             assert(false);
     }
