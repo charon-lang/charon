@@ -123,17 +123,23 @@ static ir_node_t *parse_literal_bool(tokenizer_t *tokenizer) {
     return ir_node_make_expr_literal_bool(util_token_cmp(tokenizer, token_bool, "true") == 0, UTIL_SRCLOC(tokenizer, token_bool));
 }
 
-static ir_node_t *parse_group(tokenizer_t *tokenizer) {
-    util_consume(tokenizer, TOKEN_KIND_PARENTHESES_LEFT);
-    ir_node_t *inner = parser_expr(tokenizer);
-    util_consume(tokenizer, TOKEN_KIND_PARENTHESES_RIGHT);
-    return inner;
-}
-
 static ir_node_t *parse_primary(tokenizer_t *tokenizer) {
     token_t token = tokenizer_peek(tokenizer);
     switch(token.kind) {
-        case TOKEN_KIND_PARENTHESES_LEFT: return parse_group(tokenizer);
+        case TOKEN_KIND_PARENTHESES_LEFT:
+            token_t token_left_paren = util_consume(tokenizer, TOKEN_KIND_PARENTHESES_LEFT);
+            ir_node_t *value = parser_expr(tokenizer);
+            if(util_try_consume(tokenizer, TOKEN_KIND_COMMA)) {
+                ir_node_list_t values = IR_NODE_LIST_INIT;
+                ir_node_list_append(&values, value);
+                do {
+                    ir_node_list_append(&values, parser_expr(tokenizer));
+                } while(util_try_consume(tokenizer, TOKEN_KIND_COMMA));
+                util_consume(tokenizer, TOKEN_KIND_PARENTHESES_RIGHT);
+                return ir_node_make_expr_tuple(values, UTIL_SRCLOC(tokenizer, token_left_paren));
+            }
+            util_consume(tokenizer, TOKEN_KIND_PARENTHESES_RIGHT);
+            return value;
         case TOKEN_KIND_IDENTIFIER:
             token_t token_name = util_consume(tokenizer, TOKEN_KIND_IDENTIFIER);
             const char *name = util_text_make_from_token(tokenizer, token_name);

@@ -14,4 +14,7 @@
 
     let test: *char;
     let test: **char;
+
+    let test: (u8, i32);
+    let test: (i32, (u8, *char));
 }
