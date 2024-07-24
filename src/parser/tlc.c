@@ -7,7 +7,7 @@
 #include <stdlib.h>
 
 static ir_node_t *parse_function(tokenizer_t *tokenizer) {
-    source_location_t source_location = UTIL_SRCLOC(tokenizer, util_consume(tokenizer, TOKEN_KIND_KEYWORD_FUNCTION));
+    source_location_t source_location = util_loc(tokenizer, util_consume(tokenizer, TOKEN_KIND_KEYWORD_FUNCTION));
 
     ir_function_t *prototype = ir_function_make(util_text_make_from_token(tokenizer, util_consume(tokenizer, TOKEN_KIND_IDENTIFIER)));
     util_consume(tokenizer, TOKEN_KIND_PARENTHESES_LEFT);
@@ -42,7 +42,7 @@ ir_node_t *parser_tlc(tokenizer_t *tokenizer) {
     token_t token = tokenizer_peek(tokenizer);
     switch(token.kind) {
         case TOKEN_KIND_KEYWORD_FUNCTION: return parse_function(tokenizer);
-        default: diag_error(UTIL_SRCLOC(tokenizer, token), "expected top level construct, got %s", token_kind_tostring(token.kind));
+        default: diag_error(util_loc(tokenizer, token), "expected top level construct, got %s", token_kind_tostring(token.kind));
     }
     __builtin_unreachable();
 }

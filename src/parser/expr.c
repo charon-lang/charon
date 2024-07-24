@@ -64,9 +64,9 @@ static ir_node_t *helper_binary_operation(tokenizer_t *tokenizer, ir_node_t *(*f
             case TOKEN_KIND_LESS_EQUAL: operation = IR_NODE_BINARY_OPERATION_LESS_EQUAL; break;
             case TOKEN_KIND_EQUAL_EQUAL: operation = IR_NODE_BINARY_OPERATION_EQUAL; break;
             case TOKEN_KIND_NOT_EQUAL: operation = IR_NODE_BINARY_OPERATION_NOT_EQUAL; break;
-            default: diag_error(UTIL_SRCLOC(tokenizer, token_operation), "expected a binary operator");
+            default: diag_error(util_loc(tokenizer, token_operation), "expected a binary operator");
         }
-        left = ir_node_make_expr_binary(operation, left, func(tokenizer), UTIL_SRCLOC(tokenizer, token_operation));
+        left = ir_node_make_expr_binary(operation, left, func(tokenizer), util_loc(tokenizer, token_operation));
         va_end(list);
         va_start(list, count);
     }
@@ -82,24 +82,24 @@ static ir_node_t *parse_literal_numeric(tokenizer_t *tokenizer) {
         case TOKEN_KIND_CONST_NUMBER_HEX: base = 16; break;
         case TOKEN_KIND_CONST_NUMBER_BIN: base = 2; break;
         case TOKEN_KIND_CONST_NUMBER_OCT: base = 8; break;
-        default: diag_error(UTIL_SRCLOC(tokenizer, token_numeric), "expected a numeric literal");
+        default: diag_error(util_loc(tokenizer, token_numeric), "expected a numeric literal");
     }
     char *text = util_text_make_from_token(tokenizer, token_numeric);
     errno = 0;
     char *stripped = text;
     if(base != 10) stripped += 2;
     uintmax_t value = strtoull(stripped, NULL, base);
-    if(errno == ERANGE) diag_error(UTIL_SRCLOC(tokenizer, token_numeric), "numeric constant too large");
+    if(errno == ERANGE) diag_error(util_loc(tokenizer, token_numeric), "numeric constant too large");
     free(text);
-    return ir_node_make_expr_literal_numeric(value, UTIL_SRCLOC(tokenizer, token_numeric));
+    return ir_node_make_expr_literal_numeric(value, util_loc(tokenizer, token_numeric));
 }
 
 static ir_node_t *parse_literal_string(tokenizer_t *tokenizer) {
     token_t token_string = util_consume(tokenizer, TOKEN_KIND_CONST_STRING);
     char *text = util_text_make_from_token(tokenizer, token_string);
-    char *value = helper_string_escape(&text[1], strlen(text) - 2, UTIL_SRCLOC(tokenizer, token_string));
+    char *value = helper_string_escape(&text[1], strlen(text) - 2, util_loc(tokenizer, token_string));
     free(text);
-    return ir_node_make_expr_literal_string(value, UTIL_SRCLOC(tokenizer, token_string));
+    return ir_node_make_expr_literal_string(value, util_loc(tokenizer, token_string));
 }
 
 static ir_node_t *parse_literal_string_raw(tokenizer_t *tokenizer) {
@@ -107,7 +107,7 @@ static ir_node_t *parse_literal_string_raw(tokenizer_t *tokenizer) {
     char *text = util_text_make_from_token(tokenizer, token_string);
     char *value = strndup(text + 2, strlen(text) - 4);
     free(text);
-    return ir_node_make_expr_literal_string(value, UTIL_SRCLOC(tokenizer, token_string));
+    return ir_node_make_expr_literal_string(value, util_loc(tokenizer, token_string));
 }
 
 static ir_node_t *parse_literal_char(tokenizer_t *tokenizer) {
@@ -115,12 +115,12 @@ static ir_node_t *parse_literal_char(tokenizer_t *tokenizer) {
     char *text = util_text_make_from_token(tokenizer, token_char);
     char value = text[1];
     free(text);
-    return ir_node_make_expr_literal_char(value, UTIL_SRCLOC(tokenizer, token_char));
+    return ir_node_make_expr_literal_char(value, util_loc(tokenizer, token_char));
 }
 
 static ir_node_t *parse_literal_bool(tokenizer_t *tokenizer) {
     token_t token_bool = util_consume(tokenizer, TOKEN_KIND_CONST_BOOL);
-    return ir_node_make_expr_literal_bool(util_token_cmp(tokenizer, token_bool, "true") == 0, UTIL_SRCLOC(tokenizer, token_bool));
+    return ir_node_make_expr_literal_bool(util_token_cmp(tokenizer, token_bool, "true") == 0, util_loc(tokenizer, token_bool));
 }
 
 static ir_node_t *parse_primary(tokenizer_t *tokenizer) {
@@ -136,14 +136,14 @@ static ir_node_t *parse_primary(tokenizer_t *tokenizer) {
                     ir_node_list_append(&values, parser_expr(tokenizer));
                 } while(util_try_consume(tokenizer, TOKEN_KIND_COMMA));
                 util_consume(tokenizer, TOKEN_KIND_PARENTHESES_RIGHT);
-                return ir_node_make_expr_tuple(values, UTIL_SRCLOC(tokenizer, token_left_paren));
+                return ir_node_make_expr_tuple(values, util_loc(tokenizer, token_left_paren));
             }
             util_consume(tokenizer, TOKEN_KIND_PARENTHESES_RIGHT);
             return value;
         case TOKEN_KIND_IDENTIFIER:
             token_t token_name = util_consume(tokenizer, TOKEN_KIND_IDENTIFIER);
             const char *name = util_text_make_from_token(tokenizer, token_name);
-            if(!util_try_consume(tokenizer, TOKEN_KIND_PARENTHESES_LEFT)) return ir_node_make_expr_variable(name, UTIL_SRCLOC(tokenizer, token_name));
+            if(!util_try_consume(tokenizer, TOKEN_KIND_PARENTHESES_LEFT)) return ir_node_make_expr_variable(name, util_loc(tokenizer, token_name));
 
             ir_node_list_t arguments = IR_NODE_LIST_INIT;
             if(tokenizer_peek(tokenizer).kind != TOKEN_KIND_PARENTHESES_RIGHT) {
@@ -152,7 +152,7 @@ static ir_node_t *parse_primary(tokenizer_t *tokenizer) {
                 } while(util_try_consume(tokenizer, TOKEN_KIND_COMMA));
             }
             util_consume(tokenizer, TOKEN_KIND_PARENTHESES_RIGHT);
-            return ir_node_make_expr_call(name, arguments, UTIL_SRCLOC(tokenizer, token_name));
+            return ir_node_make_expr_call(name, arguments, util_loc(tokenizer, token_name));
         case TOKEN_KIND_CONST_STRING: return parse_literal_string(tokenizer);
         case TOKEN_KIND_CONST_STRING_RAW: return parse_literal_string_raw(tokenizer);
         case TOKEN_KIND_CONST_CHAR: return parse_literal_char(tokenizer);
@@ -162,7 +162,7 @@ static ir_node_t *parse_primary(tokenizer_t *tokenizer) {
         case TOKEN_KIND_CONST_NUMBER_BIN:
         case TOKEN_KIND_CONST_NUMBER_OCT:
             return parse_literal_numeric(tokenizer);
-        default: diag_error(UTIL_SRCLOC(tokenizer, token), "expected primary, got %s", token_kind_tostring(token.kind));
+        default: diag_error(util_loc(tokenizer, token), "expected primary, got %s", token_kind_tostring(token.kind));
     }
     __builtin_unreachable();
 }
@@ -177,7 +177,7 @@ static ir_node_t *parse_unary(tokenizer_t *tokenizer) {
         default: return parse_primary(tokenizer);
     }
     token_t token_operator = tokenizer_advance(tokenizer);
-    return ir_node_make_expr_unary(operation, parse_unary(tokenizer), UTIL_SRCLOC(tokenizer, token_operator));
+    return ir_node_make_expr_unary(operation, parse_unary(tokenizer), util_loc(tokenizer, token_operator));
 }
 
 static ir_node_t *parse_factor(tokenizer_t *tokenizer) {

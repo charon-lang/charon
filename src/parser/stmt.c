@@ -8,7 +8,7 @@ static ir_node_t *parse_expression(tokenizer_t *tokenizer) {
 }
 
 static ir_node_t *parse_declaration(tokenizer_t *tokenizer) {
-    source_location_t source_location = UTIL_SRCLOC(tokenizer, util_consume(tokenizer, TOKEN_KIND_KEYWORD_LET));
+    source_location_t source_location = util_loc(tokenizer, util_consume(tokenizer, TOKEN_KIND_KEYWORD_LET));
     token_t token_name = util_consume(tokenizer, TOKEN_KIND_IDENTIFIER);
     ir_type_t *type = NULL;
     if(util_try_consume(tokenizer, TOKEN_KIND_COLON)) type = util_parse_type(tokenizer);
@@ -28,7 +28,7 @@ static ir_node_t *parse_simple(tokenizer_t *tokenizer) {
 }
 
 static ir_node_t *parse_block(tokenizer_t *tokenizer) {
-    source_location_t source_location = UTIL_SRCLOC(tokenizer, util_consume(tokenizer, TOKEN_KIND_BRACE_LEFT));
+    source_location_t source_location = util_loc(tokenizer, util_consume(tokenizer, TOKEN_KIND_BRACE_LEFT));
     ir_node_list_t statements = IR_NODE_LIST_INIT;
     while(!util_try_consume(tokenizer, TOKEN_KIND_BRACE_RIGHT)) ir_node_list_append(&statements, parser_stmt(tokenizer));
     return ir_node_make_stmt_block(statements, source_location);

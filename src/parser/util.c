@@ -6,6 +6,10 @@
 #include <string.h>
 #include <stdlib.h>
 
+source_location_t util_loc(tokenizer_t *tokenizer, token_t token) {
+    return (source_location_t) { .source = tokenizer->source, .offset = token.offset, .length = token.size };
+}
+
 bool util_try_consume(tokenizer_t *tokenizer, token_kind_t kind) {
     if(tokenizer_peek(tokenizer).kind == kind) {
         tokenizer_advance(tokenizer);
@@ -17,7 +21,7 @@ bool util_try_consume(tokenizer_t *tokenizer, token_kind_t kind) {
 token_t util_consume(tokenizer_t *tokenizer, token_kind_t kind) {
     token_t token = tokenizer_advance(tokenizer);
     if(token.kind == kind) return token;
-    diag_error(UTIL_SRCLOC(tokenizer, token), "expected %s got %s", token_kind_tostring(kind), token_kind_tostring(token.kind));
+    diag_error(util_loc(tokenizer, token), "expected %s got %s", token_kind_tostring(kind), token_kind_tostring(token.kind));
 }
 
 char *util_text_make_from_token(tokenizer_t *tokenizer, token_t token) {
@@ -56,5 +60,5 @@ ir_type_t *util_parse_type(tokenizer_t *tokenizer) {
     if(util_token_cmp(tokenizer, token_primitive_type, "i16") == 0) return ir_type_get_i16();
     if(util_token_cmp(tokenizer, token_primitive_type, "i32") == 0) return ir_type_get_i32();
     if(util_token_cmp(tokenizer, token_primitive_type, "i64") == 0) return ir_type_get_i64();
-    diag_error(UTIL_SRCLOC(tokenizer, token_primitive_type), "invalid type `%s`", util_text_make_from_token(tokenizer, token_primitive_type));
+    diag_error(util_loc(tokenizer, token_primitive_type), "invalid type `%s`", util_text_make_from_token(tokenizer, token_primitive_type));
 }
