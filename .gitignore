@@ -2,8 +2,7 @@
 .ccls-cache/
 compile_commands.json
 
-build/
-tests/out.ll
+out.ll
 
 tests/runners/*
 !tests/runners/*.c

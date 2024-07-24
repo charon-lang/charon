@@ -13,4 +13,4 @@ tests/runners/%: tests/runners/%.c
 	@ $(CC) -I./src $(CFLAGS) -g -o $@ $< $(C_SOURCES)
 
 clean:
-	@ rm $(shell find tests/runners/* ! -name "*.c")
+	@ rm -f $(shell find tests/runners/* ! -name "*.c")
