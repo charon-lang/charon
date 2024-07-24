@@ -111,7 +111,7 @@ static codegen_function_t *state_add_function(codegen_state_t *state, ir_functio
 }
 
 static codegen_function_t *state_get_function(codegen_state_t *state, const char *name) {
-    for(size_t i = 0; state->function_count; i++) {
+    for(size_t i = 0; i < state->function_count; i++) {
         if(strcmp(state->functions[i].prototype->name, name) != 0) continue;
         return &state->functions[i];
     }
@@ -296,13 +296,13 @@ static codegen_value_t cg_expr_call(codegen_state_t *state, codegen_scope_t *sco
     LLVMValueRef arguments[node->expr_call.arguments.count];
     IR_NODE_LIST_FOREACH(&node->expr_call.arguments, {
         codegen_value_t argument = cg_expr(state, scope, node);
-        if(!ir_type_eq(argument.type, fn->prototype->arguments[i].type)) diag_error(node->source_location, "argument has invalid type");
+        if(fn->prototype->argument_count > i && !ir_type_eq(argument.type, fn->prototype->arguments[i].type)) diag_error(node->source_location, "argument has invalid type");
         arguments[i] = argument.value;
     });
 
     return (codegen_value_t) {
         .type = fn->prototype->return_type,
-        .value = LLVMBuildCall2(state->builder, fn->type, fn->ref, arguments, argument_count, "expr.call")
+        .value = LLVMBuildCall2(state->builder, fn->type, fn->ref, arguments, argument_count, "")
     };
 }
 
@@ -362,7 +362,11 @@ void codegen(ir_node_t *node, const char *dest, const char *passes) {
     state.functions = NULL;
 
     // TODO: temporarily add printf
-    LLVMAddFunction(state.module, "printf", LLVMFunctionType(LLVMIntTypeInContext(state.context, 32), (LLVMTypeRef[]) { LLVMPointerTypeInContext(state.context, 0) }, 1, true));
+    ir_function_t *printf_prototype = ir_function_make("printf");
+    ir_function_add_argument(printf_prototype, "fmt", ir_type_pointer_make(ir_type_get_char()));
+    printf_prototype->return_type = ir_type_get_i32();
+    printf_prototype->varargs = true;
+    state_add_function(&state, printf_prototype);
 
     cg(&state, NULL, node);
 
