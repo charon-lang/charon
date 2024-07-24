@@ -103,6 +103,7 @@ run_all_parse() {
     echo "| Running Parse Tests"
     for TEST_FILE in tests/parse/*.test; do run_parse $TEST_FILE; done
     echo "| Done"
+    make clean
 }
 
 run_all_exec() {
@@ -110,6 +111,7 @@ run_all_exec() {
     echo "| Running Execution Tests"
     for TEST_FILE in tests/exec/*.test; do run_exec $TEST_FILE; done
     echo "| Done"
+    make clean
 }
 
 case $MODE in
