@@ -186,6 +186,14 @@ static ir_node_t *parse_unary(tokenizer_t *tokenizer) {
                 util_consume(tokenizer, TOKEN_KIND_BRACKET_RIGHT);
                 value = ir_node_make_expr_access_index(value, index, util_loc(tokenizer, token));
             }
+            if(util_try_consume(tokenizer, TOKEN_KIND_PERIOD)) {
+                token_t token_index = util_consume(tokenizer, TOKEN_KIND_CONST_NUMBER_DEC);
+                char *text = util_text_make_from_token(tokenizer, token_index);
+                uintmax_t index = strtoull(text, NULL, 10);
+                if(errno == ERANGE) diag_error(util_loc(tokenizer, token_index), "index too large");
+                free(text);
+                value = ir_node_make_expr_access_index_const(value, index, util_loc(tokenizer, token));
+            }
             return value;
     }
     token_t token_operator = tokenizer_advance(tokenizer);
