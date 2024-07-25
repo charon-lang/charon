@@ -165,16 +165,19 @@ static void cg_stmt_declaration(codegen_state_t *state, codegen_scope_t *scope, 
     ir_type_t *type = node->stmt_declaration.type;
     if(node->stmt_declaration.initial != NULL) {
         codegen_value_t cg_value = cg_expr(state, scope, node->stmt_declaration.initial);
-        if(!ir_type_eq(cg_value.type, type)) diag_error(node->source_location, "declarations initial value does not match its explicit type");
+        if(type == NULL) {
+            type = cg_value.type;
+        } else {
+            if(!ir_type_eq(cg_value.type, type)) diag_error(node->source_location, "declarations initial value does not match its explicit type");
+        }
         value = cg_value.value;
-        if(type == NULL) type = cg_value.type;
     }
     if(type == NULL) diag_error(node->source_location, "declaration is missing both an explicit and inferred type");
 
     LLVMBasicBlockRef bb_entry = LLVMGetEntryBasicBlock(func_parent);
     LLVMBuilderRef entry_builder = LLVMCreateBuilderInContext(state->context);
     LLVMPositionBuilder(entry_builder, bb_entry, LLVMGetFirstInstruction(bb_entry));
-    LLVMValueRef ref = LLVMBuildAlloca(entry_builder, llvm_type(state, node->stmt_declaration.type), node->stmt_declaration.name);
+    LLVMValueRef ref = LLVMBuildAlloca(entry_builder, llvm_type(state, type), node->stmt_declaration.name);
     LLVMDisposeBuilder(entry_builder);
     if(value != NULL) LLVMBuildStore(state->builder, value, ref);
 
@@ -321,6 +324,32 @@ static codegen_value_t cg_expr_tuple(codegen_state_t *state, codegen_scope_t *sc
     };
 }
 
+static codegen_value_t cg_expr_cast(codegen_state_t *state, codegen_scope_t *scope, ir_node_t *node) {
+    codegen_value_t value = cg_expr(state, scope, node->expr_cast.value);
+    if(ir_type_eq(node->expr_cast.type, value.type)) return value;
+
+    ir_type_t *type_to = node->expr_cast.type;
+    ir_type_t *type_from = value.type;
+
+    if(node->expr_cast.type->kind == IR_TYPE_KIND_INTEGER && value.type->kind == IR_TYPE_KIND_INTEGER) {
+        if(type_from->integer.bit_size == type_to->integer.bit_size) return value;
+
+        LLVMValueRef value_to;
+        if(type_from->integer.bit_size > type_to->integer.bit_size) {
+            value_to = LLVMBuildTrunc(state->builder, value.value, llvm_type(state, type_to), "cast.trunc");
+        } else {
+            if(type_to->integer.is_signed) {
+                value_to = LLVMBuildSExt(state->builder, value.value, llvm_type(state, type_to), "cast.sext");
+            } else {
+                value_to = LLVMBuildZExt(state->builder, value.value, llvm_type(state, type_to), "cast.zext");
+            }
+        }
+        return (codegen_value_t) { .type = type_to, .value = value_to };
+    }
+
+    diag_error(node->source_location, "invalid cast");
+}
+
 static codegen_value_t cg_expr(codegen_state_t *state, codegen_scope_t *scope, ir_node_t *node) {
     switch(node->type) {
         case IR_NODE_TYPE_ROOT:
@@ -341,6 +370,7 @@ static codegen_value_t cg_expr(codegen_state_t *state, codegen_scope_t *scope, i
         case IR_NODE_TYPE_EXPR_VARIABLE: return cg_expr_variable(state, scope, node);
         case IR_NODE_TYPE_EXPR_CALL: return cg_expr_call(state, scope, node);
         case IR_NODE_TYPE_EXPR_TUPLE: return cg_expr_tuple(state, scope, node);
+        case IR_NODE_TYPE_EXPR_CAST: return cg_expr_cast(state, scope, node);
     }
     assert(false);
 }
@@ -364,6 +394,7 @@ static void cg(codegen_state_t *state, codegen_scope_t *scope, ir_node_t *node) 
         case IR_NODE_TYPE_EXPR_VARIABLE:
         case IR_NODE_TYPE_EXPR_TUPLE:
         case IR_NODE_TYPE_EXPR_CALL:
+        case IR_NODE_TYPE_EXPR_CAST:
             assert(false);
     }
 }
