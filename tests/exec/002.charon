@@ -2,10 +2,11 @@ fn test(x: u64) {
     printf("test > %i\n", x);
 }
 
-fn other_test(a: (u8, u32)) {
+fn other_test(a: (u64, u64)) {
 
 }
 
 fn main(argc: i32, argv: *char) {
     test(500);
+    other_test((25, 500));
 }
