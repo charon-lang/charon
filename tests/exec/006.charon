@@ -1,0 +1,18 @@
+fn x(): uint {
+    return 5;
+}
+
+fn add(a: uint, b: uint): uint {
+    return a + b;
+}
+
+fn z() {
+    return;
+    printf("unreachable\n");
+}
+
+fn main() {
+    printf("> %lu\n", x());
+    printf("> %lu\n", add(5, 10));
+    z():
+}

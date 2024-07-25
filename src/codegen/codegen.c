@@ -38,6 +38,7 @@ typedef struct {
     codegen_function_t *functions;
     size_t function_count;
 
+    ir_type_t *current_function_return_type;
     bool current_function_returned;
 } codegen_state_t;
 
@@ -136,6 +137,7 @@ static void cg_tlc_function(codegen_state_t *state, codegen_scope_t *scope, ir_n
     LLVMBasicBlockRef bb_entry = LLVMAppendBasicBlockInContext(state->context, fn->ref, "tlc.function");
     LLVMPositionBuilderAtEnd(state->builder, bb_entry);
 
+    state->current_function_return_type = node->tlc_function.prototype->return_type;
     state->current_function_returned = false;
     scope = scope_enter(scope);
     for(size_t i = 0; i < node->tlc_function.prototype->argument_count; i++) {
@@ -182,6 +184,16 @@ static void cg_stmt_declaration(codegen_state_t *state, codegen_scope_t *scope, 
     if(value != NULL) LLVMBuildStore(state->builder, value, ref);
 
     scope_add_variable(scope, node->stmt_declaration.name, type, ref);
+}
+
+static void cg_stmt_return(codegen_state_t *state, codegen_scope_t *scope, ir_node_t *node) {
+    assert(false);
+    // TODO: implement
+    // state->current_function_returned = true;
+    // if(state->current_function_return_type->kind == IR_TYPE_KIND_VOID) {
+
+    // }
+    // codegen_value_t value = cg_expr(node->stmt_return.value);
 }
 
 static codegen_value_t cg_expr_literal_numeric(codegen_state_t *state, codegen_scope_t *scope, ir_node_t *node) {
@@ -385,6 +397,7 @@ static codegen_value_t cg_expr_cast(codegen_state_t *state, codegen_scope_t *sco
 }
 
 static codegen_value_t cg_expr_access_index(codegen_state_t *state, codegen_scope_t *scope, ir_node_t *node) {
+    // TODO: implement when arrays
     // codegen_value_t value_index = cg_expr(state, scope, node->expr_access_index.index);
     // codegen_value_t value = cg_expr(state, scope, node->expr_access_index.value);
     // LLVMBuildGEP2(state->builder, llvm_type(state, value.type), value.value, (LLVMValueRef[]) { LLVMConstInt(ir_type_get_uint(), 0, false), value_index.value }, 2, "expr.access_index");
@@ -421,6 +434,7 @@ static codegen_value_t cg_expr(codegen_state_t *state, codegen_scope_t *scope, i
         case IR_NODE_TYPE_STMT_BLOCK:
         case IR_NODE_TYPE_STMT_DECLARATION:
         case IR_NODE_TYPE_STMT_EXPRESSION:
+        case IR_NODE_TYPE_STMT_RETURN:
             assert(false);
 
         case IR_NODE_TYPE_EXPR_LITERAL_NUMERIC: return cg_expr_literal_numeric(state, scope, node);
@@ -448,6 +462,7 @@ static void cg(codegen_state_t *state, codegen_scope_t *scope, ir_node_t *node) 
         case IR_NODE_TYPE_STMT_BLOCK: cg_stmt_block(state, scope, node); break;
         case IR_NODE_TYPE_STMT_DECLARATION: cg_stmt_declaration(state, scope, node); break;
         case IR_NODE_TYPE_STMT_EXPRESSION: cg_expr(state, scope, node->stmt_expression.expression); break;
+        case IR_NODE_TYPE_STMT_RETURN: assert(false);
 
         case IR_NODE_TYPE_EXPR_LITERAL_NUMERIC:
         case IR_NODE_TYPE_EXPR_LITERAL_STRING:
