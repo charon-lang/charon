@@ -279,6 +279,38 @@ static codegen_value_t cg_expr_binary(codegen_state_t *state, codegen_scope_t *s
     }
 }
 
+static codegen_value_t cg_expr_unary(codegen_state_t *state, codegen_scope_t *scope, ir_node_t *node) {
+    if(node->expr_unary.operation == IR_NODE_UNARY_OPERATION_REF) {
+        if(node->expr_unary.operand->type != IR_NODE_TYPE_EXPR_VARIABLE) diag_error(node->source_location, "references can only be made to variables");
+        codegen_variable_t *var = scope_get_variable(scope, node->expr_unary.operand->expr_variable.name);
+        return (codegen_value_t) {
+            .type = ir_type_pointer_make(var->type),
+            .value = var->ref
+        };
+    }
+
+    codegen_value_t operand = cg_expr(state, scope, node->expr_unary.operand);
+    switch(node->expr_unary.operation) {
+        case IR_NODE_UNARY_OPERATION_DEREF:
+            if(operand.type->kind != IR_TYPE_KIND_POINTER) diag_error(node->source_location, "unary operation \"dereference\" on a non-pointer value");
+            ir_type_t *type = operand.type->pointer.referred;
+            return (codegen_value_t) {
+                .type = type,
+                .value = LLVMBuildLoad2(state->builder, llvm_type(state, type), operand.value, "")
+            };
+        case IR_NODE_UNARY_OPERATION_NOT:
+            if(operand.type->kind != IR_TYPE_KIND_INTEGER) diag_error(node->source_location, "unary operation \"not\" on a non-numeric value");
+            return (codegen_value_t) {
+                .type = ir_type_get_bool(),
+                .value = LLVMBuildICmp(state->builder, LLVMIntEQ, operand.value, LLVMConstInt(llvm_type(state, operand.type), 0, false), "")
+            };
+        case IR_NODE_UNARY_OPERATION_NEGATIVE:
+            if(operand.type->kind != IR_TYPE_KIND_INTEGER) diag_error(node->source_location, "unary operation \"negative\" on a non-numeric value");
+            return (codegen_value_t) { .type = operand.type, .value = LLVMBuildNeg(state->builder, operand.value, "") };
+        default: assert(false);
+    }
+}
+
 static codegen_value_t cg_expr_variable(codegen_state_t *state, codegen_scope_t *scope, ir_node_t *node) {
     codegen_variable_t *var = scope_get_variable(scope, node->expr_variable.name);
     if(var == NULL) diag_error(node->source_location, "referenced an undefined variable `%s`", node->expr_variable.name);
@@ -368,7 +400,7 @@ static codegen_value_t cg_expr(codegen_state_t *state, codegen_scope_t *scope, i
         case IR_NODE_TYPE_EXPR_LITERAL_CHAR: return cg_expr_literal_char(state, scope, node);
         case IR_NODE_TYPE_EXPR_LITERAL_BOOL: return cg_expr_literal_bool(state, scope, node);
         case IR_NODE_TYPE_EXPR_BINARY: return cg_expr_binary(state, scope, node);
-        case IR_NODE_TYPE_EXPR_UNARY: assert(false);
+        case IR_NODE_TYPE_EXPR_UNARY: return cg_expr_unary(state, scope, node);
         case IR_NODE_TYPE_EXPR_VARIABLE: return cg_expr_variable(state, scope, node);
         case IR_NODE_TYPE_EXPR_CALL: return cg_expr_call(state, scope, node);
         case IR_NODE_TYPE_EXPR_TUPLE: return cg_expr_tuple(state, scope, node);

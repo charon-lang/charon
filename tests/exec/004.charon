@@ -1,0 +1,10 @@
+fn main(argc: i32, argv: *char) {
+    let x: int = 100 as int;
+
+    printf("> %i\n", -x);
+    printf("> %i\n", !x);
+
+    let z = 500;
+    let zp = &z;
+    printf("> %#lu", *zp);
+}
