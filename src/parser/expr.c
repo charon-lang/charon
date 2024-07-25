@@ -181,6 +181,11 @@ static ir_node_t *parse_unary(tokenizer_t *tokenizer) {
                 ir_type_t *type = util_parse_type(tokenizer);
                 value = ir_node_make_expr_cast(value, type, util_loc(tokenizer, token));
             }
+            if(util_try_consume(tokenizer, TOKEN_KIND_BRACKET_LEFT)) {
+                ir_node_t *index = parser_expr(tokenizer);
+                util_consume(tokenizer, TOKEN_KIND_BRACKET_RIGHT);
+                value = ir_node_make_expr_access_index(value, index, util_loc(tokenizer, token));
+            }
             return value;
     }
     token_t token_operator = tokenizer_advance(tokenizer);
