@@ -6,6 +6,7 @@ TOKEN(KEYWORD_WHILE,    "while",    "^while"    )
 TOKEN(KEYWORD_STRUCT,   "struct",   "^struct"   )
 TOKEN(KEYWORD_FUNCTION, "fn",       "^fn"       )
 TOKEN(KEYWORD_LET,      "let",      "^let"      )
+TOKEN(KEYWORD_AS,       "as",       "^as"       )
 
 // Constants
 TOKEN(CONST_NUMBER_HEX, "number",   "^0x[a-fA-F\\d]+"   )
