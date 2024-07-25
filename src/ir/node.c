@@ -118,3 +118,10 @@ ir_node_t *ir_node_make_expr_cast(ir_node_t *value, ir_type_t *type, source_loca
     node->expr_cast.type = type;
     return node;
 }
+
+ir_node_t *ir_node_make_expr_access_index(ir_node_t *value, ir_node_t *index, source_location_t source_location) {
+    ir_node_t *node = make_node(IR_NODE_TYPE_EXPR_ACCESS_INDEX, source_location);
+    node->expr_access_index.value = value;
+    node->expr_access_index.index = index;
+    return node;
+}
