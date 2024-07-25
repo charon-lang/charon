@@ -66,6 +66,7 @@ static void print_node(ir_node_t *node, int depth) {
             }
             break;
         case IR_NODE_TYPE_STMT_EXPRESSION: printf("stmt.expression"); break;
+        case IR_NODE_TYPE_STMT_RETURN: printf("stmt.return"); break;
 
         case IR_NODE_TYPE_EXPR_LITERAL_NUMERIC: printf("expr.literal_numeric `%lu`", node->expr_literal.numeric_value); break;
         case IR_NODE_TYPE_EXPR_LITERAL_STRING: printf("expr.literal_string `%s`", node->expr_literal.string_value); break;
@@ -108,6 +109,7 @@ static void print_node(ir_node_t *node, int depth) {
         case IR_NODE_TYPE_STMT_BLOCK: print_list(&node->stmt_block.statements, depth); break;
         case IR_NODE_TYPE_STMT_DECLARATION: print_node(node->stmt_declaration.initial, depth); break;
         case IR_NODE_TYPE_STMT_EXPRESSION: print_node(node->stmt_expression.expression, depth); break;
+        case IR_NODE_TYPE_STMT_RETURN: if(node->stmt_return.value != NULL) print_node(node->stmt_return.value, depth); break;
 
         case IR_NODE_TYPE_EXPR_LITERAL_NUMERIC: break;
         case IR_NODE_TYPE_EXPR_LITERAL_STRING: break;

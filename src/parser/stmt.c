@@ -17,9 +17,17 @@ static ir_node_t *parse_declaration(tokenizer_t *tokenizer) {
     return ir_node_make_stmt_declaration(util_text_make_from_token(tokenizer, token_name), type, initial, source_location);
 }
 
+static ir_node_t *parse_return(tokenizer_t *tokenizer) {
+    token_t token_return = util_consume(tokenizer, TOKEN_KIND_KEYWORD_RETURN);
+    ir_node_t *value = NULL;
+    if(tokenizer_peek(tokenizer).kind != TOKEN_KIND_SEMI_COLON) value = parser_expr(tokenizer);
+    return ir_node_make_stmt_return(value, util_loc(tokenizer, token_return));
+}
+
 static ir_node_t *parse_simple(tokenizer_t *tokenizer) {
     ir_node_t *node;
     switch(tokenizer_peek(tokenizer).kind) {
+        case TOKEN_KIND_KEYWORD_RETURN: node = parse_return(tokenizer); break;
         case TOKEN_KIND_KEYWORD_LET: node = parse_declaration(tokenizer); break;
         default: node = parse_expression(tokenizer); break;
     }

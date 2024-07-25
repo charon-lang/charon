@@ -1,0 +1,13 @@
+stmt
+(stmt.block)
+  (stmt.return)
+  (stmt.return)
+    (expr.literal_numeric `5`)
+  (stmt.return)
+    (expr.binary `+`)
+      (expr.variable `a`)
+      (expr.literal_numeric `5`)
+  (stmt.return)
+    (expr.tuple)
+      (expr.literal_numeric `5`)
+      (expr.literal_numeric `6`)
