@@ -325,23 +325,25 @@ static codegen_value_t cg_expr_tuple(codegen_state_t *state, codegen_scope_t *sc
 }
 
 static codegen_value_t cg_expr_cast(codegen_state_t *state, codegen_scope_t *scope, ir_node_t *node) {
-    codegen_value_t value = cg_expr(state, scope, node->expr_cast.value);
-    if(ir_type_eq(node->expr_cast.type, value.type)) return value;
+    codegen_value_t value_from = cg_expr(state, scope, node->expr_cast.value);
+    if(ir_type_eq(node->expr_cast.type, value_from.type)) return value_from;
 
     ir_type_t *type_to = node->expr_cast.type;
-    ir_type_t *type_from = value.type;
+    ir_type_t *type_from = value_from.type;
 
-    if(node->expr_cast.type->kind == IR_TYPE_KIND_INTEGER && value.type->kind == IR_TYPE_KIND_INTEGER) {
-        if(type_from->integer.bit_size == type_to->integer.bit_size) return value;
-
+    if(node->expr_cast.type->kind == IR_TYPE_KIND_INTEGER && value_from.type->kind == IR_TYPE_KIND_INTEGER) {
         LLVMValueRef value_to;
-        if(type_from->integer.bit_size > type_to->integer.bit_size) {
-            value_to = LLVMBuildTrunc(state->builder, value.value, llvm_type(state, type_to), "cast.trunc");
+        if(type_from->integer.bit_size == type_to->integer.bit_size) {
+            value_to = value_from.value;
         } else {
-            if(type_to->integer.is_signed) {
-                value_to = LLVMBuildSExt(state->builder, value.value, llvm_type(state, type_to), "cast.sext");
+            if(type_from->integer.bit_size > type_to->integer.bit_size) {
+                value_to = LLVMBuildTrunc(state->builder, value_from.value, llvm_type(state, type_to), "cast.trunc");
             } else {
-                value_to = LLVMBuildZExt(state->builder, value.value, llvm_type(state, type_to), "cast.zext");
+                if(type_to->integer.is_signed) {
+                    value_to = LLVMBuildSExt(state->builder, value_from.value, llvm_type(state, type_to), "cast.sext");
+                } else {
+                    value_to = LLVMBuildZExt(state->builder, value_from.value, llvm_type(state, type_to), "cast.zext");
+                }
             }
         }
         return (codegen_value_t) { .type = type_to, .value = value_to };
