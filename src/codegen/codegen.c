@@ -188,7 +188,7 @@ static codegen_value_t cg_expr_literal_numeric(codegen_state_t *state, codegen_s
     ir_type_t *type = ir_type_get_uint();
     return (codegen_value_t) {
         .type = type,
-        .value = LLVMConstInt(llvm_type(state, type), node->expr_literal.numeric_value, false) // TODO: maybe sign extend sometime?
+        .value = LLVMConstInt(llvm_type(state, type), node->expr_literal.numeric_value, type->integer.is_signed)
     };
 }
 
@@ -204,7 +204,7 @@ static codegen_value_t cg_expr_literal_string(codegen_state_t *state, codegen_sc
     ir_type_t *type = ir_type_pointer_make(ir_type_get_char());
     return (codegen_value_t) {
         .type = type,
-        .value = LLVMBuildGlobalString(state->builder, node->expr_literal.string_value, "expr.literal_string") //   TODO: does this mean only one can be defined
+        .value = LLVMBuildGlobalString(state->builder, node->expr_literal.string_value, "expr.literal_string")
     };
 }
 
