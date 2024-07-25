@@ -111,3 +111,10 @@ ir_node_t *ir_node_make_expr_tuple(ir_node_list_t values, source_location_t sour
     node->expr_tuple.values = values;
     return node;
 }
+
+ir_node_t *ir_node_make_expr_cast(ir_node_t *value, ir_type_t *type, source_location_t source_location) {
+    ir_node_t *node = make_node(IR_NODE_TYPE_EXPR_CAST, source_location);
+    node->expr_cast.value = value;
+    node->expr_cast.type = type;
+    return node;
+}
