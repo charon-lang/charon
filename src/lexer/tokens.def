@@ -23,6 +23,7 @@ TOKEN(IDENTIFIER,   "identifier",   "^[_a-zA-Z][_a-zA-Z0-9]*")
 
 // Punctuation
 TOKEN(TRIPLE_PERIOD,        "...",  "^\\.\\.\\."    )
+TOKEN(PERIOD,               ".",    "^\\."          )
 TOKEN(COLON,                ":",    "^:"            )
 TOKEN(SEMI_COLON,           ";",    "^;"            )
 TOKEN(EQUAL_EQUAL,          "==",   "^=="           )
