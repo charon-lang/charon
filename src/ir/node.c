@@ -125,3 +125,10 @@ ir_node_t *ir_node_make_expr_access_index(ir_node_t *value, ir_node_t *index, so
     node->expr_access_index.index = index;
     return node;
 }
+
+ir_node_t *ir_node_make_expr_access_index_const(ir_node_t *value, uintmax_t index, source_location_t source_location) {
+    ir_node_t *node = make_node(IR_NODE_TYPE_EXPR_ACCESS_INDEX_CONST, source_location);
+    node->expr_access_index_const.value = value;
+    node->expr_access_index_const.index = index;
+    return node;
+}

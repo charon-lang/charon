@@ -28,7 +28,8 @@ typedef enum {
     IR_NODE_TYPE_EXPR_CALL,
     IR_NODE_TYPE_EXPR_TUPLE,
     IR_NODE_TYPE_EXPR_CAST,
-    IR_NODE_TYPE_EXPR_ACCESS_INDEX
+    IR_NODE_TYPE_EXPR_ACCESS_INDEX,
+    IR_NODE_TYPE_EXPR_ACCESS_INDEX_CONST
 } ir_node_type_t;
 
 typedef enum {
@@ -116,6 +117,10 @@ struct ir_node {
             ir_node_t *value;
             ir_node_t *index;
         } expr_access_index;
+        struct {
+            ir_node_t *value;
+            uintmax_t index;
+        } expr_access_index_const;
     };
     struct ir_node *next;
 };
@@ -142,3 +147,4 @@ ir_node_t *ir_node_make_expr_call(const char *function_name, ir_node_list_t argu
 ir_node_t *ir_node_make_expr_tuple(ir_node_list_t values, source_location_t source_location);
 ir_node_t *ir_node_make_expr_cast(ir_node_t *value, ir_type_t *type, source_location_t source_location);
 ir_node_t *ir_node_make_expr_access_index(ir_node_t *value, ir_node_t *index, source_location_t source_location);
+ir_node_t *ir_node_make_expr_access_index_const(ir_node_t *value, uintmax_t index, source_location_t source_location);
