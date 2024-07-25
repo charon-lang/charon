@@ -306,6 +306,21 @@ static codegen_value_t cg_expr_call(codegen_state_t *state, codegen_scope_t *sco
     };
 }
 
+static codegen_value_t cg_expr_tuple(codegen_state_t *state, codegen_scope_t *scope, ir_node_t *node) {
+    LLVMValueRef *values = malloc(node->expr_tuple.values.count * sizeof(LLVMValueRef));
+    ir_type_t **types = malloc(node->expr_tuple.values.count * sizeof(ir_type_t *));
+    IR_NODE_LIST_FOREACH(&node->expr_tuple.values, {
+        codegen_value_t value = cg_expr(state, scope, node);
+        types[i] = value.type;
+        values[i] = value.value;
+    });
+
+    return (codegen_value_t) {
+        .type = ir_type_tuple_make(node->expr_tuple.values.count, types),
+        .value = LLVMConstStructInContext(state->context, values, node->expr_tuple.values.count, false) // TODO: const tuple, tuples should be mutable
+    };
+}
+
 static codegen_value_t cg_expr(codegen_state_t *state, codegen_scope_t *scope, ir_node_t *node) {
     switch(node->type) {
         case IR_NODE_TYPE_ROOT:
@@ -325,7 +340,7 @@ static codegen_value_t cg_expr(codegen_state_t *state, codegen_scope_t *scope, i
         case IR_NODE_TYPE_EXPR_UNARY: assert(false);
         case IR_NODE_TYPE_EXPR_VARIABLE: return cg_expr_variable(state, scope, node);
         case IR_NODE_TYPE_EXPR_CALL: return cg_expr_call(state, scope, node);
-        case IR_NODE_TYPE_EXPR_TUPLE: assert(false);
+        case IR_NODE_TYPE_EXPR_TUPLE: return cg_expr_tuple(state, scope, node);
     }
     assert(false);
 }
