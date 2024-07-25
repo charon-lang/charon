@@ -174,7 +174,14 @@ static ir_node_t *parse_unary(tokenizer_t *tokenizer) {
         case TOKEN_KIND_MINUS: operation = IR_NODE_UNARY_OPERATION_NEGATIVE; break;
         case TOKEN_KIND_NOT: operation = IR_NODE_UNARY_OPERATION_NOT; break;
         case TOKEN_KIND_AMPERSAND: operation = IR_NODE_UNARY_OPERATION_REF; break;
-        default: return parse_primary(tokenizer);
+        default:
+            ir_node_t *value = parse_primary(tokenizer);
+            token_t token = tokenizer_peek(tokenizer);
+            if(util_try_consume(tokenizer, TOKEN_KIND_KEYWORD_AS)) {
+                ir_type_t *type = util_parse_type(tokenizer);
+                value = ir_node_make_expr_cast(value, type, util_loc(tokenizer, token));
+            }
+            return value;
     }
     token_t token_operator = tokenizer_advance(tokenizer);
     return ir_node_make_expr_unary(operation, parse_unary(tokenizer), util_loc(tokenizer, token_operator));

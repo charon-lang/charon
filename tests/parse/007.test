@@ -1,0 +1,11 @@
+stmt
+(stmt.block)
+  (stmt.expression)
+    (expr.cast `uint8`)
+      (expr.literal_numeric `100`)
+  (stmt.expression)
+    (expr.cast `int32`)
+      (expr.literal_numeric `200`)
+  (stmt.expression)
+    (expr.cast `uint16`)
+      (expr.literal_char `c`)

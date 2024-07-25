@@ -76,6 +76,7 @@ static void print_node(ir_node_t *node, int depth) {
         case IR_NODE_TYPE_EXPR_VARIABLE: printf("expr.variable `%s`", node->expr_variable.name); break;
         case IR_NODE_TYPE_EXPR_CALL: printf("expr.call `%s`", node->expr_call.function_name); break;
         case IR_NODE_TYPE_EXPR_TUPLE: printf("expr.tuple"); break;
+        case IR_NODE_TYPE_EXPR_CAST: printf("expr.cast `"); print_type(node->expr_cast.type); printf("`"); break;
     }
     printf(")\n");
 
@@ -115,6 +116,7 @@ static void print_node(ir_node_t *node, int depth) {
         case IR_NODE_TYPE_EXPR_VARIABLE: break;
         case IR_NODE_TYPE_EXPR_CALL: print_list(&node->expr_call.arguments, depth); break;
         case IR_NODE_TYPE_EXPR_TUPLE: print_list(&node->expr_tuple.values, depth); break;
+        case IR_NODE_TYPE_EXPR_CAST: print_node(node->expr_cast.value, depth); break;
     }
 }
 
