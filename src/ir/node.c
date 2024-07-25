@@ -54,6 +54,12 @@ ir_node_t *ir_node_make_stmt_expression(ir_node_t *expression, source_location_t
     return node;
 }
 
+ir_node_t *ir_node_make_stmt_return(ir_node_t *value, source_location_t source_location) {
+    ir_node_t *node = make_node(IR_NODE_TYPE_STMT_RETURN, source_location);
+    node->stmt_return.value = value;
+    return node;
+}
+
 ir_node_t *ir_node_make_expr_literal_numeric(uintmax_t value, source_location_t source_location) {
     ir_node_t *node = make_node(IR_NODE_TYPE_EXPR_LITERAL_NUMERIC, source_location);
     node->expr_literal.numeric_value = value;

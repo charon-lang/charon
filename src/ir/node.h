@@ -17,6 +17,7 @@ typedef enum {
     IR_NODE_TYPE_STMT_BLOCK,
     IR_NODE_TYPE_STMT_DECLARATION,
     IR_NODE_TYPE_STMT_EXPRESSION,
+    IR_NODE_TYPE_STMT_RETURN,
 
     IR_NODE_TYPE_EXPR_LITERAL_NUMERIC,
     IR_NODE_TYPE_EXPR_LITERAL_STRING,
@@ -84,6 +85,9 @@ struct ir_node {
         struct {
             ir_node_t *expression;
         } stmt_expression;
+        struct {
+            ir_node_t *value; // OPTIONAL
+        } stmt_return;
 
         union {
             uintmax_t numeric_value;
@@ -135,6 +139,7 @@ ir_node_t *ir_node_make_tlc_function(ir_function_t *prototype, ir_node_list_t st
 ir_node_t *ir_node_make_stmt_block(ir_node_list_t statements, source_location_t source_location);
 ir_node_t *ir_node_make_stmt_declaration(const char *name, ir_type_t *type, ir_node_t *initial, source_location_t source_location);
 ir_node_t *ir_node_make_stmt_expression(ir_node_t *expression, source_location_t source_location);
+ir_node_t *ir_node_make_stmt_return(ir_node_t *value, source_location_t source_location);
 
 ir_node_t *ir_node_make_expr_literal_numeric(uintmax_t value, source_location_t source_location);
 ir_node_t *ir_node_make_expr_literal_string(const char *value, source_location_t source_location);
