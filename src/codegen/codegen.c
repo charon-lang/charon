@@ -384,6 +384,34 @@ static codegen_value_t cg_expr_cast(codegen_state_t *state, codegen_scope_t *sco
     diag_error(node->source_location, "invalid cast");
 }
 
+static codegen_value_t cg_expr_access_index(codegen_state_t *state, codegen_scope_t *scope, ir_node_t *node) {
+    // codegen_value_t value_index = cg_expr(state, scope, node->expr_access_index.index);
+    // codegen_value_t value = cg_expr(state, scope, node->expr_access_index.value);
+    // LLVMBuildGEP2(state->builder, llvm_type(state, value.type), value.value, (LLVMValueRef[]) { LLVMConstInt(ir_type_get_uint(), 0, false), value_index.value }, 2, "expr.access_index");
+    assert(false);
+}
+
+static codegen_value_t cg_expr_access_index_const(codegen_state_t *state, codegen_scope_t *scope, ir_node_t *node) {
+    codegen_value_t value = cg_expr(state, scope, node->expr_access_index_const.value);
+    ir_type_t *member_type;
+    switch(value.type->kind) {
+        case IR_TYPE_KIND_TUPLE:
+            if(node->expr_access_index_const.index >= value.type->tuple.type_count) diag_error(node->source_location, "index out of bounds");
+            member_type = value.type->tuple.types[node->expr_access_index_const.index];
+            break;
+        default: diag_error(node->source_location, "invalid type for constant indexing");
+    }
+    // TODO: this part feels incredibly wrong
+    LLVMTypeRef type = llvm_type(state, value.type);
+    LLVMValueRef ptr = LLVMBuildAlloca(state->builder, type, "expr.access_index_const.alloca");
+    LLVMBuildStore(state->builder, value.value, ptr);
+    LLVMValueRef member_ptr = LLVMBuildStructGEP2(state->builder, type, ptr, node->expr_access_index_const.index, "expr.access_index_const");
+    return (codegen_value_t) {
+        .type = member_type,
+        .value = LLVMBuildLoad2(state->builder, llvm_type(state, member_type), member_ptr, "expr.access_index_const.load")
+    };
+}
+
 static codegen_value_t cg_expr(codegen_state_t *state, codegen_scope_t *scope, ir_node_t *node) {
     switch(node->type) {
         case IR_NODE_TYPE_ROOT:
@@ -405,6 +433,8 @@ static codegen_value_t cg_expr(codegen_state_t *state, codegen_scope_t *scope, i
         case IR_NODE_TYPE_EXPR_CALL: return cg_expr_call(state, scope, node);
         case IR_NODE_TYPE_EXPR_TUPLE: return cg_expr_tuple(state, scope, node);
         case IR_NODE_TYPE_EXPR_CAST: return cg_expr_cast(state, scope, node);
+        case IR_NODE_TYPE_EXPR_ACCESS_INDEX: return cg_expr_access_index(state, scope, node);
+        case IR_NODE_TYPE_EXPR_ACCESS_INDEX_CONST: return cg_expr_access_index_const(state, scope, node);
     }
     assert(false);
 }
@@ -429,6 +459,8 @@ static void cg(codegen_state_t *state, codegen_scope_t *scope, ir_node_t *node) 
         case IR_NODE_TYPE_EXPR_TUPLE:
         case IR_NODE_TYPE_EXPR_CALL:
         case IR_NODE_TYPE_EXPR_CAST:
+        case IR_NODE_TYPE_EXPR_ACCESS_INDEX:
+        case IR_NODE_TYPE_EXPR_ACCESS_INDEX_CONST:
             assert(false);
     }
 }
