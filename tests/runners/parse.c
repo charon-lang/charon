@@ -77,6 +77,7 @@ static void print_node(ir_node_t *node, int depth) {
         case IR_NODE_TYPE_EXPR_CALL: printf("expr.call `%s`", node->expr_call.function_name); break;
         case IR_NODE_TYPE_EXPR_TUPLE: printf("expr.tuple"); break;
         case IR_NODE_TYPE_EXPR_CAST: printf("expr.cast `"); print_type(node->expr_cast.type); printf("`"); break;
+        case IR_NODE_TYPE_EXPR_ACCESS_INDEX: printf("expr.access_index"); break;
     }
     printf(")\n");
 
@@ -117,6 +118,10 @@ static void print_node(ir_node_t *node, int depth) {
         case IR_NODE_TYPE_EXPR_CALL: print_list(&node->expr_call.arguments, depth); break;
         case IR_NODE_TYPE_EXPR_TUPLE: print_list(&node->expr_tuple.values, depth); break;
         case IR_NODE_TYPE_EXPR_CAST: print_node(node->expr_cast.value, depth); break;
+        case IR_NODE_TYPE_EXPR_ACCESS_INDEX:
+            print_node(node->expr_access_index.value, depth);
+            print_node(node->expr_access_index.index, depth);
+            break;
     }
 }
 
