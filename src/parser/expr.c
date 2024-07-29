@@ -216,6 +216,24 @@ static ir_node_t *parse_equality(tokenizer_t *tokenizer) {
     return helper_binary_operation(tokenizer, parse_comparison, 2, TOKEN_KIND_EQUAL_EQUAL, TOKEN_KIND_NOT_EQUAL);
 }
 
+static ir_node_t *parse_assignment(tokenizer_t *tokenizer) {
+    ir_node_t *left = parse_equality(tokenizer);
+    ir_node_binary_operation_t operation;
+    switch(tokenizer_peek(tokenizer).kind) {
+        case TOKEN_KIND_EQUAL: operation = IR_NODE_BINARY_OPERATION_ASSIGN; break;
+        case TOKEN_KIND_PLUS_EQUAL: operation = IR_NODE_BINARY_OPERATION_ADDITION; break;
+        case TOKEN_KIND_MINUS_EQUAL: operation = IR_NODE_BINARY_OPERATION_SUBTRACTION; break;
+        case TOKEN_KIND_STAR_EQUAL: operation = IR_NODE_BINARY_OPERATION_MULTIPLICATION; break;
+        case TOKEN_KIND_SLASH_EQUAL: operation = IR_NODE_BINARY_OPERATION_DIVISION; break;
+        case TOKEN_KIND_PERCENTAGE_EQUAL: operation = IR_NODE_BINARY_OPERATION_MODULO; break;
+        default: return left;
+    }
+    token_t token_operation = tokenizer_advance(tokenizer);
+    ir_node_t *right = parse_assignment(tokenizer);
+    if(operation != IR_NODE_BINARY_OPERATION_ASSIGN) right = ir_node_make_expr_binary(operation, left, right, util_loc(tokenizer, token_operation));
+    return ir_node_make_expr_binary(IR_NODE_BINARY_OPERATION_ASSIGN, left, right, util_loc(tokenizer, token_operation));
+}
+
 ir_node_t *parser_expr(tokenizer_t *tokenizer) {
-    return parse_equality(tokenizer);
+    return parse_assignment(tokenizer);
 }

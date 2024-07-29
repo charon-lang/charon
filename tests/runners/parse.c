@@ -44,7 +44,7 @@ static void print_node(ir_node_t *node, int depth) {
     if(node == NULL) return;
 
     static const char *binary_op_translations[] = {
-        "+", "-", "*", "/", "%", ">", ">=", "<", "<=", "==", "!=", "="
+        "=", "+", "-", "*", "/", "%", ">", ">=", "<", "<=", "==", "!="
     };
     static const char *unary_op_translations[] = {
         "!", "-", "*", "&"

@@ -1,9 +1,5 @@
 {
-    // Tuples
-    (5, 6);
-    ('h', "hello", 150);
-    (50 * 50, 10 / 2);
-
-    // Groups
-    (10);
+    hello_world();
+    print("hello world");
+    print("hello", " ", "world", 5, x);
 }

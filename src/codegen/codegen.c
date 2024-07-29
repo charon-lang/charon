@@ -280,6 +280,8 @@ static codegen_value_t cg_expr_binary(codegen_state_t *state, codegen_scope_t *s
 
     ir_type_t *type = right.type;
 
+    //  TODO: impl assignment
+
     switch(node->expr_binary.operation) {
         case IR_NODE_BINARY_OPERATION_EQUAL: return (codegen_value_t) {
             .type = ir_type_get_bool(),
