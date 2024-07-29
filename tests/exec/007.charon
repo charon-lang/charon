@@ -1,0 +1,12 @@
+fn main() {
+    printf("hello\n");
+    if(true) {
+        printf("world\n");
+    }
+
+    if(5 > 10) {
+        printf("a\n");
+    } else {
+        printf("b\n");
+    }
+}

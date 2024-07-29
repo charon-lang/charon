@@ -125,8 +125,8 @@ static codegen_value_t cg_expr(codegen_state_t *state, codegen_scope_t *scope, i
 static void cg_list(codegen_state_t *state, codegen_scope_t *scope, ir_node_list_t *list) {
     ir_node_t *node = list->first;
     while(node != NULL) {
+        if(state->current_function_returned) diag_error(node->source_location, "unreachable");
         cg(state, scope, node);
-        if(state->current_function_returned) break;
         node = node->next;
     }
 }
@@ -199,6 +199,46 @@ static void cg_stmt_return(codegen_state_t *state, codegen_scope_t *scope, ir_no
     codegen_value_t value = cg_expr(state, scope, node->stmt_return.value);
     if(!ir_type_eq(value.type, state->current_function_return_type)) diag_error(node->source_location, "invalid type");
     LLVMBuildRet(state->builder, value.value);
+}
+
+static void cg_stmt_if(codegen_state_t *state, codegen_scope_t *scope, ir_node_t *node) {
+    LLVMValueRef func = LLVMGetBasicBlockParent(LLVMGetInsertBlock(state->builder));
+    LLVMBasicBlockRef bb_then = LLVMAppendBasicBlockInContext(state->context, func, "if.then");
+    LLVMBasicBlockRef bb_else = LLVMCreateBasicBlockInContext(state->context, "if.else");
+    LLVMBasicBlockRef bb_end = LLVMCreateBasicBlockInContext(state->context, "if.end");
+
+    codegen_value_t condition = cg_expr(state, scope, node->stmt_if.condition);
+    if(!ir_type_eq(condition.type, ir_type_get_bool())) diag_error(node->stmt_if.condition->source_location, "condition is not a boolean");
+
+    bool create_end = node->stmt_if.else_body == NULL;
+    LLVMBuildCondBr(state->builder, condition.value, bb_then, !create_end ? bb_else : bb_end);
+
+    // Create then, aka body
+    LLVMPositionBuilderAtEnd(state->builder, bb_then);
+    cg(state, scope, node->stmt_if.body);
+    if(LLVMGetBasicBlockTerminator(bb_then) == NULL) {
+        LLVMBuildBr(state->builder, bb_end);
+        create_end = true;
+    }
+    state->current_function_returned = false;
+
+    // Create else body
+    if(node->stmt_if.else_body != NULL) {
+        LLVMAppendExistingBasicBlock(func, bb_else);
+        LLVMPositionBuilderAtEnd(state->builder, bb_else);
+        cg(state, scope, node->stmt_if.else_body);
+        if(LLVMGetBasicBlockTerminator(bb_else) == NULL) {
+            LLVMBuildBr(state->builder, bb_end);
+            create_end = true;
+        }
+    }
+    state->current_function_returned = !create_end;
+
+    // Setup end block
+    if(create_end) {
+        LLVMAppendExistingBasicBlock(func, bb_end);
+        LLVMPositionBuilderAtEnd(state->builder, bb_end);
+    }
 }
 
 static codegen_value_t cg_expr_literal_numeric(codegen_state_t *state, codegen_scope_t *scope, ir_node_t *node) {
@@ -440,6 +480,7 @@ static codegen_value_t cg_expr(codegen_state_t *state, codegen_scope_t *scope, i
         case IR_NODE_TYPE_STMT_DECLARATION:
         case IR_NODE_TYPE_STMT_EXPRESSION:
         case IR_NODE_TYPE_STMT_RETURN:
+        case IR_NODE_TYPE_STMT_IF:
             assert(false);
 
         case IR_NODE_TYPE_EXPR_LITERAL_NUMERIC: return cg_expr_literal_numeric(state, scope, node);
@@ -468,6 +509,7 @@ static void cg(codegen_state_t *state, codegen_scope_t *scope, ir_node_t *node) 
         case IR_NODE_TYPE_STMT_DECLARATION: cg_stmt_declaration(state, scope, node); break;
         case IR_NODE_TYPE_STMT_EXPRESSION: cg_expr(state, scope, node->stmt_expression.expression); break;
         case IR_NODE_TYPE_STMT_RETURN: cg_stmt_return(state, scope, node); break;
+        case IR_NODE_TYPE_STMT_IF: cg_stmt_if(state, scope, node); break;
 
         case IR_NODE_TYPE_EXPR_LITERAL_NUMERIC:
         case IR_NODE_TYPE_EXPR_LITERAL_STRING:
