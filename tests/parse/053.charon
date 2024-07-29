@@ -1,0 +1,8 @@
+{
+    if(true) {
+        hello();
+        let x = 100;
+    }
+    if(5 > 1) a();
+    else b();
+}
