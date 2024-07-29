@@ -14,5 +14,5 @@ fn z() {
 fn main() {
     printf("> %lu\n", x());
     printf("> %lu\n", add(5, 10));
-    z():
+    z();
 }
