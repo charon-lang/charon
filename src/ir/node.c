@@ -60,6 +60,14 @@ ir_node_t *ir_node_make_stmt_return(ir_node_t *value, source_location_t source_l
     return node;
 }
 
+ir_node_t *ir_node_make_stmt_if(ir_node_t *condition, ir_node_t *body, ir_node_t *else_body, source_location_t source_location) {
+    ir_node_t *node = make_node(IR_NODE_TYPE_STMT_IF, source_location);
+    node->stmt_if.condition = condition;
+    node->stmt_if.body = body;
+    node->stmt_if.else_body = else_body;
+    return node;
+}
+
 ir_node_t *ir_node_make_expr_literal_numeric(uintmax_t value, source_location_t source_location) {
     ir_node_t *node = make_node(IR_NODE_TYPE_EXPR_LITERAL_NUMERIC, source_location);
     node->expr_literal.numeric_value = value;
