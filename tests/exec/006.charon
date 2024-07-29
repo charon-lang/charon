@@ -8,7 +8,6 @@ fn add(a: uint, b: uint): uint {
 
 fn z() {
     return;
-    printf("unreachable\n");
 }
 
 fn main() {
