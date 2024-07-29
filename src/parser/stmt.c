@@ -24,6 +24,17 @@ static ir_node_t *parse_return(tokenizer_t *tokenizer) {
     return ir_node_make_stmt_return(value, util_loc(tokenizer, token_return));
 }
 
+static ir_node_t *parse_if(tokenizer_t *tokenizer) {
+    token_t token_if = util_consume(tokenizer, TOKEN_KIND_KEYWORD_IF);
+    util_consume(tokenizer, TOKEN_KIND_PARENTHESES_LEFT);
+    ir_node_t *condition = parser_expr(tokenizer);
+    util_consume(tokenizer, TOKEN_KIND_PARENTHESES_RIGHT);
+    ir_node_t *body = parser_stmt(tokenizer);
+    ir_node_t *else_body = NULL;
+    if(util_try_consume(tokenizer, TOKEN_KIND_KEYWORD_ELSE)) else_body = parser_stmt(tokenizer);
+    return ir_node_make_stmt_if(condition, body, else_body, util_loc(tokenizer, token_if));
+}
+
 static ir_node_t *parse_simple(tokenizer_t *tokenizer) {
     ir_node_t *node;
     switch(tokenizer_peek(tokenizer).kind) {
@@ -44,6 +55,7 @@ static ir_node_t *parse_block(tokenizer_t *tokenizer) {
 
 ir_node_t *parser_stmt(tokenizer_t *tokenizer) {
     switch(tokenizer_peek(tokenizer).kind) {
+        case TOKEN_KIND_KEYWORD_IF: return parse_if(tokenizer);
         case TOKEN_KIND_BRACE_LEFT: return parse_block(tokenizer);
         default: return parse_simple(tokenizer);
     }
