@@ -278,9 +278,25 @@ static codegen_value_t cg_expr_binary(codegen_state_t *state, codegen_scope_t *s
     codegen_value_t left = cg_expr(state, scope, node->expr_binary.left);
     if(!ir_type_eq(right.type, left.type)) diag_error(node->source_location, "conflicting types in binary expression");
 
-    ir_type_t *type = right.type;
+    if(node->expr_binary.operation == IR_NODE_BINARY_OPERATION_ASSIGN) {
+        switch(node->expr_binary.left->type) {
+            case IR_NODE_TYPE_EXPR_VARIABLE:
+                codegen_variable_t *variable = scope_get_variable(scope, node->expr_binary.left->expr_variable.name);
+                if(!ir_type_eq(variable->type, right.type)) diag_error(node->source_location, "conflicting types in assignment");
+                LLVMBuildStore(state->builder, right.value, variable->ref);
+                return right;
+            case IR_NODE_TYPE_EXPR_UNARY:
+                if(node->expr_binary.left->expr_unary.operation != IR_NODE_UNARY_OPERATION_DEREF) break;
+                codegen_value_t value = cg_expr(state, scope, node->expr_binary.left->expr_unary.operand);
+                if(!ir_type_eq(value.type, ir_type_pointer_make(right.type))) diag_error(node->source_location, "conflicting types in assignment");
+                LLVMBuildStore(state->builder, right.value, value.value);
+                return right;
+            default: break;
+        }
+        diag_error(node->source_location, "invalid lvalue");
+    }
 
-    //  TODO: impl assignment
+    ir_type_t *type = right.type;
 
     switch(node->expr_binary.operation) {
         case IR_NODE_BINARY_OPERATION_EQUAL: return (codegen_value_t) {
