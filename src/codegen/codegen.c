@@ -1,11 +1,16 @@
 #include "codegen.h"
 
+#include "lib/log.h"
 #include "lib/diag.h"
 
 #include <string.h>
 #include <assert.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <llvm-c/Core.h>
+#include <llvm-c/Analysis.h>
+#include <llvm-c/TargetMachine.h>
+#include <llvm-c/Transforms/PassBuilder.h>
 
 typedef struct {
     ir_type_t *type;
@@ -519,7 +524,7 @@ static codegen_value_t cg_expr(codegen_state_t *state, codegen_scope_t *scope, i
 
 static void cg(codegen_state_t *state, codegen_scope_t *scope, ir_node_t *node) {
     switch(node->type) {
-        case IR_NODE_TYPE_ROOT: cg_list(state, scope, &node->root.tlc_nodes); break;
+        case IR_NODE_TYPE_ROOT: assert(false);
 
         case IR_NODE_TYPE_TLC_FUNCTION: cg_tlc_function(state, scope, node); break;
 
@@ -545,10 +550,12 @@ static void cg(codegen_state_t *state, codegen_scope_t *scope, ir_node_t *node) 
     }
 }
 
-void codegen(ir_node_t *node, const char *dest, const char *passes) {
+static void cg_root(ir_node_t *node, LLVMContextRef context, LLVMModuleRef module) {
+    assert(node->type == IR_NODE_TYPE_ROOT);
+
     codegen_state_t state = {};
-    state.context = LLVMContextCreate();
-    state.module = LLVMModuleCreateWithNameInContext("CharonModule", state.context);
+    state.context = context;
+    state.module = module;
     state.builder = LLVMCreateBuilderInContext(state.context);
     state.function_count = 0;
     state.functions = NULL;
@@ -560,13 +567,63 @@ void codegen(ir_node_t *node, const char *dest, const char *passes) {
     printf_prototype->varargs = true;
     state_add_function(&state, printf_prototype);
 
-    cg(&state, NULL, node);
-
-    LLVMRunPasses(state.module, passes, NULL, LLVMCreatePassBuilderOptions());
-    LLVMPrintModuleToFile(state.module, dest, NULL);
+    cg_list(&state, NULL, &node->root.tlc_nodes);
 
     free(state.functions);
     LLVMDisposeBuilder(state.builder);
-    LLVMDisposeModule(state.module);
-    LLVMContextDispose(state.context);
+}
+
+void codegen(ir_node_t *node, const char *path, const char *passes) {
+    char *error_message;
+
+    // OPTIMIZE: this is kind of lazy
+    LLVMInitializeAllTargetInfos();
+    LLVMInitializeAllTargetMCs();
+    LLVMInitializeAllTargets();
+    LLVMInitializeAllAsmParsers();
+    LLVMInitializeAllAsmPrinters();
+
+    const char *triple = LLVMGetDefaultTargetTriple();
+
+    LLVMTargetRef target;
+    if(LLVMGetTargetFromTriple(triple, &target, &error_message) != 0) log_fatal("failed to create target (%s)", error_message);
+
+    LLVMTargetMachineRef machine = LLVMCreateTargetMachine(target, triple, "generic", "", LLVMCodeGenLevelDefault, LLVMRelocDefault, LLVMCodeModelDefault);
+    if(machine == NULL) log_fatal("failed to create target machine");
+
+    LLVMContextRef context = LLVMContextCreate();
+    LLVMModuleRef module = LLVMModuleCreateWithNameInContext("CharonModule", context);
+
+    cg_root(node, context, module);
+    error_message = NULL;
+    LLVMVerifyModule(module, LLVMReturnStatusAction, &error_message);
+    if(error_message != NULL) {
+        if(strlen(error_message) != 0) log_fatal("failed to verify module (%s)", error_message);
+        LLVMDisposeMessage(error_message);
+    }
+
+    LLVMRunPasses(module, passes, NULL, LLVMCreatePassBuilderOptions());
+    // TODO: handle error ^
+
+    LLVMSetTarget(module, triple);
+    char *layout = LLVMCopyStringRepOfTargetData(LLVMCreateTargetDataLayout(machine));
+    LLVMSetDataLayout(module, layout);
+    LLVMDisposeMessage(layout);
+
+    if(LLVMTargetMachineEmitToFile(machine, module, path, LLVMObjectFile, &error_message) != 0) log_fatal("emit failed (%s)", error_message);
+
+    LLVMDisposeModule(module);
+    LLVMContextDispose(context);
+}
+
+void codegen_ir(ir_node_t *node, const char *path) {
+    LLVMContextRef context = LLVMContextCreate();
+    LLVMModuleRef module = LLVMModuleCreateWithNameInContext("CharonModule", context);
+
+    cg_root(node, context, module);
+
+    LLVMPrintModuleToFile(module, path, NULL);
+
+    LLVMDisposeModule(module);
+    LLVMContextDispose(context);
 }

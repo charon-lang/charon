@@ -18,7 +18,7 @@ int main(int argc, char **argv) {
     ir_node_t *node = parser_root(tokenizer);
     tokenizer_free(tokenizer);
 
-    codegen(node, argv[2], "");
+    codegen_ir(node, argv[2]);
 
     source_free(source);
     return EXIT_SUCCESS;
