@@ -14,6 +14,7 @@
                 nativeBuildInputs = with pkgs; [
                     pcre2
                     llvmPackages_18.libllvm
+                    lld_18
                     clang_18
                     clang-tools_18
                     gnumake
