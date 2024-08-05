@@ -551,6 +551,7 @@ static codegen_value_t cg_expr(codegen_state_t *state, codegen_scope_t *scope, i
 
         case IR_NODE_TYPE_TLC_FUNCTION:
 
+        case IR_NODE_TYPE_STMT_NOOP:
         case IR_NODE_TYPE_STMT_BLOCK:
         case IR_NODE_TYPE_STMT_DECLARATION:
         case IR_NODE_TYPE_STMT_EXPRESSION:
@@ -581,6 +582,7 @@ static void cg(codegen_state_t *state, codegen_scope_t *scope, ir_node_t *node) 
 
         case IR_NODE_TYPE_TLC_FUNCTION: cg_tlc_function(state, scope, node); break;
 
+        case IR_NODE_TYPE_STMT_NOOP: break;
         case IR_NODE_TYPE_STMT_BLOCK: cg_stmt_block(state, scope, node); break;
         case IR_NODE_TYPE_STMT_DECLARATION: cg_stmt_declaration(state, scope, node); break;
         case IR_NODE_TYPE_STMT_EXPRESSION: cg_expr(state, scope, node->stmt_expression.expression); break;
