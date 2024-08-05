@@ -250,9 +250,9 @@ static void cg_stmt_if(codegen_state_t *state, codegen_scope_t *scope, ir_node_t
 
     // Setup end block
     if(!create_end) return;
-        LLVMAppendExistingBasicBlock(func, bb_end);
-        LLVMPositionBuilderAtEnd(state->builder, bb_end);
-    }
+    LLVMAppendExistingBasicBlock(func, bb_end);
+    LLVMPositionBuilderAtEnd(state->builder, bb_end);
+}
 
 static void cg_stmt_while(codegen_state_t *state, codegen_scope_t *scope, ir_node_t *node) {
     LLVMValueRef func = LLVMGetBasicBlockParent(LLVMGetInsertBlock(state->builder));
