@@ -484,7 +484,7 @@ static codegen_value_t cg_expr_cast(codegen_state_t *state, codegen_scope_t *sco
     ir_type_t *type_to = node->expr_cast.type;
     ir_type_t *type_from = value_from.type;
 
-    if(node->expr_cast.type->kind == IR_TYPE_KIND_INTEGER && value_from.type->kind == IR_TYPE_KIND_INTEGER) {
+    if(type_to->kind == IR_TYPE_KIND_INTEGER && value_from.type->kind == IR_TYPE_KIND_INTEGER) {
         LLVMValueRef value_to;
         if(type_from->integer.bit_size == type_to->integer.bit_size) {
             value_to = value_from.value;
@@ -501,6 +501,17 @@ static codegen_value_t cg_expr_cast(codegen_state_t *state, codegen_scope_t *sco
         }
         return (codegen_value_t) { .type = type_to, .value = value_to };
     }
+
+    // TODO: pointer casting
+    // if(type_from->kind == IR_TYPE_KIND_POINTER && type_to->kind == IR_TYPE_KIND_INTEGER) return (codegen_value_t) {
+    //     .type = type_to,
+    //     .value = LLVMBuildPointerCast(state->builder, value_from.value, llvm_type(state, type_to), "cast.pointer")
+    // };
+
+    if(type_from->kind == IR_TYPE_KIND_INTEGER && type_to->kind == IR_TYPE_KIND_POINTER) return (codegen_value_t) {
+        .type = type_to,
+        .value = LLVMBuildIntToPtr(state->builder, value_from.value, llvm_type(state, type_to), "cast.inttoptr")
+    };
 
     diag_error(node->source_location, "invalid cast");
 }
