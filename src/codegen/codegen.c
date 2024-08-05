@@ -240,10 +240,42 @@ static void cg_stmt_if(codegen_state_t *state, codegen_scope_t *scope, ir_node_t
     state->current_function_returned = !create_end;
 
     // Setup end block
-    if(create_end) {
+    if(!create_end) return;
         LLVMAppendExistingBasicBlock(func, bb_end);
         LLVMPositionBuilderAtEnd(state->builder, bb_end);
     }
+
+static void cg_stmt_while(codegen_state_t *state, codegen_scope_t *scope, ir_node_t *node) {
+    LLVMValueRef func = LLVMGetBasicBlockParent(LLVMGetInsertBlock(state->builder));
+
+    LLVMBasicBlockRef bb_top = LLVMAppendBasicBlockInContext(state->context, func, "while.top");
+    LLVMBasicBlockRef bb_then = LLVMCreateBasicBlockInContext(state->context, "while.then");
+    LLVMBasicBlockRef bb_end = LLVMCreateBasicBlockInContext(state->context, "while.end");
+
+    bool create_end = node->stmt_while.condition != NULL;
+
+    LLVMBuildBr(state->builder, bb_top);
+
+    // Condition
+    LLVMPositionBuilderAtEnd(state->builder, bb_top);
+    if(node->stmt_while.condition != NULL) {
+        codegen_value_t condition = cg_expr(state, scope, node->stmt_while.condition);
+        if(!ir_type_eq(condition.type, ir_type_get_bool())) diag_error(node->stmt_while.condition->source_location, "condition is not a boolean");
+        LLVMBuildCondBr(state->builder, condition.value, bb_then, bb_end);
+    } else {
+        LLVMBuildBr(state->builder, bb_then);
+    }
+
+    // Body
+    LLVMAppendExistingBasicBlock(func, bb_then);
+    LLVMPositionBuilderAtEnd(state->builder, bb_then);
+    cg(state, scope, node->stmt_while.body);
+    LLVMBuildBr(state->builder, bb_top);
+
+    // End
+    if(!create_end) return;
+    LLVMAppendExistingBasicBlock(func, bb_end);
+    LLVMPositionBuilderAtEnd(state->builder, bb_end);
 }
 
 static codegen_value_t cg_expr_literal_numeric(codegen_state_t *state, codegen_scope_t *scope, ir_node_t *node) {
@@ -504,6 +536,7 @@ static codegen_value_t cg_expr(codegen_state_t *state, codegen_scope_t *scope, i
         case IR_NODE_TYPE_STMT_EXPRESSION:
         case IR_NODE_TYPE_STMT_RETURN:
         case IR_NODE_TYPE_STMT_IF:
+        case IR_NODE_TYPE_STMT_WHILE:
             assert(false);
 
         case IR_NODE_TYPE_EXPR_LITERAL_NUMERIC: return cg_expr_literal_numeric(state, scope, node);
@@ -533,6 +566,7 @@ static void cg(codegen_state_t *state, codegen_scope_t *scope, ir_node_t *node) 
         case IR_NODE_TYPE_STMT_EXPRESSION: cg_expr(state, scope, node->stmt_expression.expression); break;
         case IR_NODE_TYPE_STMT_RETURN: cg_stmt_return(state, scope, node); break;
         case IR_NODE_TYPE_STMT_IF: cg_stmt_if(state, scope, node); break;
+        case IR_NODE_TYPE_STMT_WHILE: cg_stmt_while(state, scope, node); break;
 
         case IR_NODE_TYPE_EXPR_LITERAL_NUMERIC:
         case IR_NODE_TYPE_EXPR_LITERAL_STRING:
