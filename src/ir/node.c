@@ -68,6 +68,13 @@ ir_node_t *ir_node_make_stmt_if(ir_node_t *condition, ir_node_t *body, ir_node_t
     return node;
 }
 
+ir_node_t *ir_node_make_stmt_while(ir_node_t *condition, ir_node_t *body, source_location_t source_location) {
+    ir_node_t *node = make_node(IR_NODE_TYPE_STMT_WHILE, source_location);
+    node->stmt_while.condition = condition;
+    node->stmt_while.body = body;
+    return node;
+}
+
 ir_node_t *ir_node_make_expr_literal_numeric(uintmax_t value, source_location_t source_location) {
     ir_node_t *node = make_node(IR_NODE_TYPE_EXPR_LITERAL_NUMERIC, source_location);
     node->expr_literal.numeric_value = value;
