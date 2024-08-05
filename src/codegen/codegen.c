@@ -12,12 +12,15 @@
 #include <llvm-c/TargetMachine.h>
 #include <llvm-c/Transforms/PassBuilder.h>
 
+typedef struct codegen_scope codegen_scope_t;
+
 typedef struct {
     ir_type_t *type;
     LLVMValueRef value;
 } codegen_value_t;
 
 typedef struct {
+    codegen_scope_t *scope;
     const char *name;
     ir_type_t *type;
     LLVMValueRef ref;
@@ -29,11 +32,11 @@ typedef struct {
     LLVMValueRef ref;
 } codegen_function_t;
 
-typedef struct codegen_scope {
+struct codegen_scope {
     struct codegen_scope *parent;
     codegen_variable_t *variables;
     size_t variable_count;
-} codegen_scope_t;
+};
 
 typedef struct {
     LLVMModuleRef module;
@@ -71,7 +74,7 @@ static LLVMTypeRef llvm_type(codegen_state_t *state, ir_type_t *type) {
 
 static void scope_add_variable(codegen_scope_t *scope, const char *name, ir_type_t *type, LLVMValueRef ref) {
     scope->variables = realloc(scope->variables, ++scope->variable_count * sizeof(codegen_variable_t));
-    scope->variables[scope->variable_count - 1] = (codegen_variable_t) { .name = name, .type = type, .ref = ref };
+    scope->variables[scope->variable_count - 1] = (codegen_variable_t) { .scope = scope, .name = name, .type = type, .ref = ref };
 }
 
 static codegen_variable_t *scope_get_variable(codegen_scope_t *scope, const char *name) {
@@ -169,7 +172,13 @@ static void cg_stmt_block(codegen_state_t *state, codegen_scope_t *scope, ir_nod
     scope = scope_exit(scope);
 }
 
-static void cg_stmt_declaration(codegen_state_t *state, codegen_scope_t *scope, ir_node_t *node) {
+static void cg_stmt_declaration(codegen_state_t *state, codegen_scope_t *scope, ir_node_t *node) {\
+    codegen_variable_t *var = scope_get_variable(scope, node->stmt_declaration.name);
+    if(var != NULL) {
+        if(var->scope == scope) diag_error(node->source_location, "redeclaration of `%s`", node->stmt_declaration.name);
+        diag_warn(node->source_location, "declaration shadows `%s`", node->stmt_declaration.name);
+    }
+
     LLVMValueRef func_parent = LLVMGetBasicBlockParent(LLVMGetInsertBlock(state->builder));
 
     LLVMValueRef value = NULL;
