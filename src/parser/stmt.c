@@ -46,6 +46,14 @@ static ir_node_t *parse_while(tokenizer_t *tokenizer) {
     return ir_node_make_stmt_while(condition, body, util_loc(tokenizer, token_while));
 }
 
+static ir_node_t *parse_block(tokenizer_t *tokenizer) {
+    source_location_t source_location = util_loc(tokenizer, util_consume(tokenizer, TOKEN_KIND_BRACE_LEFT));
+    ir_node_list_t statements = IR_NODE_LIST_INIT;
+    while(!util_try_consume(tokenizer, TOKEN_KIND_BRACE_RIGHT)) {
+        ir_node_list_append(&statements, parser_stmt(tokenizer));
+    }
+    return ir_node_make_stmt_block(statements, source_location);
+}
 
 static ir_node_t *parse_simple(tokenizer_t *tokenizer) {
     ir_node_t *node;
@@ -58,15 +66,9 @@ static ir_node_t *parse_simple(tokenizer_t *tokenizer) {
     return node;
 }
 
-static ir_node_t *parse_block(tokenizer_t *tokenizer) {
-    source_location_t source_location = util_loc(tokenizer, util_consume(tokenizer, TOKEN_KIND_BRACE_LEFT));
-    ir_node_list_t statements = IR_NODE_LIST_INIT;
-    while(!util_try_consume(tokenizer, TOKEN_KIND_BRACE_RIGHT)) ir_node_list_append(&statements, parser_stmt(tokenizer));
-    return ir_node_make_stmt_block(statements, source_location);
-}
-
 ir_node_t *parser_stmt(tokenizer_t *tokenizer) {
     switch(tokenizer_peek(tokenizer).kind) {
+        case TOKEN_KIND_SEMI_COLON: return ir_node_make_stmt_noop(util_loc(tokenizer, tokenizer_advance(tokenizer)));
         case TOKEN_KIND_KEYWORD_IF: return parse_if(tokenizer);
         case TOKEN_KIND_KEYWORD_WHILE: return parse_while(tokenizer);
         case TOKEN_KIND_BRACE_LEFT: return parse_block(tokenizer);
