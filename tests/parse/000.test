@@ -10,3 +10,8 @@ root
             (expr.literal_numeric `5`)
             (expr.literal_numeric `5`)
           (expr.variable `x`)
+      (stmt.noop)
+      (stmt.noop)
+      (stmt.noop)
+      (stmt.noop)
+      (stmt.noop)
