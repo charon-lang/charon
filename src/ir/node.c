@@ -34,6 +34,10 @@ ir_node_t *ir_node_make_tlc_function(ir_function_t *prototype, ir_node_list_t st
     return node;
 }
 
+ir_node_t *ir_node_make_stmt_noop(source_location_t source_location) {
+    return make_node(IR_NODE_TYPE_STMT_NOOP, source_location);
+}
+
 ir_node_t *ir_node_make_stmt_block(ir_node_list_t statements, source_location_t source_location) {
     ir_node_t *node = make_node(IR_NODE_TYPE_STMT_BLOCK, source_location);
     node->stmt_block.statements = statements;

@@ -56,6 +56,7 @@ static void print_node(ir_node_t *node, int depth) {
 
         case IR_NODE_TYPE_TLC_FUNCTION: printf("tlc.function `%s` `", node->tlc_function.prototype->name); print_type(node->tlc_function.prototype->return_type); printf("`"); if(node->tlc_function.prototype->varargs) printf(" varargs"); break;
 
+        case IR_NODE_TYPE_STMT_NOOP: printf("stmt.noop"); break;
         case IR_NODE_TYPE_STMT_BLOCK: printf("stmt.block"); break;
         case IR_NODE_TYPE_STMT_DECLARATION:
             printf("stmt.declaration `%s`", node->stmt_declaration.name);
@@ -108,6 +109,7 @@ static void print_node(ir_node_t *node, int depth) {
             }
             break;
 
+        case IR_NODE_TYPE_STMT_NOOP: break;
         case IR_NODE_TYPE_STMT_BLOCK: print_list(&node->stmt_block.statements, depth); break;
         case IR_NODE_TYPE_STMT_DECLARATION: print_node(node->stmt_declaration.initial, depth); break;
         case IR_NODE_TYPE_STMT_EXPRESSION: print_node(node->stmt_expression.expression, depth); break;
