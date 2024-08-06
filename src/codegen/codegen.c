@@ -172,7 +172,7 @@ static void cg_stmt_block(codegen_state_t *state, codegen_scope_t *scope, ir_nod
     scope = scope_exit(scope);
 }
 
-static void cg_stmt_declaration(codegen_state_t *state, codegen_scope_t *scope, ir_node_t *node) {\
+static void cg_stmt_declaration(codegen_state_t *state, codegen_scope_t *scope, ir_node_t *node) {
     codegen_variable_t *var = scope_get_variable(scope, node->stmt_declaration.name);
     if(var != NULL) {
         if(var->scope == scope) diag_error(node->source_location, "redeclaration of `%s`", node->stmt_declaration.name);
@@ -501,6 +501,11 @@ static codegen_value_t cg_expr_cast(codegen_state_t *state, codegen_scope_t *sco
         }
         return (codegen_value_t) { .type = type_to, .value = value_to };
     }
+
+    if(type_from->kind == IR_TYPE_KIND_POINTER && type_to->kind == IR_TYPE_KIND_POINTER) return (codegen_value_t) {
+        .type = type_to,
+        .value = value_from.value
+    };
 
     // TODO: pointer casting
     // if(type_from->kind == IR_TYPE_KIND_POINTER && type_to->kind == IR_TYPE_KIND_INTEGER) return (codegen_value_t) {
