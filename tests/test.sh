@@ -98,16 +98,13 @@ run_exec() {
     fi
 }
 
-run_all_parse() {
+run_all() {
     make clean tests/runners/parse
     echo "| Running Parse Tests"
     for TEST_FILE in tests/parse/*.test; do run_parse $TEST_FILE; done
     echo "| Done"
-    make clean
-}
 
-run_all_exec() {
-    make clean tests/runners/full
+    make tests/runners/full
     echo "| Running Execution Tests"
     for TEST_FILE in tests/exec/*.test; do run_exec $TEST_FILE; done
     echo "| Done"
@@ -115,10 +112,35 @@ run_all_exec() {
 }
 
 case $MODE in
-    parse) run_all_parse ;;
-    exec) run_all_exec;;
     all)
-        run_all_parse
-        run_all_exec
+        make clean tests/runners/parse tests/runners/full
+
+        echo "| Running Parse Tests"
+        for TEST_FILE in tests/parse/*.test; do run_parse $TEST_FILE; done
+        echo "| Done"
+
+        echo "| Running Execution Tests"
+        for TEST_FILE in tests/exec/*.test; do run_exec $TEST_FILE; done
+        echo "| Done"
+
+        make clean
+        ;;
+    parse)
+        make clean tests/runners/parse
+
+        echo "| Running Parse Test \`$1\`"
+        run_parse tests/parse/$1.test
+        echo "| Done"
+
+        make clean
+        ;;
+    exec)
+        make clean tests/runners/full
+
+        echo "| Running Execution Test \`$1\`"
+        run_exec tests/exec/$1.test
+        echo "| Done"
+
+        make clean
         ;;
 esac
