@@ -621,12 +621,22 @@ static void cg_root(ir_node_t *node, LLVMContextRef context, LLVMModuleRef modul
     state.function_count = 0;
     state.functions = NULL;
 
-    // TODO: temporarily add printf
+    // TODO: temporarily add printf, malloc, free
     ir_function_t *printf_prototype = ir_function_make("printf");
     ir_function_add_argument(printf_prototype, "fmt", ir_type_pointer_make(ir_type_get_char()));
     printf_prototype->return_type = ir_type_get_i32();
     printf_prototype->varargs = true;
     state_add_function(&state, printf_prototype);
+
+    ir_function_t *malloc_prototype = ir_function_make("malloc");
+    ir_function_add_argument(malloc_prototype, "size", ir_type_get_u64());
+    malloc_prototype->return_type = ir_type_pointer_make(ir_type_get_void());
+    state_add_function(&state, malloc_prototype);
+
+    ir_function_t *free_prototype = ir_function_make("free");
+    ir_function_add_argument(free_prototype, "ptr", ir_type_pointer_make(ir_type_get_void()));
+    free_prototype->return_type = ir_type_get_void();
+    state_add_function(&state, free_prototype);
 
     cg_list(&state, NULL, &node->root.tlc_nodes);
 
