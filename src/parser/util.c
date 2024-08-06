@@ -48,6 +48,7 @@ ir_type_t *util_parse_type(tokenizer_t *tokenizer) {
     }
     if(util_try_consume(tokenizer, TOKEN_KIND_STAR)) return ir_type_pointer_make(util_parse_type(tokenizer));
     token_t token_primitive_type = util_consume(tokenizer, TOKEN_KIND_IDENTIFIER);
+    if(util_token_cmp(tokenizer, token_primitive_type, "void") == 0) return ir_type_get_void();
     if(util_token_cmp(tokenizer, token_primitive_type, "bool") == 0) return ir_type_get_bool();
     if(util_token_cmp(tokenizer, token_primitive_type, "char") == 0) return ir_type_get_char();
     if(util_token_cmp(tokenizer, token_primitive_type, "uint") == 0) return ir_type_get_uint();
