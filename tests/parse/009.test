@@ -18,3 +18,8 @@ stmt
       (expr.tuple)
         (expr.literal_numeric `10`)
         (expr.literal_numeric `50`)
+  (stmt.expression)
+    (expr.binary `=`)
+      (expr.access_index_const `3`)
+        (expr.variable `x`)
+      (expr.literal_numeric `500`)
