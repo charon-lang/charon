@@ -690,8 +690,10 @@ void codegen(ir_node_t *node, const char *path, const char *passes) {
         LLVMDisposeMessage(error_message);
     }
 
-    LLVMRunPasses(module, passes, NULL, LLVMCreatePassBuilderOptions());
-    // TODO: handle error ^
+    if(passes != NULL) {
+        LLVMErrorRef error = LLVMRunPasses(module, passes, NULL, LLVMCreatePassBuilderOptions());
+        if(error != NULL) log_warning("llvm ir optimization failed (%s)", LLVMGetErrorMessage(error));
+    }
 
     LLVMSetTarget(module, triple);
     char *layout = LLVMCopyStringRepOfTargetData(LLVMCreateTargetDataLayout(machine));

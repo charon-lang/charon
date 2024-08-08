@@ -50,13 +50,18 @@ static char *add_extension(char *path, char *extension, char extension_separator
 int main(int argc, char *argv[]) {
     enum { DEFAULT, COMPILE, INFO } mode = DEFAULT;
     enum { OBJECT, IR } format = OBJECT;
+    enum { NONE, O1, O2, O3 } optimization = O1;
 
     while(true) {
         int option_index = 0;
         int option = getopt_long(argc, argv, "ci", (struct option[]) {
             { .name = "compile", .has_arg = no_argument, .val = 'c' },
             { .name = "info", .has_arg = no_argument, .val = 'i' },
-            { .name = "llvm-ir", .has_arg = no_argument, .val = IR, .flag = &format },
+            { .name = "llvm-ir", .has_arg = no_argument, .val = IR, .flag = (int *) &format },
+            { .name = "O0", .has_arg = no_argument, .val = NONE, .flag = (int *) &optimization },
+            { .name = "O1", .has_arg = no_argument, .val = O1, .flag = (int *) &optimization },
+            { .name = "O2", .has_arg = no_argument, .val = O2, .flag = (int *) &optimization },
+            { .name = "O3", .has_arg = no_argument, .val = O3, .flag = (int *) &optimization },
             {}
         }, &option_index);
         if(option == -1) break;
@@ -78,7 +83,7 @@ int main(int argc, char *argv[]) {
             char **files = NULL;
             while(optind < argc) {
                 files = realloc(files, ++file_count * sizeof(char *));
-                files[file_count - 1] = argv[optind];
+                files[file_count - 1] = argv[optind++];
             }
 
             for(int i = 1; i < argc; i++) {
@@ -97,8 +102,16 @@ int main(int argc, char *argv[]) {
                 char *path = add_extension(extensionless_path, "o", '.');
                 free(extensionless_path);
 
+                const char *optstr = NULL;
+                switch(optimization) {
+                    case NONE: break;
+                    case O1: optstr = "default<O1>"; break;
+                    case O2: optstr = "default<O2>"; break;
+                    case O3: optstr = "default<O3>"; break;
+                }
+
                 switch(format) {
-                    case OBJECT: codegen(node, path, ""); break;
+                    case OBJECT: codegen(node, path, optstr); break;
                     case IR: codegen_ir(node, path); break;
                 }
 
