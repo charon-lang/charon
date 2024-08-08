@@ -519,11 +519,10 @@ static codegen_value_container_t cg_expr_cast(codegen_state_t *state, codegen_sc
         .value = value_from.value
     };
 
-    // TODO: pointer casting
-    // if(type_from->kind == IR_TYPE_KIND_POINTER && type_to->kind == IR_TYPE_KIND_INTEGER) return (codegen_value_container_t) {
-    //     .type = type_to,
-    //     .value = LLVMBuildPointerCast(state->builder, value_from.value, llvm_type(state, type_to), "cast.pointer")
-    // };
+    if(type_from->kind == IR_TYPE_KIND_POINTER && type_to->kind == IR_TYPE_KIND_INTEGER) return (codegen_value_container_t) {
+        .type = type_to,
+        .value = LLVMBuildPtrToInt(state->builder, value_from.value, llvm_type(state, type_to), "cast.ptrtoint")
+    };
 
     if(type_from->kind == IR_TYPE_KIND_INTEGER && type_to->kind == IR_TYPE_KIND_POINTER) return (codegen_value_container_t) {
         .type = type_to,

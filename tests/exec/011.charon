@@ -1,0 +1,13 @@
+fn main() {
+    let brr = 0x80000 as *char;
+    printf("%p\n", brr);
+
+    let back = brr as uint;
+    printf("%#lx\n", back);
+
+    let data = malloc(16);
+
+    *(data as *u8) = 100 as u8;
+
+    free(data);
+}
