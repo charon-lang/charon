@@ -13,6 +13,7 @@ typedef enum {
     IR_NODE_TYPE_ROOT,
 
     IR_NODE_TYPE_TLC_FUNCTION,
+    IR_NODE_TYPE_TLC_EXTERN,
 
     IR_NODE_TYPE_STMT_NOOP,
     IR_NODE_TYPE_STMT_BLOCK,
@@ -77,6 +78,9 @@ struct ir_node {
             ir_function_t *prototype;
             ir_node_list_t statements;
         } tlc_function;
+        struct {
+            ir_function_t *prototype;
+        } tlc_extern;
 
         struct {
             ir_node_list_t statements;
@@ -148,6 +152,7 @@ size_t ir_node_list_count(ir_node_list_t *list);
 ir_node_t *ir_node_make_root(ir_node_list_t tlc_nodes, source_location_t source_location);
 
 ir_node_t *ir_node_make_tlc_function(ir_function_t *prototype, ir_node_list_t statements, source_location_t source_location);
+ir_node_t *ir_node_make_tlc_extern(ir_function_t *prototype, source_location_t source_location);
 
 ir_node_t *ir_node_make_stmt_noop(source_location_t source_location);
 ir_node_t *ir_node_make_stmt_block(ir_node_list_t statements, source_location_t source_location);
