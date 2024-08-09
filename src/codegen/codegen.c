@@ -176,6 +176,11 @@ static void cg_tlc_function(codegen_state_t *state, codegen_scope_t *scope, ir_n
     state->current_function_returned = false;
 }
 
+static void cg_tlc_extern(codegen_state_t *state, codegen_scope_t *scope, ir_node_t *node) {
+    if(state_get_function(state, node->tlc_extern.prototype->name) != NULL) diag_error(node->source_location, "redefinition of `%s`", node->tlc_function.prototype->name);
+    state_add_function(state, node->tlc_extern.prototype);
+}
+
 static void cg_stmt_block(codegen_state_t *state, codegen_scope_t *scope, ir_node_t *node) {
     scope = scope_enter(scope);
     cg_list(state, scope, &node->stmt_block.statements);
@@ -567,6 +572,7 @@ static codegen_value_container_t cg_expr_ext(codegen_state_t *state, codegen_sco
         case IR_NODE_TYPE_ROOT:
 
         case IR_NODE_TYPE_TLC_FUNCTION:
+        case IR_NODE_TYPE_TLC_EXTERN:
 
         case IR_NODE_TYPE_STMT_NOOP:
         case IR_NODE_TYPE_STMT_BLOCK:
@@ -603,6 +609,7 @@ static void cg(codegen_state_t *state, codegen_scope_t *scope, ir_node_t *node) 
         case IR_NODE_TYPE_ROOT: assert(false);
 
         case IR_NODE_TYPE_TLC_FUNCTION: cg_tlc_function(state, scope, node); break;
+        case IR_NODE_TYPE_TLC_EXTERN: cg_tlc_extern(state, scope, node); break;
 
         case IR_NODE_TYPE_STMT_NOOP: break;
         case IR_NODE_TYPE_STMT_BLOCK: cg_stmt_block(state, scope, node); break;
@@ -637,23 +644,6 @@ static void cg_root(ir_node_t *node, LLVMContextRef context, LLVMModuleRef modul
     state.builder = LLVMCreateBuilderInContext(state.context);
     state.function_count = 0;
     state.functions = NULL;
-
-    // TODO: temporarily add printf, malloc, free
-    ir_function_t *printf_prototype = ir_function_make("printf");
-    ir_function_add_argument(printf_prototype, "fmt", ir_type_pointer_make(ir_type_get_char()));
-    printf_prototype->return_type = ir_type_get_i32();
-    printf_prototype->varargs = true;
-    state_add_function(&state, printf_prototype);
-
-    ir_function_t *malloc_prototype = ir_function_make("malloc");
-    ir_function_add_argument(malloc_prototype, "size", ir_type_get_u64());
-    malloc_prototype->return_type = ir_type_pointer_make(ir_type_get_void());
-    state_add_function(&state, malloc_prototype);
-
-    ir_function_t *free_prototype = ir_function_make("free");
-    ir_function_add_argument(free_prototype, "ptr", ir_type_pointer_make(ir_type_get_void()));
-    free_prototype->return_type = ir_type_get_void();
-    state_add_function(&state, free_prototype);
 
     cg_list(&state, NULL, &node->root.tlc_nodes);
 

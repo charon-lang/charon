@@ -1,3 +1,5 @@
+extern fn printf(fmt: *u8, ...): i32;
+
 fn brr() {
     let x = 0;
     while(true) {

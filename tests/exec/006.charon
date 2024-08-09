@@ -1,3 +1,5 @@
+extern fn printf(fmt: *u8, ...): i32;
+
 fn x(): uint {
     return 5;
 }

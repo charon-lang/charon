@@ -55,6 +55,7 @@ static void print_node(ir_node_t *node, int depth) {
         case IR_NODE_TYPE_ROOT: printf("root"); break;
 
         case IR_NODE_TYPE_TLC_FUNCTION: printf("tlc.function `%s` `", node->tlc_function.prototype->name); print_type(node->tlc_function.prototype->return_type); printf("`"); if(node->tlc_function.prototype->varargs) printf(" varargs"); break;
+        case IR_NODE_TYPE_TLC_EXTERN: printf("tlc.extern `%s` `", node->tlc_extern.prototype->name); print_type(node->tlc_extern.prototype->return_type); printf("`"); if(node->tlc_extern.prototype->varargs) printf(" varargs"); break;
 
         case IR_NODE_TYPE_STMT_NOOP: printf("stmt.noop"); break;
         case IR_NODE_TYPE_STMT_BLOCK: printf("stmt.block"); break;
@@ -106,6 +107,19 @@ static void print_node(ir_node_t *node, int depth) {
                 printf("%*s", depth * 2, "");
                 printf("body:\n");
                 print_list(&node->tlc_function.statements, depth + 1);
+            }
+            break;
+        case IR_NODE_TYPE_TLC_EXTERN:
+            if(node->tlc_function.prototype->argument_count > 0) {
+                printf("%*s", depth * 2, "");
+                printf("args:\n");
+                for(size_t i = 0; i < node->tlc_function.prototype->argument_count; i++) {
+                    ir_function_argument_t *argument = &node->tlc_function.prototype->arguments[i];
+                    printf("%*s", (depth + 1) * 2, "");
+                    printf("- %s `", argument->name);
+                    print_type(argument->type);
+                    printf("`\n");
+                }
             }
             break;
 
