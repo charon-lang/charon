@@ -39,10 +39,26 @@ struct codegen_scope {
     size_t variable_count;
 };
 
+typedef struct codegen_module {
+    const char *name;
+
+    struct codegen_module *parent;
+    struct codegen_module *children;
+    size_t child_count;
+
+    codegen_function_t *functions;
+    size_t function_count;
+} codegen_module_t;
+
 typedef struct {
     LLVMModuleRef module;
     LLVMContextRef context;
     LLVMBuilderRef builder;
+
+    codegen_module_t *current_module;
+
+    codegen_module_t *modules;
+    size_t module_count;
 
     codegen_function_t *functions;
     size_t function_count;
@@ -112,18 +128,53 @@ static codegen_function_t *state_add_function(codegen_state_t *state, ir_functio
     LLVMTypeRef fn_type = LLVMFunctionType(fn_return_type, fn_arguments, prototype->argument_count, prototype->varargs);
     LLVMValueRef fn = LLVMAddFunction(state->module, prototype->name, fn_type);
 
-    state->functions = realloc(state->functions, ++state->function_count * sizeof(codegen_function_t));
-    codegen_function_t *function = &state->functions[state->function_count - 1];
+    codegen_function_t *function;
+    if(state->current_module == NULL) {
+        state->functions = realloc(state->functions, ++state->function_count * sizeof(codegen_function_t));
+        function = &state->functions[state->function_count - 1];
+    } else {
+        state->current_module->functions = realloc(state->current_module->functions, ++state->current_module->function_count * sizeof(codegen_function_t));
+        function = &state->current_module->functions[state->function_count - 1];
+    }
     function->prototype = prototype;
     function->type = fn_type;
     function->ref = fn;
     return function;
 }
 
+static codegen_function_t *module_get_function(codegen_module_t *module, const char *name) {
+    for(size_t i = 0; i < module->function_count; i++) {
+        if(strcmp(module->functions[i].prototype->name, name) != 0) continue;
+        return &module->functions[i];
+    }
+    return NULL;
+}
+
 static codegen_function_t *state_get_function(codegen_state_t *state, const char *name) {
+    if(state->current_module != NULL) {
+        codegen_function_t *fn = module_get_function(state->current_module, name);
+        if(fn != NULL) return fn;
+    }
+
     for(size_t i = 0; i < state->function_count; i++) {
         if(strcmp(state->functions[i].prototype->name, name) != 0) continue;
         return &state->functions[i];
+    }
+    return NULL;
+}
+
+static codegen_module_t *module_get_child(codegen_module_t *module, const char *name) {
+    for(size_t i = 0; i < module->child_count; i++) {
+        if(strcmp(module->children[i].name, name) != 0) continue;
+        return &module->children[i];
+    }
+    return NULL;
+}
+
+static codegen_module_t *state_get_module(codegen_state_t *state, const char *name) {
+    for(size_t i = 0; i < state->module_count; i++) {
+        if(strcmp(state->modules[i].name, name) != 0) continue;
+        return &state->modules[i];
     }
     return NULL;
 }
@@ -137,6 +188,7 @@ static codegen_value_container_t resolve_iref(codegen_state_t *state, codegen_va
 }
 
 static void cg(codegen_state_t *state, codegen_scope_t *scope, ir_node_t *node);
+static codegen_value_container_t cg_expr_ext_selected_module(codegen_state_t *state, codegen_scope_t *scope, codegen_module_t *selected_module, ir_node_t *node);
 static codegen_value_container_t cg_expr_ext(codegen_state_t *state, codegen_scope_t *scope, ir_node_t *node, bool do_resolve_iref);
 static codegen_value_container_t cg_expr(codegen_state_t *state, codegen_scope_t *scope, ir_node_t *node);
 
@@ -147,6 +199,25 @@ static void cg_list(codegen_state_t *state, codegen_scope_t *scope, ir_node_list
         cg(state, scope, node);
         node = node->next;
     }
+}
+
+static void cg_tlc_module(codegen_state_t *state, codegen_scope_t *scope, ir_node_t *node) {
+    codegen_module_t *module;
+    if(state->current_module != NULL) {
+        state->current_module->children = realloc(state->current_module->children, ++state->current_module->child_count * sizeof(codegen_module_t));
+        module = &state->current_module->children[state->current_module->child_count - 1];
+    } else {
+        state->modules = realloc(state->modules, ++state->module_count * sizeof(codegen_module_t));
+        module = &state->modules[state->module_count - 1];
+    }
+    module->parent = state->current_module;
+    module->name = node->tlc_module.name;
+    module->functions = NULL;
+    module->function_count = 0;
+
+    state->current_module = module;
+    cg_list(state, scope, &node->tlc_module.tlcs);
+    state->current_module = state->current_module->parent;
 }
 
 static void cg_tlc_function(codegen_state_t *state, codegen_scope_t *scope, ir_node_t *node) {
@@ -177,6 +248,7 @@ static void cg_tlc_function(codegen_state_t *state, codegen_scope_t *scope, ir_n
 }
 
 static void cg_tlc_extern(codegen_state_t *state, codegen_scope_t *scope, ir_node_t *node) {
+    if(state->current_module != NULL) diag_error(node->source_location, "cannot declare an extern within a module");
     if(state_get_function(state, node->tlc_extern.prototype->name) != NULL) diag_error(node->source_location, "redefinition of `%s`", node->tlc_function.prototype->name);
     state_add_function(state, node->tlc_extern.prototype);
 }
@@ -448,8 +520,13 @@ static codegen_value_container_t cg_expr_variable(codegen_state_t *state, codege
     };
 }
 
-static codegen_value_container_t cg_expr_call(codegen_state_t *state, codegen_scope_t *scope, ir_node_t *node) {
-    codegen_function_t *fn = state_get_function(state, node->expr_call.function_name);
+static codegen_value_container_t cg_expr_call(codegen_state_t *state, codegen_scope_t *scope, codegen_module_t *selected_module, ir_node_t *node) {
+    codegen_function_t *fn;
+    if(selected_module != NULL) {
+        fn = module_get_function(selected_module, node->expr_call.function_name);
+    } else {
+        fn = state_get_function(state, node->expr_call.function_name);
+    }
     if(fn == NULL) diag_error(node->source_location, "call to an unknown function `%s`", node->expr_call.function_name);
 
     if(node->expr_call.arguments.count < fn->prototype->argument_count) diag_error(node->source_location, "missing arguments");
@@ -467,6 +544,13 @@ static codegen_value_container_t cg_expr_call(codegen_state_t *state, codegen_sc
         .type = fn->prototype->return_type,
         .value = LLVMBuildCall2(state->builder, fn->type, fn->ref, arguments, argument_count, "")
     };
+}
+
+// TODO: rn if u do Hello:world() it will match Hello:world AND world if Hello:world does not exist
+static codegen_value_container_t cg_expr_selector(codegen_state_t *state, codegen_scope_t *scope, codegen_module_t *selected_module, ir_node_t *node) {
+    selected_module = (selected_module == NULL ? state_get_module(state, node->expr_selector.name) : module_get_child(selected_module, node->expr_selector.name));
+    if(selected_module == NULL) diag_error(node->source_location, "unknown module `%s`", node->expr_selector.name);
+    return cg_expr_ext_selected_module(state, scope, selected_module, node->expr_selector.value);
 }
 
 static codegen_value_container_t cg_expr_tuple(codegen_state_t *state, codegen_scope_t *scope, ir_node_t *node) {
@@ -566,6 +650,15 @@ static codegen_value_container_t cg_expr_access_index_const(codegen_state_t *sta
     };
 }
 
+static codegen_value_container_t cg_expr_ext_selected_module(codegen_state_t *state, codegen_scope_t *scope, codegen_module_t *selected_module, ir_node_t *node) {
+    switch(node->type) {
+        case IR_NODE_TYPE_EXPR_CALL: return cg_expr_call(state, scope, selected_module, node);
+        case IR_NODE_TYPE_EXPR_SELECTOR: return cg_expr_selector(state, scope, selected_module, node);
+        default: assert(false);
+    }
+    __builtin_unreachable();
+}
+
 static codegen_value_container_t cg_expr_ext(codegen_state_t *state, codegen_scope_t *scope, ir_node_t *node, bool do_resolve_iref) {
     codegen_value_container_t value;
     switch(node->type) {
@@ -591,11 +684,12 @@ static codegen_value_container_t cg_expr_ext(codegen_state_t *state, codegen_sco
         case IR_NODE_TYPE_EXPR_BINARY: value = cg_expr_binary(state, scope, node); break;
         case IR_NODE_TYPE_EXPR_UNARY: value = cg_expr_unary(state, scope, node); break;
         case IR_NODE_TYPE_EXPR_VARIABLE: value = cg_expr_variable(state, scope, node); break;
-        case IR_NODE_TYPE_EXPR_CALL: value = cg_expr_call(state, scope, node); break;
+        case IR_NODE_TYPE_EXPR_CALL: value = cg_expr_call(state, scope, NULL, node); break;
         case IR_NODE_TYPE_EXPR_TUPLE: value = cg_expr_tuple(state, scope, node); break;
         case IR_NODE_TYPE_EXPR_CAST: value = cg_expr_cast(state, scope, node); break;
         case IR_NODE_TYPE_EXPR_ACCESS_INDEX: value = cg_expr_access_index(state, scope, node); break;
         case IR_NODE_TYPE_EXPR_ACCESS_INDEX_CONST: value = cg_expr_access_index_const(state, scope, node); break;
+        case IR_NODE_TYPE_EXPR_SELECTOR: value = cg_expr_selector(state, scope, NULL, node); break;
     }
     if(do_resolve_iref) return resolve_iref(state, value);
     return value;
@@ -609,7 +703,7 @@ static void cg(codegen_state_t *state, codegen_scope_t *scope, ir_node_t *node) 
     switch(node->type) {
         case IR_NODE_TYPE_ROOT: assert(false);
 
-        case IR_NODE_TYPE_TLC_MODULE: assert(false);
+        case IR_NODE_TYPE_TLC_MODULE: cg_tlc_module(state, scope, node); break;
         case IR_NODE_TYPE_TLC_FUNCTION: cg_tlc_function(state, scope, node); break;
         case IR_NODE_TYPE_TLC_EXTERN: cg_tlc_extern(state, scope, node); break;
 
@@ -633,6 +727,7 @@ static void cg(codegen_state_t *state, codegen_scope_t *scope, ir_node_t *node) 
         case IR_NODE_TYPE_EXPR_CAST:
         case IR_NODE_TYPE_EXPR_ACCESS_INDEX:
         case IR_NODE_TYPE_EXPR_ACCESS_INDEX_CONST:
+        case IR_NODE_TYPE_EXPR_SELECTOR:
             assert(false);
     }
 }
@@ -644,8 +739,11 @@ static void cg_root(ir_node_t *node, LLVMContextRef context, LLVMModuleRef modul
     state.context = context;
     state.module = module;
     state.builder = LLVMCreateBuilderInContext(state.context);
+    state.module_count = 0;
+    state.modules = NULL;
     state.function_count = 0;
     state.functions = NULL;
+    state.current_module = NULL;
 
     cg_list(&state, NULL, &node->root.tlc_nodes);
 
