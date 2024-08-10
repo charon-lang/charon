@@ -1,0 +1,22 @@
+extern fn printf(fmt: *u8, ...): i32;
+
+module Hello {
+    fn world() {
+        printf("world\n");
+    }
+
+    module World {
+        fn city() {
+            printf("city\n");
+        }
+    }
+}
+
+fn main(): i32 {
+    printf("womp\n");
+
+    Hello::world();
+    Hello::World::city();
+
+    return 0 as i32;
+}
