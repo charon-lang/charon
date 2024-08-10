@@ -5,7 +5,7 @@
 		{ "include": "#comments" },
 		{ "include": "#keywords" },
 		{ "include": "#typedef" },
-		{ "include": "#expression" }
+		{ "include": "#common" }
 	],
 	"repository": {
 		"comments": {
@@ -37,23 +37,26 @@
 				},
 				{
 					"name": "keyword.charon",
-					"match": "\\b(?:struct|let|as|extern|true|false)\\b"
+					"match": "\\b(?:struct|let|as|extern)\\b"
 				}
+			]
+		},
+		"common": {
+			"patterns": [
+				{ "include": "#access" },
+				{ "include": "#selector" },
+				{ "include": "#typedef" },
+				{ "include": "#numbers" },
+				{ "include": "#strings" },
+				{ "include": "#booleans" },
+				{ "include": "#call" },
+				{ "include": "#identifier" }
 			]
 		},
 		"typedef": {
 			"name": "meta.typedef.charon",
 			"match": ":\\s*\\**([_a-zA-Z][_a-zA-Z0-9]*)",
 			"captures": { "1": { "name": "entity.name.type.charon" } }
-		},
-		"expression": {
-			"patterns": [
-				{ "include": "#access" },
-				{ "include": "#numbers" },
-				{ "include": "#strings" },
-				{ "include": "#call" },
-				{ "include": "#identifier" }
-			]
 		},
 		"strings": {
 			"patterns": [
@@ -82,6 +85,14 @@
 				}
 			]
 		},
+		"selector": {
+			"name": "meta.selector.charon",
+			"match": "::"
+		},
+		"booleans": {
+			"name": "constant.language.charon",
+			"match": "\\b(?:true|false)\\b"
+		},
 		"numbers": {
 			"name": "constant.numeric.charon",
 			"match": "(?:0x|0b|0o)?\\d+"
@@ -100,7 +111,7 @@
 			"begin": "\\b([_a-zA-Z][_a-zA-Z0-9]+)\\(",
 			"beginCaptures": { "1": { "name": "entity.name.function.charon" } },
 			"end": "\\)",
-			"patterns": [{ "include": "#expression" }, { "include": "#typedef" }]
+			"patterns": [{ "include": "#common" }]
 		},
 		"identifier": {
 			"name": "variable.charon",
