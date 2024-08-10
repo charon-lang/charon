@@ -1,0 +1,10 @@
+stmt
+(stmt.block)
+  (stmt.expression)
+    (expr.selector `Hello`)
+      (expr.call `world`)
+  (stmt.expression)
+    (expr.selector `Three`)
+      (expr.selector `Two`)
+        (expr.selector `One`)
+          (expr.call `zero`)
