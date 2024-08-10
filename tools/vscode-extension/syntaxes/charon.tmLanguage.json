@@ -25,7 +25,7 @@
 			"patterns": [
 				{
 					"name": "keyword.control.charon",
-					"match": "\\b(?:return|if|else|while|fn)\\b"
+					"match": "\\b(?:return|if|else|while|fn|module)\\b"
 				},
 				{
 					"name": "meta.statement.as.charon",
