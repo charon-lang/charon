@@ -27,6 +27,13 @@ ir_node_t *ir_node_make_root(ir_node_list_t tlc_nodes, source_location_t source_
     return node;
 }
 
+ir_node_t *ir_node_make_tlc_module(const char *name, ir_node_list_t tlcs, source_location_t source_location) {
+    ir_node_t *node = make_node(IR_NODE_TYPE_TLC_MODULE, source_location);
+    node->tlc_module.name = name;
+    node->tlc_module.tlcs = tlcs;
+    return node;
+}
+
 ir_node_t *ir_node_make_tlc_function(ir_function_t *prototype, ir_node_list_t statements, source_location_t source_location) {
     ir_node_t *node = make_node(IR_NODE_TYPE_TLC_FUNCTION, source_location);
     node->tlc_function.prototype = prototype;
