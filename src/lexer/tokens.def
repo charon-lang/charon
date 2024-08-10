@@ -8,6 +8,7 @@ TOKEN(KEYWORD_FUNCTION, "fn",       "^fn"       )
 TOKEN(KEYWORD_LET,      "let",      "^let"      )
 TOKEN(KEYWORD_AS,       "as",       "^as"       )
 TOKEN(KEYWORD_EXTERN,   "extern",    "^extern"  )
+TOKEN(KEYWORD_MODULE,   "module",    "^module"  )
 
 // Constants
 TOKEN(CONST_NUMBER_HEX, "number",   "^0x[a-fA-F\\d]+"   )
