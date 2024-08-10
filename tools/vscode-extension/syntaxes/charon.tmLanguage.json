@@ -48,6 +48,7 @@
 		},
 		"expression": {
 			"patterns": [
+				{ "include": "#access" },
 				{ "include": "#numbers" },
 				{ "include": "#strings" },
 				{ "include": "#call" },
@@ -84,6 +85,15 @@
 		"numbers": {
 			"name": "constant.numeric.charon",
 			"match": "(?:0x|0b|0o)?\\d+"
+		},
+		"access": {
+			"patterns": [
+				{
+					"name": "meta.index.constant.charon",
+					"match": "\\.(\\d+)",
+					"captures": { "1": { "name": "variable.other.member.charon" } }
+				}
+			]
 		},
 		"call": {
 			"name": "meta.function-call.charon",
