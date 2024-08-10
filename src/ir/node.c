@@ -170,3 +170,10 @@ ir_node_t *ir_node_make_expr_access_index_const(ir_node_t *value, uintmax_t inde
     node->expr_access_index_const.index = index;
     return node;
 }
+
+ir_node_t *ir_node_make_expr_selector(const char *name, ir_node_t *value, source_location_t source_location) {
+    ir_node_t *node = make_node(IR_NODE_TYPE_EXPR_SELECTOR, source_location);
+    node->expr_selector.name = name;
+    node->expr_selector.value = value;
+    return node;
+}
