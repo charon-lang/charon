@@ -1,0 +1,37 @@
+{
+  "name": "charon-lang",
+  "displayName": "Charon Language",
+  "description": "",
+  "version": "0.0.1",
+  "engines": {
+    "vscode": "^1.89.0"
+  },
+  "categories": [
+    "Programming Languages"
+  ],
+  "contributes": {
+    "languages": [
+      {
+        "id": "charon",
+        "aliases": [
+          "Charon",
+          "charon"
+        ],
+        "extensions": [
+          ".charon"
+        ],
+        "configuration": "./language-configuration.json"
+      }
+    ],
+    "grammars": [
+      {
+        "language": "charon",
+        "scopeName": "source.charon",
+        "path": "./syntaxes/charon.tmLanguage.json"
+      }
+    ]
+  },
+  "dependencies": {
+    "vsce": "^2.15.0"
+  }
+}

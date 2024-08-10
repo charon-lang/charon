@@ -1,0 +1,101 @@
+{
+	"$schema": "https://raw.githubusercontent.com/martinring/tmlanguage/master/tmlanguage.json",
+	"name": "Charon",
+	"patterns": [
+		{ "include": "#comments" },
+		{ "include": "#keywords" },
+		{ "include": "#typedef" },
+		{ "include": "#expression" }
+	],
+	"repository": {
+		"comments": {
+			"patterns": [
+				{
+					"name": "comment.block.charon",
+					"begin": "/\\*",
+					"end": "\\*/"
+				},
+				{
+					"name": "comment.line.charon",
+					"match": "//.*\n"
+				}
+			]
+		},
+		"keywords": {
+			"patterns": [
+				{
+					"name": "keyword.control.charon",
+					"match": "\\b(?:return|if|else|while|fn)\\b"
+				},
+				{
+					"name": "meta.statement.as.charon",
+					"match": "(as)\\s+\\**([_a-zA-Z][_a-zA-Z0-9]*)",
+					"captures": {
+						"1": { "name": "keyword.charon" },
+						"2": { "name": "entity.name.type.charon" }
+					}
+				},
+				{
+					"name": "keyword.charon",
+					"match": "\\b(?:struct|let|as|extern|true|false)\\b"
+				}
+			]
+		},
+		"typedef": {
+			"name": "meta.typedef.charon",
+			"match": ":\\s*\\**([_a-zA-Z][_a-zA-Z0-9]*)",
+			"captures": { "1": { "name": "entity.name.type.charon" } }
+		},
+		"expression": {
+			"patterns": [
+				{ "include": "#numbers" },
+				{ "include": "#strings" },
+				{ "include": "#call" },
+				{ "include": "#identifier" }
+			]
+		},
+		"strings": {
+			"patterns": [
+				{
+					"name": "string.quoted.normal.charon",
+					"begin": "\"",
+					"end": "\"",
+					"patterns": [{
+						"name": "constant.character.escape.charon",
+						"match": "\\\\."
+					}]
+				},
+				{
+					"name": "string.quoted.raw.charon",
+					"begin": "''",
+					"end": "''"
+				},
+				{
+					"name": "string.quoted.single",
+					"begin": "'",
+					"end": "'",
+					"patterns": [{
+						"name": "constant.character.escape.charon",
+						"match": "\\\\."
+					}]
+				}
+			]
+		},
+		"numbers": {
+			"name": "constant.numeric.charon",
+			"match": "(?:0x|0b|0o)?\\d+"
+		},
+		"call": {
+			"name": "meta.function-call.charon",
+			"begin": "\\b([_a-zA-Z][_a-zA-Z0-9]+)\\(",
+			"beginCaptures": { "1": { "name": "entity.name.function.charon" } },
+			"end": "\\)",
+			"patterns": [{ "include": "#expression" }, { "include": "#typedef" }]
+		},
+		"identifier": {
+			"name": "variable.charon",
+			"match": "\\b[_a-zA-Z][_a-zA-Z0-9]*\\b"
+		}
+	},
+	"scopeName": "source.charon"
+}
