@@ -1,0 +1,5 @@
+module Test {
+    extern fn hello();
+
+    fn world() {}
+}

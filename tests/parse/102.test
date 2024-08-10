@@ -1,0 +1,5 @@
+root
+(root)
+  (tlc.module `Test`)
+    (tlc.extern `hello` `void`)
+    (tlc.function `world` `void`)

@@ -571,6 +571,7 @@ static codegen_value_container_t cg_expr_ext(codegen_state_t *state, codegen_sco
     switch(node->type) {
         case IR_NODE_TYPE_ROOT:
 
+        case IR_NODE_TYPE_TLC_MODULE:
         case IR_NODE_TYPE_TLC_FUNCTION:
         case IR_NODE_TYPE_TLC_EXTERN:
 
@@ -608,6 +609,7 @@ static void cg(codegen_state_t *state, codegen_scope_t *scope, ir_node_t *node) 
     switch(node->type) {
         case IR_NODE_TYPE_ROOT: assert(false);
 
+        case IR_NODE_TYPE_TLC_MODULE: assert(false);
         case IR_NODE_TYPE_TLC_FUNCTION: cg_tlc_function(state, scope, node); break;
         case IR_NODE_TYPE_TLC_EXTERN: cg_tlc_extern(state, scope, node); break;
 

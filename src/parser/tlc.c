@@ -36,6 +36,17 @@ static ir_function_t *parse_prototype(tokenizer_t *tokenizer) {
     return prototype;
 }
 
+static ir_node_t *parse_module(tokenizer_t *tokenizer) {
+    source_location_t source_location = util_loc(tokenizer, util_consume(tokenizer, TOKEN_KIND_KEYWORD_MODULE));
+    token_t token_identifier = util_consume(tokenizer, TOKEN_KIND_IDENTIFIER);
+
+    ir_node_list_t tlcs = IR_NODE_LIST_INIT;
+    util_consume(tokenizer, TOKEN_KIND_BRACE_LEFT);
+    while(!util_try_consume(tokenizer, TOKEN_KIND_BRACE_RIGHT)) ir_node_list_append(&tlcs, parser_tlc(tokenizer));
+
+    return ir_node_make_tlc_module(util_text_make_from_token(tokenizer, token_identifier), tlcs, source_location);
+}
+
 static ir_node_t *parse_function(tokenizer_t *tokenizer) {
     source_location_t source_location = util_loc(tokenizer, tokenizer_peek(tokenizer));
     ir_function_t *prototype = parse_prototype(tokenizer);
@@ -56,6 +67,7 @@ ir_node_t *parse_extern(tokenizer_t *tokenizer) {
 ir_node_t *parser_tlc(tokenizer_t *tokenizer) {
     token_t token = tokenizer_peek(tokenizer);
     switch(token.kind) {
+        case TOKEN_KIND_KEYWORD_MODULE: return parse_module(tokenizer);
         case TOKEN_KIND_KEYWORD_FUNCTION: return parse_function(tokenizer);
         case TOKEN_KIND_KEYWORD_EXTERN: return parse_extern(tokenizer);
         default: diag_error(util_loc(tokenizer, token), "expected top level construct, got %s", token_kind_tostring(token.kind));

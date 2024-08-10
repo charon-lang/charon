@@ -54,6 +54,7 @@ static void print_node(ir_node_t *node, int depth) {
     switch(node->type) {
         case IR_NODE_TYPE_ROOT: printf("root"); break;
 
+        case IR_NODE_TYPE_TLC_MODULE: printf("tlc.module `%s`", node->tlc_module.name); break;
         case IR_NODE_TYPE_TLC_FUNCTION: printf("tlc.function `%s` `", node->tlc_function.prototype->name); print_type(node->tlc_function.prototype->return_type); printf("`"); if(node->tlc_function.prototype->varargs) printf(" varargs"); break;
         case IR_NODE_TYPE_TLC_EXTERN: printf("tlc.extern `%s` `", node->tlc_extern.prototype->name); print_type(node->tlc_extern.prototype->return_type); printf("`"); if(node->tlc_extern.prototype->varargs) printf(" varargs"); break;
 
@@ -91,6 +92,7 @@ static void print_node(ir_node_t *node, int depth) {
     switch(node->type) {
         case IR_NODE_TYPE_ROOT: print_list(&node->root.tlc_nodes, depth); break;
 
+        case IR_NODE_TYPE_TLC_MODULE: print_list(&node->tlc_module.tlcs, depth); break;
         case IR_NODE_TYPE_TLC_FUNCTION:
             if(node->tlc_function.prototype->argument_count > 0) {
                 printf("%*s", depth * 2, "");
