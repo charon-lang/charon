@@ -79,14 +79,7 @@ int main(int argc, char *argv[]) {
             break;
         case DEFAULT:
         case COMPILE:
-            size_t file_count = 0;
-            char **files = NULL;
-            while(optind < argc) {
-                files = realloc(files, ++file_count * sizeof(char *));
-                files[file_count - 1] = argv[optind++];
-            }
-
-            for(int i = 1; i < argc; i++) {
+            for(int i = optind; i < argc; i++) {
                 source_t *source = source_from_path(argv[i]);
 
                 tokenizer_t *tokenizer = tokenizer_make(source);
