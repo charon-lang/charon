@@ -394,9 +394,17 @@ static codegen_value_container_t cg_expr_literal_char(codegen_state_t *state, co
 
 static codegen_value_container_t cg_expr_literal_string(codegen_state_t *state, codegen_scope_t *scope, ir_node_t *node) {
     ir_type_t *type = ir_type_pointer_make(ir_type_get_char());
+
+    // TODO: array type mismatch, ig we need arrays :D
+    LLVMValueRef value = LLVMAddGlobal(state->module, LLVMArrayType2(LLVMInt8TypeInContext(state->context), strlen(node->expr_literal.string_value) + 1), "expr.literal_string");
+    LLVMSetLinkage(value, LLVMInternalLinkage);
+    LLVMSetGlobalConstant(value, 1);
+    LLVMSetUnnamedAddress(value, LLVMGlobalUnnamedAddr);
+    LLVMSetInitializer(value, LLVMConstStringInContext(state->context, node->expr_literal.string_value, strlen(node->expr_literal.string_value) + 1, true));
+
     return (codegen_value_container_t) {
         .type = type,
-        .value = LLVMBuildGlobalString(state->builder, node->expr_literal.string_value, "expr.literal_string")
+        .value = value
     };
 }
 
