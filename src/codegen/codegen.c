@@ -556,7 +556,6 @@ static codegen_value_container_t cg_expr_call(codegen_state_t *state, codegen_sc
     };
 }
 
-// TODO: rn if u do Hello:world() it will match Hello:world AND world if Hello:world does not exist
 static codegen_value_container_t cg_expr_selector(codegen_state_t *state, codegen_scope_t *scope, codegen_module_t *selected_module, ir_node_t *node) {
     selected_module = (selected_module == NULL ? state_get_module(state, node->expr_selector.name) : module_get_child(selected_module, node->expr_selector.name));
     if(selected_module == NULL) diag_error(node->source_location, "unknown module `%s`", node->expr_selector.name);
