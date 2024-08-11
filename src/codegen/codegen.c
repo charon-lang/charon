@@ -134,7 +134,7 @@ static codegen_function_t *state_add_function(codegen_state_t *state, ir_functio
         function = &state->functions[state->function_count - 1];
     } else {
         state->current_module->functions = realloc(state->current_module->functions, ++state->current_module->function_count * sizeof(codegen_function_t));
-        function = &state->current_module->functions[state->function_count - 1];
+        function = &state->current_module->functions[state->current_module->function_count - 1];
     }
     function->prototype = prototype;
     function->type = fn_type;
@@ -214,6 +214,8 @@ static void cg_tlc_module(codegen_state_t *state, codegen_scope_t *scope, ir_nod
     module->name = node->tlc_module.name;
     module->functions = NULL;
     module->function_count = 0;
+    module->children = NULL;
+    module->child_count = 0;
 
     state->current_module = module;
     cg_list(state, scope, &node->tlc_module.tlcs);
