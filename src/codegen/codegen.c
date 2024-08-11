@@ -802,7 +802,9 @@ void codegen_ir(ir_node_t *node, const char *path) {
 
     cg_root(node, context, module);
 
-    LLVMPrintModuleToFile(module, path, NULL);
+    char *error_message;
+    LLVMBool failure = LLVMPrintModuleToFile(module, path, &error_message);
+    if(failure) log_fatal("emit failed (%s)\n", error_message);
 
     LLVMDisposeModule(module);
     LLVMContextDispose(context);
