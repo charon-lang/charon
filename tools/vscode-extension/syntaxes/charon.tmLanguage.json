@@ -4,7 +4,6 @@
 	"patterns": [
 		{ "include": "#comments" },
 		{ "include": "#keywords" },
-		{ "include": "#typedef" },
 		{ "include": "#common" }
 	],
 	"repository": {
@@ -55,7 +54,7 @@
 		},
 		"typedef": {
 			"name": "meta.typedef.charon",
-			"match": ":\\s*\\**([_a-zA-Z][_a-zA-Z0-9]*)",
+			"match": ":\\s*(?:\\*|\\[(?:0x|0b|0o)?\\d+\\])*([_a-zA-Z][_a-zA-Z0-9]*)",
 			"captures": { "1": { "name": "entity.name.type.charon" } }
 		},
 		"strings": {
