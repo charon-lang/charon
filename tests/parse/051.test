@@ -16,3 +16,5 @@ stmt
   (stmt.declaration `test` `**uint8`)
   (stmt.declaration `test` `(uint8, int32)`)
   (stmt.declaration `test` `(int32, (uint8, *uint8))`)
+  (stmt.declaration `test` `[10]uint32`)
+  (stmt.declaration `test` `[5][3]*int32`)

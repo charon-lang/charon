@@ -37,6 +37,10 @@ static void print_type(ir_type_t *type) {
             }
             printf(")");
             break;
+        case IR_TYPE_KIND_ARRAY:
+            printf("[%lu]", type->array.size);
+            print_type(type->array.type);
+            break;
     }
 }
 
