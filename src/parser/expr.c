@@ -76,22 +76,7 @@ static ir_node_t *helper_binary_operation(tokenizer_t *tokenizer, ir_node_t *(*f
 
 static ir_node_t *parse_literal_numeric(tokenizer_t *tokenizer) {
     token_t token_numeric = tokenizer_advance(tokenizer);
-    int base;
-    switch(token_numeric.kind) {
-        case TOKEN_KIND_CONST_NUMBER_DEC: base = 10; break;
-        case TOKEN_KIND_CONST_NUMBER_HEX: base = 16; break;
-        case TOKEN_KIND_CONST_NUMBER_BIN: base = 2; break;
-        case TOKEN_KIND_CONST_NUMBER_OCT: base = 8; break;
-        default: diag_error(util_loc(tokenizer, token_numeric), "expected a numeric literal");
-    }
-    char *text = util_text_make_from_token(tokenizer, token_numeric);
-    errno = 0;
-    char *stripped = text;
-    if(base != 10) stripped += 2;
-    uintmax_t value = strtoull(stripped, NULL, base);
-    if(errno == ERANGE) diag_error(util_loc(tokenizer, token_numeric), "numeric constant too large");
-    free(text);
-    return ir_node_make_expr_literal_numeric(value, util_loc(tokenizer, token_numeric));
+    return ir_node_make_expr_literal_numeric(util_number_make_from_token(tokenizer, token_numeric), util_loc(tokenizer, token_numeric));
 }
 
 static ir_node_t *parse_literal_string(tokenizer_t *tokenizer) {

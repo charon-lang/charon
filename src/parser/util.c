@@ -35,6 +35,25 @@ int util_token_cmp(tokenizer_t *tokenizer, token_t token, const char *string) {
     return strncmp(tokenizer->source->data_buffer + token.offset, string, token.size);
 }
 
+uintmax_t util_number_make_from_token(tokenizer_t *tokenizer, token_t token) {
+    int base;
+    switch(token.kind) {
+        case TOKEN_KIND_CONST_NUMBER_DEC: base = 10; break;
+        case TOKEN_KIND_CONST_NUMBER_HEX: base = 16; break;
+        case TOKEN_KIND_CONST_NUMBER_BIN: base = 2; break;
+        case TOKEN_KIND_CONST_NUMBER_OCT: base = 8; break;
+        default: diag_error(util_loc(tokenizer, token), "expected a numeric literal");
+    }
+    char *text = util_text_make_from_token(tokenizer, token);
+    errno = 0;
+    char *stripped = text;
+    if(base != 10) stripped += 2;
+    uintmax_t value = strtoull(stripped, NULL, base);
+    if(errno == ERANGE) diag_error(util_loc(tokenizer, token), "numeric constant too large");
+    free(text);
+    return value;
+}
+
 ir_type_t *util_parse_type(tokenizer_t *tokenizer) {
     if(util_try_consume(tokenizer, TOKEN_KIND_PARENTHESES_LEFT)) {
         size_t count = 0;
