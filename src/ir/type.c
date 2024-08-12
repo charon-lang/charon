@@ -22,6 +22,13 @@ static ir_type_t *make_type(ir_type_kind_t kind) {
     return type;
 }
 
+static ir_type_t *make_int_type(size_t bit_size, bool is_signed) {
+    ir_type_t *type = make_type(IR_TYPE_KIND_INTEGER);
+    type->integer.bit_size = bit_size,
+    type->integer.is_signed = is_signed;
+    return type;
+}
+
 ir_type_t *ir_type_pointer_make(ir_type_t *referred) {
     ir_type_t *type = make_type(IR_TYPE_KIND_POINTER);
     type->pointer.referred = referred;
@@ -35,11 +42,11 @@ ir_type_t *ir_type_tuple_make(size_t type_count, ir_type_t **types) {
     return type;
 }
 
-static ir_type_t *make_int_type(size_t bit_size, bool is_signed) {
-    ir_type_t *type = make_type(IR_TYPE_KIND_INTEGER);
-    type->integer.bit_size = bit_size,
-    type->integer.is_signed = is_signed;
-    return type;
+ir_type_t *ir_type_array_make(ir_type_t *type, size_t size) {
+    ir_type_t *new_type = make_type(IR_TYPE_KIND_ARRAY);
+    new_type->array.type = type;
+    new_type->array.size = size;
+    return new_type;
 }
 
 bool ir_type_eq(ir_type_t *a, ir_type_t *b) {
@@ -52,6 +59,9 @@ bool ir_type_eq(ir_type_t *a, ir_type_t *b) {
             if(a->tuple.type_count != b->tuple.type_count) return false;
             for(size_t i = 0; i < a->tuple.type_count; i++) if(!ir_type_eq(a->tuple.types[i], b->tuple.types[i])) return false;
             return true;
+        case IR_TYPE_KIND_ARRAY:
+            if(a->array.size != b->array.size) return false;
+            return ir_type_eq(a->array.type, b->array.type);
     }
     assert(false);
 }
