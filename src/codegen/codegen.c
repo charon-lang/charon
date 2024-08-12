@@ -81,6 +81,7 @@ static LLVMTypeRef llvm_type(codegen_state_t *state, ir_type_t *type) {
                 default: assert(false);
             }
         case IR_TYPE_KIND_POINTER: return LLVMPointerTypeInContext(state->context, 0);
+        case IR_TYPE_KIND_ARRAY: return LLVMArrayType2(llvm_type(state, type->array.type), type->array.size);
         case IR_TYPE_KIND_TUPLE:
             LLVMTypeRef types[type->tuple.type_count];
             for(size_t i = 0; i < type->tuple.type_count; i++) types[i] = llvm_type(state, type->tuple.types[i]);
@@ -631,11 +632,17 @@ static codegen_value_container_t cg_expr_cast(codegen_state_t *state, codegen_sc
 }
 
 static codegen_value_container_t cg_expr_access_index(codegen_state_t *state, codegen_scope_t *scope, ir_node_t *node) {
-    // TODO: implement when arrays
-    // codegen_value_container_t value_index = cg_expr(state, scope, node->expr_access_index.index);
-    // codegen_value_container_t value = cg_expr(state, scope, node->expr_access_index.value);
-    // LLVMBuildGEP2(state->builder, llvm_type(state, value.type), value.value, (LLVMValueRef[]) { LLVMConstInt(ir_type_get_uint(), 0, false), value_index.value }, 2, "expr.access_index");
-    assert(false);
+    codegen_value_container_t value = cg_expr_ext(state, scope, node->expr_access_index.value, false);
+    codegen_value_container_t index = cg_expr(state, scope, node->expr_access_index.index);
+
+    if(index.type->kind != IR_TYPE_KIND_INTEGER) diag_error(node->source_location, "invalid type for indexing");
+    if(value.type->kind != IR_TYPE_KIND_ARRAY) diag_error(node->source_location, "can only index arrays");
+
+    return (codegen_value_container_t) {
+        .iref = true,
+        .type = value.type->array.type,
+        .value = LLVMBuildGEP2(state->builder, llvm_type(state, value.type), value.value, (LLVMValueRef[]) { LLVMConstInt(LLVMInt64TypeInContext(state->context), 0, false), index.value }, 2, "expr.access_index")
+    };
 }
 
 static codegen_value_container_t cg_expr_access_index_const(codegen_state_t *state, codegen_scope_t *scope, ir_node_t *node) {
@@ -647,6 +654,10 @@ static codegen_value_container_t cg_expr_access_index_const(codegen_state_t *sta
         case IR_TYPE_KIND_TUPLE:
             if(node->expr_access_index_const.index >= value.type->tuple.type_count) diag_error(node->source_location, "index out of bounds");
             member_type = value.type->tuple.types[node->expr_access_index_const.index];
+            break;
+        case IR_TYPE_KIND_ARRAY:
+            if(node->expr_access_index_const.index >= value.type->array.size) diag_error(node->source_location, "index out of bounds");
+            member_type = value.type->array.type;
             break;
         default: diag_error(node->source_location, "invalid type for constant indexing");
     }
