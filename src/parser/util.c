@@ -4,6 +4,7 @@
 #include "lib/diag.h"
 
 #include <string.h>
+#include <errno.h>
 #include <stdlib.h>
 
 source_location_t util_loc(tokenizer_t *tokenizer, token_t token) {
@@ -64,6 +65,11 @@ ir_type_t *util_parse_type(tokenizer_t *tokenizer) {
         } while(util_try_consume(tokenizer, TOKEN_KIND_COMMA));
         util_consume(tokenizer, TOKEN_KIND_PARENTHESES_RIGHT);
         return ir_type_tuple_make(count, types);
+    }
+    if(util_try_consume(tokenizer, TOKEN_KIND_BRACKET_LEFT)) {
+        uintmax_t size = util_number_make_from_token(tokenizer, tokenizer_advance(tokenizer));
+        util_consume(tokenizer, TOKEN_KIND_BRACKET_RIGHT);
+        return ir_type_array_make(util_parse_type(tokenizer), size);
     }
     if(util_try_consume(tokenizer, TOKEN_KIND_STAR)) return ir_type_pointer_make(util_parse_type(tokenizer));
     token_t token_primitive_type = util_consume(tokenizer, TOKEN_KIND_IDENTIFIER);
