@@ -313,33 +313,31 @@ static void cg_stmt_if(codegen_state_t *state, codegen_scope_t *scope, ir_node_t
 
     codegen_value_container_t condition = cg_expr(state, scope, node->stmt_if.condition);
     if(!ir_type_eq(condition.type, ir_type_get_bool())) diag_error(node->stmt_if.condition->source_location, "condition is not a boolean");
+    LLVMBuildCondBr(state->builder, condition.value, bb_then, node->stmt_if.else_body != NULL ? bb_else : bb_end);
 
-    bool create_end = node->stmt_if.else_body == NULL;
-    LLVMBuildCondBr(state->builder, condition.value, bb_then, !create_end ? bb_else : bb_end);
+    bool then_returned = false;
+    bool else_returned = false;
 
     // Create then, aka body
     LLVMPositionBuilderAtEnd(state->builder, bb_then);
     cg(state, scope, node->stmt_if.body);
-    if(LLVMGetBasicBlockTerminator(bb_then) == NULL) {
-        LLVMBuildBr(state->builder, bb_end);
-        create_end = true;
-    }
+    then_returned = state->current_function_returned;
     state->current_function_returned = false;
+    if(!then_returned) LLVMBuildBr(state->builder, bb_end);
 
     // Create else body
     if(node->stmt_if.else_body != NULL) {
         LLVMAppendExistingBasicBlock(func, bb_else);
         LLVMPositionBuilderAtEnd(state->builder, bb_else);
         cg(state, scope, node->stmt_if.else_body);
-        if(LLVMGetBasicBlockTerminator(bb_else) == NULL) {
-            LLVMBuildBr(state->builder, bb_end);
-            create_end = true;
-        }
+        else_returned = state->current_function_returned;
+        state->current_function_returned = false;
+        if(!else_returned) LLVMBuildBr(state->builder, bb_end);
     }
-    state->current_function_returned = !create_end;
+    state->current_function_returned = then_returned && else_returned;
 
     // Setup end block
-    if(!create_end) return;
+    if(then_returned && else_returned) return;
     LLVMAppendExistingBasicBlock(func, bb_end);
     LLVMPositionBuilderAtEnd(state->builder, bb_end);
 }
@@ -347,7 +345,7 @@ static void cg_stmt_if(codegen_state_t *state, codegen_scope_t *scope, ir_node_t
 static void cg_stmt_while(codegen_state_t *state, codegen_scope_t *scope, ir_node_t *node) {
     LLVMValueRef func = LLVMGetBasicBlockParent(LLVMGetInsertBlock(state->builder));
 
-    LLVMBasicBlockRef bb_top = LLVMAppendBasicBlockInContext(state->context, func, "while.top");
+    LLVMBasicBlockRef bb_top = LLVMAppendBasicBlockInContext(state->context, func, "while.cond");
     LLVMBasicBlockRef bb_then = LLVMCreateBasicBlockInContext(state->context, "while.then");
     LLVMBasicBlockRef bb_end = LLVMCreateBasicBlockInContext(state->context, "while.end");
 
