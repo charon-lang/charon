@@ -297,9 +297,11 @@ static void cg_stmt_declaration(codegen_state_t *state, codegen_scope_t *scope, 
 static void cg_stmt_return(codegen_state_t *state, codegen_scope_t *scope, ir_node_t *node) {
     state->current_function_returned = true;
     if(state->current_function_return_type->kind == IR_TYPE_KIND_VOID) {
+        if(node->stmt_return.value) cg_expr(state, scope, node->stmt_return.value);
         LLVMBuildRetVoid(state->builder);
         return;
     }
+    if(node->stmt_return.value == NULL) diag_error(node->source_location, "no return value");
     codegen_value_container_t value = cg_expr(state, scope, node->stmt_return.value);
     if(!ir_type_eq(value.type, state->current_function_return_type)) diag_error(node->source_location, "invalid type");
     LLVMBuildRet(state->builder, value.value);
