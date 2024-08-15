@@ -2,15 +2,12 @@
 
 #include "lib/log.h"
 #include "lib/diag.h"
+#include "codegen/symbol.h"
 
 #include <string.h>
 #include <assert.h>
 #include <stdio.h>
 #include <stdlib.h>
-#include <llvm-c/Core.h>
-#include <llvm-c/Analysis.h>
-#include <llvm-c/TargetMachine.h>
-#include <llvm-c/Transforms/PassBuilder.h>
 
 typedef struct codegen_scope codegen_scope_t;
 
@@ -27,45 +24,44 @@ typedef struct {
     LLVMValueRef ref;
 } codegen_variable_t;
 
-typedef struct {
-    ir_function_t *prototype;
-    LLVMTypeRef type;
-    LLVMValueRef ref;
-} codegen_function_t;
-
 struct codegen_scope {
     struct codegen_scope *parent;
     codegen_variable_t *variables;
     size_t variable_count;
 };
 
-typedef struct codegen_module {
-    const char *name;
-
-    struct codegen_module *parent;
-    struct codegen_module *children;
-    size_t child_count;
-
-    codegen_function_t *functions;
-    size_t function_count;
-} codegen_module_t;
-
 typedef struct {
     LLVMModuleRef module;
     LLVMContextRef context;
     LLVMBuilderRef builder;
 
-    codegen_module_t *current_module;
+    symbol_t *current_module;
 
-    codegen_module_t *modules;
-    size_t module_count;
-
-    codegen_function_t *functions;
-    size_t function_count;
+    symbol_list_t symbols;
 
     ir_type_t *current_function_return_type;
     bool current_function_returned;
 } codegen_state_t;
+
+static char *name_in_module(char *name, symbol_t *module) {
+    name = strdup(name);
+    while(true) {
+        if(module == NULL) break;
+        size_t name_length = strlen(name);
+        size_t module_name_length = strlen(module->name);
+        char *new = malloc(module_name_length + 2 + name_length + 1);
+        memcpy(new, module->name, module_name_length);
+        new[module_name_length] = ':';
+        new[module_name_length + 1] = ':';
+        memcpy(&new[module_name_length + 2], name, name_length);
+        new[module_name_length + 2 + name_length] = '\0';
+
+        free(name);
+        name = new;
+        module = module->module.parent;
+    }
+    return name;
+}
 
 static LLVMTypeRef llvm_type(codegen_state_t *state, ir_type_t *type) {
     assert(type != NULL);
@@ -121,63 +117,23 @@ static codegen_scope_t *scope_exit(codegen_scope_t *scope) {
     return parent;
 }
 
-static codegen_function_t *state_add_function(codegen_state_t *state, ir_function_t *prototype) {
+static symbol_t *state_add_function(codegen_state_t *state, ir_function_t *prototype, const char *full_name) {
     LLVMTypeRef fn_arguments[prototype->argument_count];
     for(size_t i = 0; i < prototype->argument_count; i++) fn_arguments[i] = llvm_type(state, prototype->arguments[i].type);
     LLVMTypeRef fn_return_type = LLVMVoidTypeInContext(state->context);
     if(prototype->return_type != NULL) fn_return_type = llvm_type(state, prototype->return_type);
     LLVMTypeRef fn_type = LLVMFunctionType(fn_return_type, fn_arguments, prototype->argument_count, prototype->varargs);
-    LLVMValueRef fn = LLVMAddFunction(state->module, prototype->name, fn_type);
-
-    codegen_function_t *function;
-    if(state->current_module == NULL) {
-        state->functions = realloc(state->functions, ++state->function_count * sizeof(codegen_function_t));
-        function = &state->functions[state->function_count - 1];
-    } else {
-        state->current_module->functions = realloc(state->current_module->functions, ++state->current_module->function_count * sizeof(codegen_function_t));
-        function = &state->current_module->functions[state->current_module->function_count - 1];
-    }
-    function->prototype = prototype;
-    function->type = fn_type;
-    function->ref = fn;
-    return function;
+    LLVMValueRef fn = LLVMAddFunction(state->module, full_name, fn_type);
+    return symbol_list_add_function(state->current_module == NULL ? &state->symbols : &state->current_module->module.symbols, prototype->name, full_name, prototype, fn_type, fn);
 }
 
-static codegen_function_t *module_get_function(codegen_module_t *module, const char *name) {
-    for(size_t i = 0; i < module->function_count; i++) {
-        if(strcmp(module->functions[i].prototype->name, name) != 0) continue;
-        return &module->functions[i];
-    }
-    return NULL;
-}
-
-static codegen_function_t *state_get_function(codegen_state_t *state, const char *name) {
+static symbol_t *state_get_function(codegen_state_t *state, const char *name, bool rec) {
     if(state->current_module != NULL) {
-        codegen_function_t *fn = module_get_function(state->current_module, name);
-        if(fn != NULL) return fn;
+        symbol_t *symbol = symbol_list_find_type(&state->current_module->module.symbols, name, SYMBOL_TYPE_FUNCTION);
+        if(symbol != NULL) return symbol;
+        if(!rec) return NULL;
     }
-
-    for(size_t i = 0; i < state->function_count; i++) {
-        if(strcmp(state->functions[i].prototype->name, name) != 0) continue;
-        return &state->functions[i];
-    }
-    return NULL;
-}
-
-static codegen_module_t *module_get_child(codegen_module_t *module, const char *name) {
-    for(size_t i = 0; i < module->child_count; i++) {
-        if(strcmp(module->children[i].name, name) != 0) continue;
-        return &module->children[i];
-    }
-    return NULL;
-}
-
-static codegen_module_t *state_get_module(codegen_state_t *state, const char *name) {
-    for(size_t i = 0; i < state->module_count; i++) {
-        if(strcmp(state->modules[i].name, name) != 0) continue;
-        return &state->modules[i];
-    }
-    return NULL;
+    return symbol_list_find_type(&state->symbols, name, SYMBOL_TYPE_FUNCTION);
 }
 
 static codegen_value_container_t resolve_iref(codegen_state_t *state, codegen_value_container_t value) {
@@ -189,7 +145,7 @@ static codegen_value_container_t resolve_iref(codegen_state_t *state, codegen_va
 }
 
 static void cg(codegen_state_t *state, codegen_scope_t *scope, ir_node_t *node);
-static codegen_value_container_t cg_expr_ext_selected_module(codegen_state_t *state, codegen_scope_t *scope, codegen_module_t *selected_module, ir_node_t *node);
+static codegen_value_container_t cg_expr_ext_selected_module(codegen_state_t *state, codegen_scope_t *scope, symbol_t *selected_module, ir_node_t *node);
 static codegen_value_container_t cg_expr_ext(codegen_state_t *state, codegen_scope_t *scope, ir_node_t *node, bool do_resolve_iref);
 static codegen_value_container_t cg_expr(codegen_state_t *state, codegen_scope_t *scope, ir_node_t *node);
 
@@ -203,31 +159,20 @@ static void cg_list(codegen_state_t *state, codegen_scope_t *scope, ir_node_list
 }
 
 static void cg_tlc_module(codegen_state_t *state, codegen_scope_t *scope, ir_node_t *node) {
-    codegen_module_t *module;
-    if(state->current_module != NULL) {
-        state->current_module->children = realloc(state->current_module->children, ++state->current_module->child_count * sizeof(codegen_module_t));
-        module = &state->current_module->children[state->current_module->child_count - 1];
-    } else {
-        state->modules = realloc(state->modules, ++state->module_count * sizeof(codegen_module_t));
-        module = &state->modules[state->module_count - 1];
-    }
-    module->parent = state->current_module;
-    module->name = node->tlc_module.name;
-    module->functions = NULL;
-    module->function_count = 0;
-    module->children = NULL;
-    module->child_count = 0;
-
-    state->current_module = module;
+    symbol_list_t *symbols = state->current_module == NULL ? &state->symbols : &state->current_module->module.symbols;
+    state->current_module = symbol_list_add_module(symbols, node->tlc_module.name, state->current_module);
     cg_list(state, scope, &node->tlc_module.tlcs);
-    state->current_module = state->current_module->parent;
+    state->current_module = state->current_module->module.parent;
 }
 
 static void cg_tlc_function(codegen_state_t *state, codegen_scope_t *scope, ir_node_t *node) {
-    if(state_get_function(state, node->tlc_function.prototype->name) != NULL) diag_error(node->source_location, "redefinition of `%s`", node->tlc_function.prototype->name);
-    codegen_function_t *fn = state_add_function(state, node->tlc_function.prototype);
+    if(state_get_function(state, node->tlc_function.prototype->name, false) != NULL) diag_error(node->source_location, "redefinition of `%s`", node->tlc_function.prototype->name);
 
-    LLVMBasicBlockRef bb_entry = LLVMAppendBasicBlockInContext(state->context, fn->ref, "tlc.function");
+    char *name = (char *) node->tlc_function.prototype->name;
+    if(state->current_module != NULL) name = name_in_module(name, state->current_module);
+    symbol_t *symbol = state_add_function(state, node->tlc_function.prototype, name);
+
+    LLVMBasicBlockRef bb_entry = LLVMAppendBasicBlockInContext(state->context, symbol->function.value, "tlc.function");
     LLVMPositionBuilderAtEnd(state->builder, bb_entry);
 
     state->current_function_return_type = node->tlc_function.prototype->return_type;
@@ -236,14 +181,14 @@ static void cg_tlc_function(codegen_state_t *state, codegen_scope_t *scope, ir_n
     for(size_t i = 0; i < node->tlc_function.prototype->argument_count; i++) {
         ir_function_argument_t *argument = &node->tlc_function.prototype->arguments[i];
         LLVMValueRef param = LLVMBuildAlloca(state->builder, llvm_type(state, argument->type), argument->name);
-        LLVMBuildStore(state->builder, LLVMGetParam(fn->ref, i), param);
+        LLVMBuildStore(state->builder, LLVMGetParam(symbol->function.value, i), param);
         scope_add_variable(scope, argument->name, argument->type, param);
     }
     cg_list(state, scope, &node->tlc_function.statements);
     scope = scope_exit(scope);
 
     if(!state->current_function_returned) {
-        if(fn->prototype->return_type->kind != IR_TYPE_KIND_VOID) diag_error(node->source_location, "missing return");
+        if(symbol->function.prototype->return_type->kind != IR_TYPE_KIND_VOID) diag_error(node->source_location, "missing return");
         LLVMBuildRetVoid(state->builder);
     }
     state->current_function_return_type = NULL;
@@ -251,9 +196,8 @@ static void cg_tlc_function(codegen_state_t *state, codegen_scope_t *scope, ir_n
 }
 
 static void cg_tlc_extern(codegen_state_t *state, codegen_scope_t *scope, ir_node_t *node) {
-    if(state->current_module != NULL) diag_error(node->source_location, "cannot declare an extern within a module");
-    if(state_get_function(state, node->tlc_extern.prototype->name) != NULL) diag_error(node->source_location, "redefinition of `%s`", node->tlc_function.prototype->name);
-    state_add_function(state, node->tlc_extern.prototype);
+    if(state_get_function(state, node->tlc_extern.prototype->name, false) != NULL) diag_error(node->source_location, "redefinition of `%s`", node->tlc_function.prototype->name);
+    state_add_function(state, node->tlc_extern.prototype, node->tlc_extern.prototype->name);
 }
 
 static void cg_stmt_block(codegen_state_t *state, codegen_scope_t *scope, ir_node_t *node) {
@@ -531,34 +475,34 @@ static codegen_value_container_t cg_expr_variable(codegen_state_t *state, codege
     };
 }
 
-static codegen_value_container_t cg_expr_call(codegen_state_t *state, codegen_scope_t *scope, codegen_module_t *selected_module, ir_node_t *node) {
-    codegen_function_t *fn;
+static codegen_value_container_t cg_expr_call(codegen_state_t *state, codegen_scope_t *scope, symbol_t *selected_module, ir_node_t *node) {
+    symbol_t *symbol;
     if(selected_module != NULL) {
-        fn = module_get_function(selected_module, node->expr_call.function_name);
+        symbol = symbol_list_find_type(&selected_module->module.symbols, node->expr_call.function_name, SYMBOL_TYPE_FUNCTION);
     } else {
-        fn = state_get_function(state, node->expr_call.function_name);
+        symbol = state_get_function(state, node->expr_call.function_name, true);
     }
-    if(fn == NULL) diag_error(node->source_location, "call to an unknown function `%s`", node->expr_call.function_name);
+    if(symbol == NULL) diag_error(node->source_location, "call to an unknown function `%s`", node->expr_call.function_name);
 
-    if(node->expr_call.arguments.count < fn->prototype->argument_count) diag_error(node->source_location, "missing arguments");
-    if(!fn->prototype->varargs && node->expr_call.arguments.count > fn->prototype->argument_count) diag_error(node->source_location, "invalid number of arguments");
+    if(node->expr_call.arguments.count < symbol->function.prototype->argument_count) diag_error(node->source_location, "missing arguments");
+    if(!symbol->function.prototype->varargs && node->expr_call.arguments.count > symbol->function.prototype->argument_count) diag_error(node->source_location, "invalid number of arguments");
 
     size_t argument_count = ir_node_list_count(&node->expr_call.arguments);
     LLVMValueRef arguments[node->expr_call.arguments.count];
     IR_NODE_LIST_FOREACH(&node->expr_call.arguments, {
         codegen_value_container_t argument = cg_expr(state, scope, node);
-        if(fn->prototype->argument_count > i && !ir_type_eq(argument.type, fn->prototype->arguments[i].type)) diag_error(node->source_location, "argument has invalid type");
+        if(symbol->function.prototype->argument_count > i && !ir_type_eq(argument.type, symbol->function.prototype->arguments[i].type)) diag_error(node->source_location, "argument has invalid type");
         arguments[i] = argument.value;
     });
 
     return (codegen_value_container_t) {
-        .type = fn->prototype->return_type,
-        .value = LLVMBuildCall2(state->builder, fn->type, fn->ref, arguments, argument_count, "")
+        .type = symbol->function.prototype->return_type,
+        .value = LLVMBuildCall2(state->builder, symbol->function.type, symbol->function.value, arguments, argument_count, "")
     };
 }
 
-static codegen_value_container_t cg_expr_selector(codegen_state_t *state, codegen_scope_t *scope, codegen_module_t *selected_module, ir_node_t *node) {
-    selected_module = (selected_module == NULL ? state_get_module(state, node->expr_selector.name) : module_get_child(selected_module, node->expr_selector.name));
+static codegen_value_container_t cg_expr_selector(codegen_state_t *state, codegen_scope_t *scope, symbol_t *selected_module, ir_node_t *node) {
+    selected_module = symbol_list_find_type(selected_module == NULL ? &state->symbols : &selected_module->module.symbols, node->expr_selector.name, SYMBOL_TYPE_MODULE);
     if(selected_module == NULL) diag_error(node->source_location, "unknown module `%s`", node->expr_selector.name);
     return cg_expr_ext_selected_module(state, scope, selected_module, node->expr_selector.value);
 }
@@ -670,7 +614,7 @@ static codegen_value_container_t cg_expr_access_index_const(codegen_state_t *sta
     };
 }
 
-static codegen_value_container_t cg_expr_ext_selected_module(codegen_state_t *state, codegen_scope_t *scope, codegen_module_t *selected_module, ir_node_t *node) {
+static codegen_value_container_t cg_expr_ext_selected_module(codegen_state_t *state, codegen_scope_t *scope, symbol_t *selected_module, ir_node_t *node) {
     switch(node->type) {
         case IR_NODE_TYPE_EXPR_CALL: return cg_expr_call(state, scope, selected_module, node);
         case IR_NODE_TYPE_EXPR_SELECTOR: return cg_expr_selector(state, scope, selected_module, node);
@@ -759,15 +703,12 @@ static void cg_root(ir_node_t *node, LLVMContextRef context, LLVMModuleRef modul
     state.context = context;
     state.module = module;
     state.builder = LLVMCreateBuilderInContext(state.context);
-    state.module_count = 0;
-    state.modules = NULL;
-    state.function_count = 0;
-    state.functions = NULL;
+    state.symbols = SYMBOL_LIST_INIT;
     state.current_module = NULL;
 
     cg_list(&state, NULL, &node->root.tlc_nodes);
 
-    free(state.functions);
+    symbol_list_free(state.symbols);
     LLVMDisposeBuilder(state.builder);
 }
 
