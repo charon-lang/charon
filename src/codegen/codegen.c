@@ -338,14 +338,13 @@ static codegen_value_container_t cg_expr_literal_char(codegen_state_t *state, co
 }
 
 static codegen_value_container_t cg_expr_literal_string(codegen_state_t *state, codegen_scope_t *scope, ir_node_t *node) {
-    ir_type_t *type = ir_type_pointer_make(ir_type_get_char());
+    size_t size = strlen(node->expr_literal.string_value) + 1;
+    ir_type_t *type = ir_type_array_make(ir_type_get_char(), size);
 
-    // TODO: array type mismatch, ig we need arrays :D
-    LLVMValueRef value = LLVMAddGlobal(state->module, LLVMArrayType2(LLVMInt8TypeInContext(state->context), strlen(node->expr_literal.string_value) + 1), "expr.literal_string");
+    LLVMValueRef value = LLVMAddGlobal(state->module, llvm_type(state, type), "expr.literal_string");
     LLVMSetLinkage(value, LLVMInternalLinkage);
     LLVMSetGlobalConstant(value, 1);
-    LLVMSetUnnamedAddress(value, LLVMGlobalUnnamedAddr);
-    LLVMSetInitializer(value, LLVMConstStringInContext(state->context, node->expr_literal.string_value, strlen(node->expr_literal.string_value) + 1, true));
+    LLVMSetInitializer(value, LLVMConstStringInContext(state->context, node->expr_literal.string_value, size, true));
 
     return (codegen_value_container_t) {
         .type = type,
@@ -572,6 +571,13 @@ static codegen_value_container_t cg_expr_cast(codegen_state_t *state, codegen_sc
         .value = LLVMBuildIntToPtr(state->builder, value_from.value, llvm_type(state, type_to), "cast.inttoptr")
     };
 
+    if(type_from->kind == IR_TYPE_KIND_ARRAY && type_to->kind == IR_TYPE_KIND_POINTER) {
+        if(ir_type_eq(type_from->array.type, type_to->pointer.referred)) return (codegen_value_container_t) {
+            .type = type_to,
+            .value = value_from.value // TODO: validate we dont actually need a cast here
+        };
+    }
+
     diag_error(node->source_location, "invalid cast");
 }
 
@@ -713,6 +719,8 @@ static void cg_root(ir_node_t *node, LLVMContextRef context, LLVMModuleRef modul
 }
 
 void codegen(ir_node_t *node, const char *path, const char *passes) {
+    assert(node->type == IR_NODE_TYPE_ROOT);
+
     char *error_message;
 
     // OPTIMIZE: this is kind of lazy
@@ -758,6 +766,8 @@ void codegen(ir_node_t *node, const char *path, const char *passes) {
 }
 
 void codegen_ir(ir_node_t *node, const char *path) {
+    assert(node->type == IR_NODE_TYPE_ROOT);
+
     LLVMContextRef context = LLVMContextCreate();
     LLVMModuleRef module = LLVMModuleCreateWithNameInContext("CharonModule", context);
 
