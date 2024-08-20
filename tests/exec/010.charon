@@ -4,7 +4,7 @@ fn brr() {
     let x = 0;
     while(true) {
         x += 1;
-        printf("<\n");
+        printf("<\n" as *char);
         if(x >= 5) return;
     }
 }
@@ -15,9 +15,9 @@ fn main() {
     let i = 10;
     while(i > 0) {
         i -= 1;
-        printf(">\n");
+        printf(">\n" as *char);
     }
 
     brr();
-    printf("> the end\n");
+    printf("> the end\n" as *char);
 }

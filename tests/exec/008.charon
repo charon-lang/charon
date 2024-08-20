@@ -4,7 +4,7 @@ fn main() {
     let x: u64 = 600;
     let xp: *u64 = &x;
     let y: u64 = *xp;
-    printf("> %lu\n", y);
+    printf("> %lu\n" as *char, y);
 
     let a: u64 = 543;
     let b: u64;
@@ -12,5 +12,5 @@ fn main() {
 
     c = &a;
     b = *c;
-    printf("> %lu\n", *&b);
+    printf("> %lu\n" as *char, *&b);
 }

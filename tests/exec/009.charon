@@ -8,8 +8,8 @@ fn main() {
 
     a = b = c = d = 5965;
 
-    printf("> %lu\n", a);
-    printf("> %lu\n", b);
-    printf("> %lu\n", c);
-    printf("> %lu\n", d);
+    printf("> %lu\n" as *char, a);
+    printf("> %lu\n" as *char, b);
+    printf("> %lu\n" as *char, c);
+    printf("> %lu\n" as *char, d);
 }

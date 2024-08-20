@@ -96,6 +96,8 @@ run_exec() {
         print_result 0 $TEST_NAME
         diff --color <(echo "$RESULT") <(echo "$EXPECTED")
     fi
+
+    rm -f out.ll
 }
 
 run_all() {

@@ -1,14 +1,14 @@
 extern fn printf(fmt: *u8, ...): i32;
 
 fn main() {
-    printf("hello\n");
+    printf("hello\n" as *char);
     if(true) {
-        printf("world\n");
+        printf("world\n" as *char);
     }
 
     if(5 > 10) {
-        printf("a\n");
+        printf("a\n" as *char);
     } else {
-        printf("b\n");
+        printf("b\n" as *char);
     }
 }
