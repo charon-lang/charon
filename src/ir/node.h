@@ -7,7 +7,7 @@
 #include <stdint.h>
 
 #define IR_NODE_LIST_INIT ((ir_node_list_t) { .count = 0, .first = NULL, .last = NULL })
-#define IR_NODE_LIST_FOREACH(LIST, BODY) { ir_node_t *__node = (LIST)->first; for(size_t __i = 0; __i < ir_node_list_count(LIST); __i++) { assert(__node != NULL); { ir_node_t *node = __node; size_t i = __i; BODY; }; __node = __node->next; }; assert(__node == NULL); }
+#define IR_NODE_LIST_FOREACH(LIST, BODY) { ir_node_t *__node = (LIST)->first; for(size_t __i = 0; __i < ir_node_list_count(LIST); __i++) { assert(__node != NULL); { [[maybe_unused]] ir_node_t *node = __node; [[maybe_unused]] size_t i = __i; BODY; }; __node = __node->next; }; assert(__node == NULL); }
 
 typedef enum {
     IR_NODE_TYPE_ROOT,
