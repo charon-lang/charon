@@ -757,7 +757,58 @@ static value_t cg_expr_ext(CG_EXPR_PARAMS, bool do_resolve_ref) {
     return value;
 }
 
-void codegen(ir_node_t *root_node, const char *path, const char *passes) {}
+void codegen(ir_node_t *root_node, const char *path, const char *passes) {
+    assert(root_node->type == IR_NODE_TYPE_ROOT);
+
+    char *error_message;
+
+    // OPTIMIZE: this is kind of lazy
+    LLVMInitializeAllTargetInfos();
+    LLVMInitializeAllTargetMCs();
+    LLVMInitializeAllTargets();
+    LLVMInitializeAllAsmParsers();
+    LLVMInitializeAllAsmPrinters();
+
+    const char *triple = LLVMGetDefaultTargetTriple();
+
+    LLVMTargetRef target;
+    if(LLVMGetTargetFromTriple(triple, &target, &error_message) != 0) log_fatal("failed to create target (%s)", error_message);
+
+    LLVMTargetMachineRef machine = LLVMCreateTargetMachine(target, triple, "generic", "", LLVMCodeGenLevelDefault, LLVMRelocDefault, LLVMCodeModelDefault);
+    if(machine == NULL) log_fatal("failed to create target machine");
+
+    context_t context;
+    context.llvm_context = LLVMContextCreate();
+    context.llvm_builder = LLVMCreateBuilderInContext(context.llvm_context);
+    context.llvm_module = LLVMModuleCreateWithNameInContext("CharonModule", context.llvm_context);
+    context.root_symtab = SYMBOL_TABLE_INIT;
+
+    gst(&context, &context.root_symtab, root_node);
+    cg_root(&context, &context.root_symtab, root_node);
+
+    error_message = NULL;
+    LLVMVerifyModule(context.llvm_module, LLVMReturnStatusAction, &error_message);
+    if(error_message != NULL) {
+        if(strlen(error_message) != 0) log_fatal("failed to verify module (%s)", error_message);
+        LLVMDisposeMessage(error_message);
+    }
+
+    if(passes != NULL) {
+        LLVMErrorRef error = LLVMRunPasses(context.llvm_module, passes, NULL, LLVMCreatePassBuilderOptions());
+        if(error != NULL) log_warning("llvm ir optimization failed (%s)", LLVMGetErrorMessage(error));
+    }
+
+    LLVMSetTarget(context.llvm_module, triple);
+    char *layout = LLVMCopyStringRepOfTargetData(LLVMCreateTargetDataLayout(machine));
+    LLVMSetDataLayout(context.llvm_module, layout);
+    LLVMDisposeMessage(layout);
+
+    if(LLVMTargetMachineEmitToFile(machine, context.llvm_module, path, LLVMObjectFile, &error_message) != 0) log_fatal("emit failed (%s)", error_message);
+
+    LLVMDisposeBuilder(context.llvm_builder);
+    LLVMDisposeModule(context.llvm_module);
+    LLVMContextDispose(context.llvm_context);
+}
 
 void codegen_ir(ir_node_t *root_node, const char *path) {
     context_t context;
