@@ -1,4 +1,5 @@
 #include "type.h"
+
 #include <assert.h>
 #include <stdlib.h>
 #include <stdio.h>
@@ -49,6 +50,28 @@ ir_type_t *ir_type_array_make(ir_type_t *type, size_t size) {
     return new_type;
 }
 
+ir_type_t *ir_type_function_make() {
+    ir_type_t *type = make_type(IR_TYPE_KIND_FUNCTION);
+    type->function.return_type = ir_type_get_void();
+    type->function.varargs = false;
+    type->function.argument_count = 0;
+    type->function.arguments = NULL;
+    return type;
+}
+
+void ir_type_function_set_varargs(ir_type_t *fn_type) {
+    fn_type->function.varargs = true;
+}
+
+void ir_type_function_set_return_type(ir_type_t *fn_type, ir_type_t *return_type) {
+    fn_type->function.return_type = return_type;
+}
+
+void ir_type_function_add_argument(ir_type_t *fn_type, ir_type_t *argument_type) {
+    fn_type->function.arguments = reallocarray(fn_type->function.arguments, ++fn_type->function.argument_count, sizeof(ir_type_t *));
+    fn_type->function.arguments[fn_type->function.argument_count - 1] = argument_type;
+}
+
 bool ir_type_eq(ir_type_t *a, ir_type_t *b) {
     if(a->kind != b->kind) return false;
     switch(a->kind) {
@@ -62,6 +85,11 @@ bool ir_type_eq(ir_type_t *a, ir_type_t *b) {
         case IR_TYPE_KIND_ARRAY:
             if(a->array.size != b->array.size) return false;
             return ir_type_eq(a->array.type, b->array.type);
+        case IR_TYPE_KIND_FUNCTION:
+            if(a->function.varargs != b->function.varargs) return false;
+            if(a->function.argument_count != b->function.argument_count) return false;
+            for(size_t i = 0; i < a->function.argument_count; i++) if(!ir_type_eq(a->function.arguments[i], b->function.arguments[i])) return false;
+            return ir_type_eq(a->function.return_type, b->function.return_type);
     }
     assert(false);
 }
@@ -78,6 +106,10 @@ ir_type_t *ir_type_get_bool() {
 
 ir_type_t *ir_type_get_char() {
     return ir_type_get_u8();
+}
+
+ir_type_t *ir_type_get_ptr() {
+    return ir_type_get_u64();
 }
 
 ir_type_t *ir_type_get_uint() {

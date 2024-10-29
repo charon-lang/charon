@@ -2,12 +2,13 @@
 
 #include "lib/source.h"
 #include "ir/type.h"
-#include "ir/function.h"
 
 #include <stdint.h>
+#include <assert.h>
 
+/* variables in body: node, i */
+#define IR_NODE_LIST_FOREACH(LIST, BODY) { ir_node_t *__node = (LIST)->first; for(size_t __i = 0; __i < ir_node_list_count(LIST); __i++) { assert(__node != NULL); { [[maybe_unused]] ir_node_t *node = __node; [[maybe_unused]] size_t i = __i; BODY; }; __node = __node->next; }; }
 #define IR_NODE_LIST_INIT ((ir_node_list_t) { .count = 0, .first = NULL, .last = NULL })
-#define IR_NODE_LIST_FOREACH(LIST, BODY) { ir_node_t *__node = (LIST)->first; for(size_t __i = 0; __i < ir_node_list_count(LIST); __i++) { assert(__node != NULL); { [[maybe_unused]] ir_node_t *node = __node; [[maybe_unused]] size_t i = __i; BODY; }; __node = __node->next; }; assert(__node == NULL); }
 
 typedef enum {
     IR_NODE_TYPE_ROOT,
@@ -73,7 +74,7 @@ struct ir_node {
     source_location_t source_location;
     union {
         struct {
-            ir_node_list_t tlc_nodes;
+            ir_node_list_t tlcs;
         } root;
 
         struct {
@@ -81,11 +82,14 @@ struct ir_node {
             ir_node_list_t tlcs;
         } tlc_module;
         struct {
-            ir_function_t *prototype;
-            ir_node_list_t statements;
+            const char *name;
+            const char **argument_names;
+            ir_type_t *type;
+            ir_node_t *statement;
         } tlc_function;
         struct {
-            ir_function_t *prototype;
+            const char *name;
+            ir_type_t *type;
         } tlc_extern;
 
         struct {
@@ -159,11 +163,11 @@ struct ir_node {
 void ir_node_list_append(ir_node_list_t *list, ir_node_t *node);
 size_t ir_node_list_count(ir_node_list_t *list);
 
-ir_node_t *ir_node_make_root(ir_node_list_t tlc_nodes, source_location_t source_location);
+ir_node_t *ir_node_make_root(source_location_t source_location);
 
 ir_node_t *ir_node_make_tlc_module(const char *name, ir_node_list_t tlcs, source_location_t source_location);
-ir_node_t *ir_node_make_tlc_function(ir_function_t *prototype, ir_node_list_t statements, source_location_t source_location);
-ir_node_t *ir_node_make_tlc_extern(ir_function_t *prototype, source_location_t source_location);
+ir_node_t *ir_node_make_tlc_function(const char *name, ir_type_t *type, const char **argument_names, ir_node_t *statement, source_location_t source_location);
+ir_node_t *ir_node_make_tlc_extern(const char *name, ir_type_t *type, source_location_t source_location);
 
 ir_node_t *ir_node_make_stmt_noop(source_location_t source_location);
 ir_node_t *ir_node_make_stmt_block(ir_node_list_t statements, source_location_t source_location);

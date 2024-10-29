@@ -41,6 +41,16 @@ static void print_type(ir_type_t *type) {
             printf("[%lu]", type->array.size);
             print_type(type->array.type);
             break;
+        case IR_TYPE_KIND_FUNCTION:
+            printf("fn(");
+            for(size_t i = 0; i < type->function.argument_count; i++) {
+                print_type(type->function.arguments[i]);
+                if(type->function.argument_count - 1 != i) printf(", ");
+            }
+            if(type->function.varargs) printf(", ...");
+            printf("): ");
+            print_type(type->function.return_type);
+            break;
     }
 }
 
@@ -59,8 +69,8 @@ static void print_node(ir_node_t *node, int depth) {
         case IR_NODE_TYPE_ROOT: printf("root"); break;
 
         case IR_NODE_TYPE_TLC_MODULE: printf("tlc.module `%s`", node->tlc_module.name); break;
-        case IR_NODE_TYPE_TLC_FUNCTION: printf("tlc.function `%s` `", node->tlc_function.prototype->name); print_type(node->tlc_function.prototype->return_type); printf("`"); if(node->tlc_function.prototype->varargs) printf(" varargs"); break;
-        case IR_NODE_TYPE_TLC_EXTERN: printf("tlc.extern `%s` `", node->tlc_extern.prototype->name); print_type(node->tlc_extern.prototype->return_type); printf("`"); if(node->tlc_extern.prototype->varargs) printf(" varargs"); break;
+        case IR_NODE_TYPE_TLC_FUNCTION: printf("tlc.function `%s` `", node->tlc_function.name); print_type(node->tlc_function.type); printf("`"); break;
+        case IR_NODE_TYPE_TLC_EXTERN: printf("tlc.extern `%s` `", node->tlc_extern.name); print_type(node->tlc_extern.type); printf("`"); break;
 
         case IR_NODE_TYPE_STMT_NOOP: printf("stmt.noop"); break;
         case IR_NODE_TYPE_STMT_BLOCK: printf("stmt.block"); break;
@@ -95,40 +105,19 @@ static void print_node(ir_node_t *node, int depth) {
 
     depth++;
     switch(node->type) {
-        case IR_NODE_TYPE_ROOT: print_list(&node->root.tlc_nodes, depth); break;
+        case IR_NODE_TYPE_ROOT: print_list(&node->root.tlcs, depth); break;
 
         case IR_NODE_TYPE_TLC_MODULE: print_list(&node->tlc_module.tlcs, depth); break;
         case IR_NODE_TYPE_TLC_FUNCTION:
-            if(node->tlc_function.prototype->argument_count > 0) {
-                printf("%*s", depth * 2, "");
-                printf("args:\n");
-                for(size_t i = 0; i < node->tlc_function.prototype->argument_count; i++) {
-                    ir_function_argument_t *argument = &node->tlc_function.prototype->arguments[i];
-                    printf("%*s", (depth + 1) * 2, "");
-                    printf("- %s `", argument->name);
-                    print_type(argument->type);
-                    printf("`\n");
+            if(node->tlc_function.type->function.argument_count > 0) {
+                printf("%*sargs:\n", depth * 2, "");
+                for(size_t i = 0; i < node->tlc_function.type->function.argument_count; i++) {
+                    printf("%*s- %s\n", (depth + 1) * 2, "", node->tlc_function.argument_names[i]);
                 }
             }
-            if(node->tlc_function.statements.count > 0) {
-                printf("%*s", depth * 2, "");
-                printf("body:\n");
-                print_list(&node->tlc_function.statements, depth + 1);
-            }
+            print_node(node->tlc_function.statement, depth);
             break;
-        case IR_NODE_TYPE_TLC_EXTERN:
-            if(node->tlc_function.prototype->argument_count > 0) {
-                printf("%*s", depth * 2, "");
-                printf("args:\n");
-                for(size_t i = 0; i < node->tlc_function.prototype->argument_count; i++) {
-                    ir_function_argument_t *argument = &node->tlc_function.prototype->arguments[i];
-                    printf("%*s", (depth + 1) * 2, "");
-                    printf("- %s `", argument->name);
-                    print_type(argument->type);
-                    printf("`\n");
-                }
-            }
-            break;
+        case IR_NODE_TYPE_TLC_EXTERN: break;
 
         case IR_NODE_TYPE_STMT_NOOP: break;
         case IR_NODE_TYPE_STMT_BLOCK: print_list(&node->stmt_block.statements, depth); break;

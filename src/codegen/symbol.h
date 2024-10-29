@@ -1,39 +1,42 @@
 #pragma once
 
 #include "codegen/codegen.h"
-#include "ir/function.h"
+#include "ir/type.h"
 
-#define SYMBOL_LIST_INIT (symbol_list_t) { .symbol_count = 0, .symbols = NULL }
+#define SYMBOL_TABLE_INIT (symbol_table_t) { .parent = NULL, .symbols = NULL, .symbol_count = 0 }
 
 typedef enum {
-    SYMBOL_TYPE_FUNCTION,
-    SYMBOL_TYPE_MODULE
-} symbol_type_t;
+    SYMBOL_KIND_MODULE,
+    SYMBOL_KIND_FUNCTION,
+    SYMBOL_KIND_VARIABLE
+} symbol_kind_t;
 
-typedef struct symbol_list {
-    struct symbol *symbols;
+typedef struct symbol symbol_t;
+typedef struct symbol_table symbol_table_t;
+
+struct symbol_table {
+    symbol_t *parent;
+    symbol_t *symbols;
     size_t symbol_count;
-} symbol_list_t;
+};
 
-typedef struct symbol {
+struct symbol {
     const char *name;
-    const char *full_name;
-    symbol_type_t type;
+    symbol_kind_t kind;
+    symbol_table_t *table;
     union {
         struct {
-            ir_function_t *prototype;
-            LLVMTypeRef type;
-            LLVMValueRef value;
-        } function;
-        struct {
-            struct symbol *parent;
-            symbol_list_t symbols;
+            symbol_table_t symtab;
         } module;
+        struct {
+            ir_type_t *type;
+            LLVMValueRef llvm_value;
+        } function;
     };
-} symbol_t;
+};
 
-void symbol_list_free(symbol_list_t list);
-symbol_t *symbol_list_find(symbol_list_t *list, const char *name);
-symbol_t *symbol_list_find_type(symbol_list_t *list, const char *name, symbol_type_t type);
-symbol_t *symbol_list_add_function(symbol_list_t *list, const char *name, const char *full_name, ir_function_t *prototype, LLVMTypeRef type, LLVMValueRef value);
-symbol_t *symbol_list_add_module(symbol_list_t *list, const char *name, symbol_t *parent);
+symbol_t *symbol_table_find(symbol_table_t *symtab, const char *name);
+symbol_t *symbol_table_find_kind(symbol_table_t *symtab, const char *name, symbol_kind_t kind);
+symbol_t *symbol_table_add_module(symbol_table_t *symtab, const char *name);
+symbol_t *symbol_table_add_function(symbol_table_t *symtab, const char *name, ir_type_t *type, LLVMValueRef llvm_value);
+bool symbol_table_exists(symbol_table_t *symtab, const char *name);

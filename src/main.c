@@ -1,3 +1,4 @@
+#include "version.h"
 #include "lib/source.h"
 #include "lib/log.h"
 #include "lexer/tokenizer.h"
@@ -74,7 +75,7 @@ int main(int argc, char *argv[]) {
 
     switch(mode) {
         case INFO:
-            printf("Charon (dev)\n");
+            printf("Charon v%u.%u (" __DATE__ " " __TIME__ ")\n", VERSION_MAJOR, VERSION_MINOR);
             if(LLVMIsMultithreaded()) printf("Multithreaded\n");
             break;
         case DEFAULT:

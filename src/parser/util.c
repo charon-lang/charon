@@ -60,7 +60,7 @@ ir_type_t *util_parse_type(tokenizer_t *tokenizer) {
         size_t count = 0;
         ir_type_t **types = NULL;
         do {
-            types = realloc(types, ++count * sizeof(ir_type_t *));
+            types = reallocarray(types, ++count, sizeof(ir_type_t *));
             types[count - 1] = util_parse_type(tokenizer);
         } while(util_try_consume(tokenizer, TOKEN_KIND_COMMA));
         util_consume(tokenizer, TOKEN_KIND_PARENTHESES_RIGHT);
@@ -73,9 +73,9 @@ ir_type_t *util_parse_type(tokenizer_t *tokenizer) {
     }
     if(util_try_consume(tokenizer, TOKEN_KIND_STAR)) return ir_type_pointer_make(util_parse_type(tokenizer));
     token_t token_primitive_type = util_consume(tokenizer, TOKEN_KIND_IDENTIFIER);
-    if(util_token_cmp(tokenizer, token_primitive_type, "void") == 0) return ir_type_get_void();
     if(util_token_cmp(tokenizer, token_primitive_type, "bool") == 0) return ir_type_get_bool();
     if(util_token_cmp(tokenizer, token_primitive_type, "char") == 0) return ir_type_get_char();
+    if(util_token_cmp(tokenizer, token_primitive_type, "ptr") == 0) return ir_type_get_ptr();
     if(util_token_cmp(tokenizer, token_primitive_type, "uint") == 0) return ir_type_get_uint();
     if(util_token_cmp(tokenizer, token_primitive_type, "u8") == 0) return ir_type_get_u8();
     if(util_token_cmp(tokenizer, token_primitive_type, "u16") == 0) return ir_type_get_u16();

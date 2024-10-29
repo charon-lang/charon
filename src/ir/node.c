@@ -21,9 +21,9 @@ size_t ir_node_list_count(ir_node_list_t *list) {
     return list->count;
 }
 
-ir_node_t *ir_node_make_root(ir_node_list_t tlc_nodes, source_location_t source_location) {
+ir_node_t *ir_node_make_root(source_location_t source_location) {
     ir_node_t *node = make_node(IR_NODE_TYPE_ROOT, source_location);
-    node->root.tlc_nodes = tlc_nodes;
+    node->root.tlcs = IR_NODE_LIST_INIT;
     return node;
 }
 
@@ -34,16 +34,19 @@ ir_node_t *ir_node_make_tlc_module(const char *name, ir_node_list_t tlcs, source
     return node;
 }
 
-ir_node_t *ir_node_make_tlc_function(ir_function_t *prototype, ir_node_list_t statements, source_location_t source_location) {
+ir_node_t *ir_node_make_tlc_function(const char *name, ir_type_t *type, const char **argument_names, ir_node_t *statement, source_location_t source_location) {
     ir_node_t *node = make_node(IR_NODE_TYPE_TLC_FUNCTION, source_location);
-    node->tlc_function.prototype = prototype;
-    node->tlc_function.statements = statements;
+    node->tlc_function.name = name;
+    node->tlc_function.type = type;
+    node->tlc_function.argument_names = argument_names;
+    node->tlc_function.statement = statement;
     return node;
 }
 
-ir_node_t *ir_node_make_tlc_extern(ir_function_t *prototype, source_location_t source_location) {
+ir_node_t *ir_node_make_tlc_extern(const char *name, ir_type_t *type, source_location_t source_location) {
     ir_node_t *node = make_node(IR_NODE_TYPE_TLC_EXTERN, source_location);
-    node->tlc_extern.prototype = prototype;
+    node->tlc_function.name = name;
+    node->tlc_extern.type = type;
     return node;
 }
 

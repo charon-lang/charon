@@ -7,8 +7,7 @@
 #include <stdlib.h>
 
 ir_node_t *parser_root(tokenizer_t *tokenizer) {
-    source_location_t source_location = util_loc(tokenizer, tokenizer_peek(tokenizer));
-    ir_node_list_t tlc_nodes = IR_NODE_LIST_INIT;
-    while(!tokenizer_is_eof(tokenizer)) ir_node_list_append(&tlc_nodes, parser_tlc(tokenizer));
-    return ir_node_make_root(tlc_nodes, source_location);
+    ir_node_t *node = ir_node_make_root(util_loc(tokenizer, tokenizer_peek(tokenizer)));
+    while(!tokenizer_is_eof(tokenizer)) ir_node_list_append(&node->root.tlcs, parser_tlc(tokenizer));
+    return node;
 }

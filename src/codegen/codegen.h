@@ -7,5 +7,5 @@
 #include <llvm-c/TargetMachine.h>
 #include <llvm-c/Transforms/PassBuilder.h>
 
-void codegen(ir_node_t *node, const char *path, const char *passes);
-void codegen_ir(ir_node_t *node, const char *path);
+void codegen(ir_node_t *root, const char *path, const char *passes);
+void codegen_ir(ir_node_t *root, const char *path);

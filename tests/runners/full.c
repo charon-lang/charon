@@ -15,10 +15,10 @@ int main(int argc, char **argv) {
     source_t *source = source_from_path(argv[1]);
 
     tokenizer_t *tokenizer = tokenizer_make(source);
-    ir_node_t *node = parser_root(tokenizer);
+    ir_node_t *root_node = parser_root(tokenizer);
     tokenizer_free(tokenizer);
 
-    codegen_ir(node, argv[2]);
+    codegen_ir(root_node, argv[2]);
 
     source_free(source);
     return EXIT_SUCCESS;
