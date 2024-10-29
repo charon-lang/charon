@@ -1,6 +1,6 @@
 extern fn printf(fmt: *u8, ...): i32;
-extern fn malloc(size: u64): *void;
-extern fn free(ptr: *void);
+extern fn malloc(size: u64): ptr;
+extern fn free(ptr: ptr);
 
 fn main() {
     let brr = 0x80000 as *char;

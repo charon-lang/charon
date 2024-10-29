@@ -10,6 +10,8 @@ module Hello {
             printf("city\n" as *char);
         }
     }
+
+    module Earth {}
 }
 
 fn main(): i32 {

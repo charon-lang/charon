@@ -1,8 +1,11 @@
 root
 (root)
-  (tlc.function `hello` `void`)
-  (tlc.function `world` `uint64`)
-  (tlc.function `hello_world` `uint64` varargs)
+  (tlc.function `hello` `fn(): void`)
+    (stmt.block)
+  (tlc.function `world` `fn(): uint64`)
+    (stmt.block)
+  (tlc.function `hello_world` `fn(uint64, uint8, ...): uint64`)
     args:
-      - a `uint64`
-      - b `uint8`
+      - a
+      - b
+    (stmt.block)

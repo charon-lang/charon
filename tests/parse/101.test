@@ -1,5 +1,3 @@
 root
 (root)
-  (tlc.extern `printf` `int32` varargs)
-    args:
-      - fmt `*uint8`
+  (tlc.extern `printf` `fn(*uint8, ...): int32`)

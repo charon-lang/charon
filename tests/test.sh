@@ -17,6 +17,10 @@ while [[ $# -gt 0 ]]; do
             MODE="parse"
             shift
             ;;
+        --print-ir)
+            MODE="print"
+            shift
+            ;;
         -*|--*)
             echo "Unknown option $1"
             exit 1
@@ -100,6 +104,33 @@ run_exec() {
     rm -f out.ll
 }
 
+run_print() {
+    FILE_PATH="${1%.charon}"
+    FILE_NAME="${TEST_PATH##*/}"
+
+    if ! [ -f "$1" ]; then
+        print_result 0 $TEST_NAME "Missing $FILE_NAME.charon file"
+        return
+    fi
+
+    ./tests/runners/full $1 out.ll
+    EXIT_CODE=$?
+    if [ $EXIT_CODE -ne 0 ]; then
+        print_result 0 $FILE_NAME "tester exited with $EXIT_CODE"
+        return
+    fi
+
+    echo -e "\e[36m"
+    cat out.ll
+    echo -e "\e[0m"
+
+    print_result 1 $FILE_NAME
+
+    lli out.ll
+
+    rm -f out.ll
+}
+
 run_all() {
     make clean tests/runners/parse
     echo "| Running Parse Tests"
@@ -141,6 +172,15 @@ case $MODE in
 
         echo "| Running Execution Test \`$1\`"
         run_exec tests/exec/$1.test
+        echo "| Done"
+
+        make clean
+        ;;
+    print)
+        make clean tests/runners/full
+
+        echo "| Running Print \`$1\`"
+        run_print tests/$1.charon
         echo "| Done"
 
         make clean

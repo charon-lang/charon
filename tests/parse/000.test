@@ -1,7 +1,7 @@
 root
 (root)
-  (tlc.function `hello` `void`)
-    body:
+  (tlc.function `hello` `fn(): void`)
+    (stmt.block)
       (stmt.declaration `x`)
         (expr.literal_numeric `5`)
       (stmt.expression)
