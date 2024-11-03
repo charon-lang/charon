@@ -9,7 +9,7 @@ static hlir_type_t *parse_prototype(tokenizer_t *tokenizer, const char ***argume
     bool varargs = false;
     hlir_type_t **arguments = NULL;
     size_t argument_count = 0;
-    hlir_type_t *return_type = NULL;
+    hlir_type_t *return_type = hlir_type_get_void();
 
     util_consume(tokenizer, TOKEN_KIND_PARENTHESES_LEFT);
     if(tokenizer_peek(tokenizer).kind != TOKEN_KIND_PARENTHESES_RIGHT) {
