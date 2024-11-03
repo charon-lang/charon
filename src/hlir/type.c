@@ -81,7 +81,7 @@ hlir_type_t *hlir_type_structure_make(size_t member_count, hlir_type_t **members
 
 hlir_type_t *hlir_type_function_make(size_t argument_count, hlir_type_t **arguments, bool varargs, hlir_type_t *return_type) {
     hlir_type_t *type = make_type(HLIR_TYPE_KIND_FUNCTION);
-    type->function.return_type = hlir_type_get_void();
+    type->function.return_type = return_type;
     type->function.argument_count = argument_count;
     type->function.arguments = arguments;
     type->function.varargs = varargs;
