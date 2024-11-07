@@ -72,7 +72,7 @@ hlir_type_t *hlir_type_array_make(hlir_type_t *type, size_t size) {
     return new_type;
 }
 
-hlir_type_t *hlir_type_structure_make(size_t member_count, hlir_type_t **members) {
+hlir_type_t *hlir_type_structure_make(size_t member_count, hlir_type_structure_member_t *members) {
     hlir_type_t *type = make_type(HLIR_TYPE_KIND_STRUCTURE);
     type->structure.member_count = member_count;
     type->structure.members = members;
