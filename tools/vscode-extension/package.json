@@ -1,0 +1,36 @@
+{
+    "name": "charon-lang",
+    "displayName": "Charon Language",
+    "description": "Syntax highlighting for Charon",
+    "author": "WuX",
+    "repository": "https://git.thenest.dev/imwux/charon",
+    "version": "0.0.1",
+    "engines": { "vscode": "^1.89.0" },
+    "categories": [ "Programming Languages" ],
+    "contributes": {
+        "languages": [
+            {
+                "id": "charon",
+                "aliases": [
+                    "Charon",
+                    "charon"
+                ],
+                "extensions": [
+                    ".charon",
+                    ".cha"
+                ],
+                "configuration": "./language-configuration.json"
+            }
+        ],
+        "grammars": [
+            {
+                "language": "charon",
+                "scopeName": "source.charon",
+                "path": "./charon.tmLanguage.json"
+            }
+        ]
+    },
+    "dependencies": {
+        "vsce": "^2.15.0"
+    }
+}
