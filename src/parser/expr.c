@@ -191,6 +191,10 @@ static hlir_node_t *parse_unary_post(tokenizer_t *tokenizer) {
             value = hlir_node_make_expr_subscript_member(value, util_text_make_from_token(tokenizer, token_member), source_location);
         }
     }
+    if(util_try_consume(tokenizer, TOKEN_KIND_ARROW)) {
+        token_t token_member = util_consume(tokenizer, TOKEN_KIND_IDENTIFIER);
+        value = hlir_node_make_expr_subscript_member(hlir_node_make_expr_unary(HLIR_NODE_UNARY_OPERATION_DEREF, value, source_location), util_text_make_from_token(tokenizer, token_member), source_location);
+    }
     return value;
 }
 
