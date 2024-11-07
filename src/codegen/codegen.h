@@ -9,4 +9,4 @@
 #include <llvm-c/Transforms/PassBuilder.h>
 
 void codegen_ir(llir_node_t *root_node, llir_namespace_t *root_namespace, const char *path);
-void codegen(llir_node_t *root_node, llir_namespace_t *root_namespace, const char *path, const char *passes);
+void codegen(llir_node_t *root_node, llir_namespace_t *root_namespace, const char *path, const char *passes, LLVMCodeModel code_model);

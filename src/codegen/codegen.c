@@ -773,7 +773,7 @@ static void populate_namespace(context_t *context, llir_namespace_t *namespace) 
     }
 }
 
-void codegen(llir_node_t *root_node, llir_namespace_t *root_namespace, const char *path, const char *passes) {
+void codegen(llir_node_t *root_node, llir_namespace_t *root_namespace, const char *path, const char *passes, LLVMCodeModel code_model) {
     assert(root_node->type == LLIR_NODE_TYPE_ROOT);
 
     char *error_message;
@@ -790,7 +790,7 @@ void codegen(llir_node_t *root_node, llir_namespace_t *root_namespace, const cha
     LLVMTargetRef target;
     if(LLVMGetTargetFromTriple(triple, &target, &error_message) != 0) log_fatal("failed to create target (%s)", error_message);
 
-    LLVMTargetMachineRef machine = LLVMCreateTargetMachine(target, triple, "generic", "", LLVMCodeGenLevelDefault, LLVMRelocDefault, LLVMCodeModelDefault);
+    LLVMTargetMachineRef machine = LLVMCreateTargetMachine(target, triple, "generic", "", LLVMCodeGenLevelDefault, LLVMRelocDefault, code_model);
     if(machine == NULL) log_fatal("failed to create target machine");
 
     context_t context;

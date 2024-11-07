@@ -14,6 +14,7 @@
 #include <sys/stat.h>
 #include <errno.h>
 #include <llvm-c/Core.h>
+#include <llvm-c/TargetMachine.h>
 
 #define SEMVER_PRE_RELEASE "alpha.4"
 #define SEMVER_MAJOR 1
@@ -69,12 +70,16 @@ int main(int argc, char *argv[]) {
     enum { OBJECT, IR } format = OBJECT;
     enum { NONE, O1, O2, O3 } optimization = O1;
 
+    LLVMCodeModel code_model = LLVMCodeModelDefault;
+
     while(true) {
         int option_index = 0;
         int option = getopt_long(argc, argv, "ci", (struct option[]) {
             { .name = "compile", .has_arg = no_argument, .val = 'c' },
             { .name = "version", .has_arg = no_argument, .val = 'v' },
             { .name = "llvm-ir", .has_arg = no_argument, .val = IR, .flag = (int *) &format },
+
+            { .name = "memory-model", .has_arg = required_argument, .val = 'm' },
 
             { .name = "O0", .has_arg = no_argument, .val = NONE, .flag = (int *) &optimization },
             { .name = "O1", .has_arg = no_argument, .val = O1, .flag = (int *) &optimization },
@@ -87,6 +92,15 @@ int main(int argc, char *argv[]) {
         switch(option) {
             case 'c': mode = COMPILE; break;
             case 'v': mode = VERSION; break;
+            case 'm':
+                if(strcmp(optarg, "default") == 0) code_model = LLVMCodeModelDefault;
+                else if(strcmp(optarg, "kernel") == 0) code_model = LLVMCodeModelKernel;
+                else if(strcmp(optarg, "tiny") == 0) code_model = LLVMCodeModelTiny;
+                else if(strcmp(optarg, "small") == 0) code_model = LLVMCodeModelSmall;
+                else if(strcmp(optarg, "medium") == 0) code_model = LLVMCodeModelMedium;
+                else if(strcmp(optarg, "large") == 0) code_model = LLVMCodeModelLarge;
+                else log_fatal("unknown memory model `%s` (Use one of: default, kernel, tiny, small, medium, large)", optarg);
+                break;
         }
     }
 
@@ -136,7 +150,7 @@ int main(int argc, char *argv[]) {
                 char *extensionless_path = strip_extension(argv[i], '.', '/');
 
                 switch(format) {
-                    case OBJECT: codegen(llir_root_node, root_namespace, add_extension(extensionless_path, "o", '.'), optstr); break;
+                    case OBJECT: codegen(llir_root_node, root_namespace, add_extension(extensionless_path, "o", '.'), optstr, code_model); break;
                     case IR: codegen_ir(llir_root_node, root_namespace, add_extension(extensionless_path, "ll", '.')); break;
                 }
                 free(extensionless_path);
