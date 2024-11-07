@@ -11,6 +11,37 @@
 #define HLIR_NODE_LIST_FOREACH(LIST, BODY) { hlir_node_t *__node = (LIST)->first; for(size_t __i = 0; __i < hlir_node_list_count(LIST); __i++, __node = __node->next) { assert(__node != NULL); { [[maybe_unused]] hlir_node_t *node = __node; [[maybe_unused]] size_t i = __i; BODY; }; }; }
 #define HLIR_NODE_LIST_INIT ((hlir_node_list_t) { .count = 0, .first = NULL, .last = NULL })
 
+#define HLIR_CASE_TLC(BODY) \
+        case HLIR_NODE_TYPE_TLC_MODULE: \
+        case HLIR_NODE_TYPE_TLC_FUNCTION: \
+        case HLIR_NODE_TYPE_TLC_EXTERN: \
+        case HLIR_NODE_TYPE_TLC_TYPE_DEFINITION: \
+            BODY; break;
+
+#define HLIR_CASE_STMT(BODY) \
+        case HLIR_NODE_TYPE_STMT_BLOCK: \
+        case HLIR_NODE_TYPE_STMT_DECLARATION: \
+        case HLIR_NODE_TYPE_STMT_EXPRESSION: \
+        case HLIR_NODE_TYPE_STMT_RETURN: \
+        case HLIR_NODE_TYPE_STMT_IF: \
+        case HLIR_NODE_TYPE_STMT_WHILE: \
+            BODY; break;
+
+#define HLIR_CASE_EXPRESSION(BODY) \
+        case HLIR_NODE_TYPE_EXPR_LITERAL_NUMERIC: \
+        case HLIR_NODE_TYPE_EXPR_LITERAL_STRING: \
+        case HLIR_NODE_TYPE_EXPR_LITERAL_CHAR: \
+        case HLIR_NODE_TYPE_EXPR_LITERAL_BOOL: \
+        case HLIR_NODE_TYPE_EXPR_BINARY: \
+        case HLIR_NODE_TYPE_EXPR_UNARY: \
+        case HLIR_NODE_TYPE_EXPR_VARIABLE: \
+        case HLIR_NODE_TYPE_EXPR_TUPLE: \
+        case HLIR_NODE_TYPE_EXPR_CALL: \
+        case HLIR_NODE_TYPE_EXPR_CAST: \
+        case HLIR_NODE_TYPE_EXPR_SUBSCRIPT: \
+        case HLIR_NODE_TYPE_EXPR_SELECTOR: \
+            BODY; break;
+
 typedef enum {
     HLIR_NODE_TYPE_ROOT,
 
