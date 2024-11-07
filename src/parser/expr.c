@@ -174,23 +174,28 @@ static hlir_node_t *parse_unary(tokenizer_t *tokenizer) {
         case TOKEN_KIND_AMPERSAND: operation = HLIR_NODE_UNARY_OPERATION_REF; break;
         default:
             hlir_node_t *value = parse_primary(tokenizer);
-            token_t token = tokenizer_peek(tokenizer);
+            source_location_t source_location = util_loc(tokenizer, tokenizer_peek(tokenizer));
             if(util_try_consume(tokenizer, TOKEN_KIND_KEYWORD_AS)) {
                 hlir_type_t *type = util_parse_type(tokenizer);
-                value = hlir_node_make_expr_cast(value, type, util_loc(tokenizer, token));
+                value = hlir_node_make_expr_cast(value, type, source_location);
             }
             if(util_try_consume(tokenizer, TOKEN_KIND_BRACKET_LEFT)) {
                 hlir_node_t *index = parser_expr(tokenizer);
                 util_consume(tokenizer, TOKEN_KIND_BRACKET_RIGHT);
-                value = hlir_node_make_expr_subscript(value, index, util_loc(tokenizer, token));
+                value = hlir_node_make_expr_subscript_index(value, index, source_location);
             }
             if(util_try_consume(tokenizer, TOKEN_KIND_PERIOD)) {
-                token_t token_index = util_consume(tokenizer, TOKEN_KIND_CONST_NUMBER_DEC);
-                char *text = util_text_make_from_token(tokenizer, token_index);
-                uintmax_t index = strtoull(text, NULL, 10);
-                if(errno == ERANGE) diag_error(util_loc(tokenizer, token_index), "index too large");
-                free(text);
-                value = hlir_node_make_expr_subscript_const(value, index, util_loc(tokenizer, token));
+                if(tokenizer_peek(tokenizer).kind == TOKEN_KIND_CONST_NUMBER_DEC) {
+                    token_t token_index = util_consume(tokenizer, TOKEN_KIND_CONST_NUMBER_DEC);
+                    char *text = util_text_make_from_token(tokenizer, token_index);
+                    uintmax_t index = strtoull(text, NULL, 10);
+                    if(errno == ERANGE) diag_error(util_loc(tokenizer, token_index), "index too large");
+                    free(text);
+                    value = hlir_node_make_expr_subscript_index_const(value, index, source_location);
+                } else {
+                    token_t token_member = util_consume(tokenizer, TOKEN_KIND_IDENTIFIER);
+                    value = hlir_node_make_expr_subscript_member(value, util_text_make_from_token(tokenizer, token_member), source_location);
+                }
             }
             return value;
     }
