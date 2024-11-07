@@ -1,0 +1,23 @@
+extern fn printf(fmt: *char, ...): i32;
+
+type Test struct {
+    a: uint;
+    b: uint;
+}
+
+fn main(): uint {
+    let test: Test;
+
+    test.b = 15;
+    test.a = 5;
+
+    printf("%lu %lu\n" as *char, test.a, test.b);
+
+    printf("%lu\n" as *char, sum(&test));
+
+    return 0;
+}
+
+fn sum(v: *Test): uint {
+    return (*v).a + (*v).b;
+}

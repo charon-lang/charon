@@ -1,0 +1,19 @@
+extern fn printf(fmt: *u8, ...): i32;
+
+fn x(): uint {
+    return 5;
+}
+
+fn add(a: uint, b: uint): uint {
+    return a + b;
+}
+
+fn z() {
+    return;
+}
+
+fn main() {
+    printf("> %lu\n" as *char, x());
+    printf("> %lu\n" as *char, add(5, 10));
+    z();
+}
