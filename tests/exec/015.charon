@@ -14,10 +14,15 @@ fn main(): uint {
     printf("%lu %lu\n" as *char, test.a, test.b);
 
     printf("%lu\n" as *char, sum(&test));
+    printf("%lu\n" as *char, sum2(&test));
 
     return 0;
 }
 
 fn sum(v: *Test): uint {
     return (*v).a + (*v).b;
+}
+
+fn sum2(v: *Test): uint {
+    return v->a + v->b;
 }
