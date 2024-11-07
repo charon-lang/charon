@@ -163,19 +163,27 @@ hlir_node_t *hlir_node_make_expr_cast(hlir_node_t *value, hlir_type_t *type, sou
     return node;
 }
 
-hlir_node_t *hlir_node_make_expr_subscript(hlir_node_t *value, hlir_node_t *index, source_location_t source_location) {
+hlir_node_t *hlir_node_make_expr_subscript_index(hlir_node_t *value, hlir_node_t *index, source_location_t source_location) {
     hlir_node_t *node = node_make(HLIR_NODE_TYPE_EXPR_SUBSCRIPT, source_location);
-    node->expr_subscript.is_const = false;
+    node->expr_subscript.type = HLIR_NODE_SUBSCRIPT_TYPE_INDEX;
     node->expr_subscript.value = value;
     node->expr_subscript.index = index;
     return node;
 }
 
-hlir_node_t *hlir_node_make_expr_subscript_const(hlir_node_t *value, uintmax_t index, source_location_t source_location) {
+hlir_node_t *hlir_node_make_expr_subscript_index_const(hlir_node_t *value, uintmax_t index, source_location_t source_location) {
     hlir_node_t *node = node_make(HLIR_NODE_TYPE_EXPR_SUBSCRIPT, source_location);
-    node->expr_subscript.is_const = true;
+    node->expr_subscript.type = HLIR_NODE_SUBSCRIPT_TYPE_INDEX_CONST;
     node->expr_subscript.value = value;
     node->expr_subscript.index_const = index;
+    return node;
+}
+
+hlir_node_t *hlir_node_make_expr_subscript_member(hlir_node_t *value, const char *name, source_location_t source_location) {
+    hlir_node_t *node = node_make(HLIR_NODE_TYPE_EXPR_SUBSCRIPT, source_location);
+    node->expr_subscript.type = HLIR_NODE_SUBSCRIPT_TYPE_MEMBER;
+    node->expr_subscript.value = value;
+    node->expr_subscript.member = name;
     return node;
 }
 

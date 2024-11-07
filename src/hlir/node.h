@@ -62,6 +62,12 @@ typedef enum {
     HLIR_NODE_UNARY_OPERATION_REF
 } hlir_node_unary_operation_t;
 
+typedef enum {
+    HLIR_NODE_SUBSCRIPT_TYPE_INDEX,
+    HLIR_NODE_SUBSCRIPT_TYPE_INDEX_CONST,
+    HLIR_NODE_SUBSCRIPT_TYPE_MEMBER,
+} hlir_node_subscript_type_t;
+
 typedef struct hlir_node hlir_node_t;
 
 typedef struct {
@@ -148,11 +154,12 @@ struct hlir_node {
             hlir_type_t *type;
         } expr_cast;
         struct {
-            bool is_const;
+            hlir_node_subscript_type_t type;
             hlir_node_t *value;
             union {
                 uintmax_t index_const;
                 hlir_node_t *index;
+                const char *member;
             };
         } expr_subscript;
         struct {
@@ -190,6 +197,7 @@ hlir_node_t *hlir_node_make_expr_variable(const char *name, source_location_t so
 hlir_node_t *hlir_node_make_expr_call(const char *function_name, hlir_node_list_t arguments, source_location_t source_location);
 hlir_node_t *hlir_node_make_expr_tuple(hlir_node_list_t values, source_location_t source_location);
 hlir_node_t *hlir_node_make_expr_cast(hlir_node_t *value, hlir_type_t *type, source_location_t source_location);
-hlir_node_t *hlir_node_make_expr_subscript(hlir_node_t *value, hlir_node_t *index, source_location_t source_location);
-hlir_node_t *hlir_node_make_expr_subscript_const(hlir_node_t *value, uintmax_t index, source_location_t source_location);
+hlir_node_t *hlir_node_make_expr_subscript_index(hlir_node_t *value, hlir_node_t *index, source_location_t source_location);
+hlir_node_t *hlir_node_make_expr_subscript_index_const(hlir_node_t *value, uintmax_t index, source_location_t source_location);
+hlir_node_t *hlir_node_make_expr_subscript_member(hlir_node_t *value, const char *name, source_location_t source_location);
 hlir_node_t *hlir_node_make_expr_selector(const char *name, hlir_node_t *value, source_location_t source_location);
