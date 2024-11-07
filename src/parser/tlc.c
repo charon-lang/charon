@@ -46,17 +46,15 @@ static hlir_node_t *parse_type(tokenizer_t *tokenizer) {
             util_consume(tokenizer, TOKEN_KIND_BRACE_LEFT);
 
             size_t member_count = 0;
-            hlir_type_t **members = NULL;
+            hlir_type_structure_member_t *members = NULL;
             while(!util_try_consume(tokenizer, TOKEN_KIND_BRACE_RIGHT)) {
                 token_t token_identifier = util_consume(tokenizer, TOKEN_KIND_IDENTIFIER);
                 util_consume(tokenizer, TOKEN_KIND_COLON);
                 hlir_type_t *type = util_parse_type(tokenizer);
                 util_consume(tokenizer, TOKEN_KIND_SEMI_COLON);
 
-                members = reallocarray(members, ++member_count, sizeof(hlir_type_t *));
-                members[member_count - 1] = type;
-
-                (void) util_text_make_from_token(tokenizer, token_identifier); // TODO: save member name.. somewhere
+                members = reallocarray(members, ++member_count, sizeof(hlir_type_structure_member_t));
+                members[member_count - 1] = (hlir_type_structure_member_t) { .type = type, .name = util_text_make_from_token(tokenizer, token_identifier) };
             }
             return hlir_node_make_tlc_type_definition(util_text_make_from_token(tokenizer, token_identifier), hlir_type_structure_make(member_count, members), source_location);
         };
