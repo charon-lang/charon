@@ -500,12 +500,33 @@ static value_t cg_expr_unary(CG_EXPR_PARAMS) {
 }
 
 static value_t cg_expr_variable(CG_EXPR_PARAMS) {
-    scope_variable_t *var = scope_variable_find(scope, node->expr.variable.name);
-    if(var == NULL) diag_error(node->source_location, "referenced an undefined variable `%s`", node->expr.variable.name);
+    LLVMValueRef llvm_value;
+    llir_type_t *type;
+
+    scope_variable_t *scope_variable = scope_variable_find(scope, node->expr.variable.name);
+    if(scope_variable != NULL) {
+        llvm_value = scope_variable->llvm_value;
+        type = scope_variable->type;
+        goto found;
+    } else {
+        llir_symbol_t *symbol = llir_namespace_find_symbol(current_namespace, node->expr.call.function_name);
+        if(symbol == NULL) {
+            symbol = llir_namespace_find_symbol(context->root_namespace, node->expr.call.function_name);
+            if(symbol == NULL) goto not_found;
+        }
+
+        llvm_value = symbol->variable.codegen_data;
+        type = symbol->variable.type;
+        goto found;
+    }
+
+    not_found: diag_error(node->source_location, "referenced an undefined variable `%s`", node->expr.variable.name);
+    found:
+
     return (value_t) {
         .is_ref = true,
-        .type = var->type,
-        .llvm_value = var->llvm_value
+        .type = type,
+        .llvm_value = llvm_value
     };
 }
 
@@ -768,6 +789,11 @@ static void populate_namespace(context_t *context, llir_namespace_t *namespace) 
             case LLIR_SYMBOL_KIND_MODULE: populate_namespace(context, symbol->module.namespace); break;
             case LLIR_SYMBOL_KIND_FUNCTION:
                 symbol->function.codegen_data = LLVMAddFunction(context->llvm_module, mangle_name(symbol->name, symbol->namespace->parent), llir_type_to_llvm(context, symbol->function.type));
+                break;
+            case LLIR_SYMBOL_KIND_VARIABLE:
+                LLVMTypeRef type = llir_type_to_llvm(context, symbol->variable.type);
+                symbol->variable.codegen_data = LLVMAddGlobal(context->llvm_module, type, mangle_name(symbol->name, symbol->namespace->parent));
+                LLVMSetInitializer(symbol->variable.codegen_data, LLVMConstNull(type));
                 break;
         }
     }
