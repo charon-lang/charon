@@ -52,6 +52,14 @@ llir_symbol_t *llir_namespace_add_symbol_module(llir_namespace_t *namespace, con
 llir_symbol_t *llir_namespace_add_symbol_function(llir_namespace_t *namespace, const char *name, llir_type_t *type)  {
     llir_symbol_t *symbol = add_symbol(namespace, name, LLIR_SYMBOL_KIND_FUNCTION);
     symbol->function.type = type;
+    symbol->function.codegen_data = NULL;
+    return symbol;
+}
+
+llir_symbol_t *llir_namespace_add_symbol_variable(llir_namespace_t *namespace, const char *name, llir_type_t *type) {
+    llir_symbol_t *symbol = add_symbol(namespace, name, LLIR_SYMBOL_KIND_VARIABLE);
+    symbol->variable.type = type;
+    symbol->variable.codegen_data = NULL;
     return symbol;
 }
 
