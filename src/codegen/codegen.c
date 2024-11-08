@@ -662,34 +662,52 @@ static value_t cg_expr_subscript(CG_EXPR_PARAMS) {
             value_t index = cg_expr(context, current_namespace, scope, node->expr.subscript.index);
 
             if(index.type->kind != LLIR_TYPE_KIND_INTEGER) diag_error(node->source_location, "invalid type for indexing");
-            if(value.type->kind != LLIR_TYPE_KIND_ARRAY) diag_error(node->source_location, "can only index arrays");
+
+            llir_type_t *type;
+            LLVMValueRef llvm_value;
+            switch(value.type->kind) {
+                case LLIR_TYPE_KIND_ARRAY:
+                    type = value.type->array.type;
+                    llvm_value = LLVMBuildGEP2(context->llvm_builder, llir_type_to_llvm(context, value.type), value.llvm_value, (LLVMValueRef[]) { LLVMConstInt(LLVMInt64TypeInContext(context->llvm_context), 0, false), index.llvm_value }, 2, "expr.subscript");
+                    break;
+                case LLIR_TYPE_KIND_POINTER:
+                    type = value.type->pointer.pointee;
+                    llvm_value = LLVMBuildGEP2(context->llvm_builder, llir_type_to_llvm(context, type), resolve_ref(context, value).llvm_value, &index.llvm_value, 1, "expr.subscript");
+                    break;
+                default: diag_error(node->source_location, "invalid type for indexing");
+            }
 
             return (value_t) {
                 .is_ref = true,
-                .type = value.type->array.type,
-                .llvm_value = LLVMBuildGEP2(context->llvm_builder, llir_type_to_llvm(context, value.type), value.llvm_value, (LLVMValueRef[]) { LLVMConstInt(LLVMInt64TypeInContext(context->llvm_context), 0, false), index.llvm_value }, 2, "expr.subscript")
+                .type = type,
+                .llvm_value = llvm_value
             };
         }
         case LLIR_NODE_SUBSCRIPT_TYPE_INDEX_CONST: {
-            llir_type_t *member_type;
+            llir_type_t *type;
+            LLVMValueRef llvm_value;
             switch(value.type->kind) {
                 case LLIR_TYPE_KIND_TUPLE:
                     if(node->expr.subscript.index_const >= value.type->tuple.type_count) diag_error(node->source_location, "index out of bounds");
-                    member_type = value.type->tuple.types[node->expr.subscript.index_const];
+                    type = value.type->tuple.types[node->expr.subscript.index_const];
+                    llvm_value = LLVMBuildStructGEP2(context->llvm_builder, llir_type_to_llvm(context, value.type), value.llvm_value, node->expr.subscript.index_const, "expr.subscript");
                     break;
                 case LLIR_TYPE_KIND_ARRAY:
                     if(node->expr.subscript.index_const >= value.type->array.size) diag_error(node->source_location, "index out of bounds");
-                    member_type = value.type->array.type;
+                    type = value.type->array.type;
+                    llvm_value = LLVMBuildStructGEP2(context->llvm_builder, llir_type_to_llvm(context, value.type), value.llvm_value, node->expr.subscript.index_const, "expr.subscript");
+                    break;
+                case LLIR_TYPE_KIND_POINTER:
+                    type = value.type->pointer.pointee;
+                    llvm_value = LLVMBuildGEP2(context->llvm_builder, llir_type_to_llvm(context, type), resolve_ref(context, value).llvm_value, (LLVMValueRef[]) { LLVMConstInt(LLVMInt64TypeInContext(context->llvm_context), node->expr.subscript.index_const, false) }, 1, "expr.subscript");
                     break;
                 default: diag_error(node->source_location, "invalid type for constant indexing");
             }
-            assert(value.is_ref);
 
-            LLVMValueRef member_ptr = LLVMBuildStructGEP2(context->llvm_builder, llir_type_to_llvm(context, value.type), value.llvm_value, node->expr.subscript.index_const, "expr.subscript");
             return (value_t) {
                 .is_ref = true,
-                .type = member_type,
-                .llvm_value = member_ptr
+                .type = type,
+                .llvm_value = llvm_value
             };
         }
         case LLIR_NODE_SUBSCRIPT_TYPE_MEMBER: {

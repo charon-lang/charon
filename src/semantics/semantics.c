@@ -252,8 +252,6 @@ static llir_node_t *lower_node(context_t *context, llir_namespace_t *current_nam
                     break;
                 case HLIR_NODE_SUBSCRIPT_TYPE_MEMBER:
                     new_node->expr.subscript.type = LLIR_NODE_SUBSCRIPT_TYPE_MEMBER;
-
-
                     new_node->expr.subscript.member = node->expr_subscript.member;
                     break;
             }
