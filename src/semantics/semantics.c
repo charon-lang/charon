@@ -112,6 +112,7 @@ static llir_node_t *lower_node(context_t *context, llir_namespace_t *current_nam
         }
         case HLIR_NODE_TYPE_TLC_EXTERN: return NULL;
         case HLIR_NODE_TYPE_TLC_TYPE_DEFINITION: return NULL;
+        case HLIR_NODE_TYPE_TLC_DECLARATION: return NULL;
 
         case HLIR_NODE_TYPE_STMT_BLOCK: {
             llir_node_list_t statements = LLIR_NODE_LIST_INIT;
@@ -290,6 +291,10 @@ static void pass_two(context_t *context, llir_namespace_t *current_namespace, hl
             llir_namespace_update_type(current_namespace, node->tlc_type_definition.name, *lowered_type);
             free(lowered_type);
             break;
+        case HLIR_NODE_TYPE_TLC_DECLARATION:
+            if(llir_namespace_exists_symbol(current_namespace, node->tlc_declaration.name)) diag_error(node->source_location, "symbol `%s` already exists", node->tlc_declaration.name);
+            llir_namespace_add_symbol_variable(current_namespace, node->tlc_declaration.name, lower_type(context, current_namespace, node->tlc_declaration.type, node->source_location));
+            break;
 
         HLIR_CASE_STMT();
         HLIR_CASE_EXPRESSION();
@@ -311,6 +316,7 @@ static void pass_one(context_t *context, llir_namespace_t *current_namespace, hl
             if(llir_namespace_exists_type(current_namespace, node->tlc_type_definition.name)) diag_error(node->source_location, "type `%s` already exists", node->tlc_type_definition.name);
             llir_namespace_add_type(current_namespace, node->tlc_type_definition.name);
             break;
+        case HLIR_NODE_TYPE_TLC_DECLARATION: break;
 
         HLIR_CASE_STMT()
         HLIR_CASE_EXPRESSION()
