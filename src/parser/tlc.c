@@ -85,7 +85,7 @@ static hlir_node_t *parse_function(tokenizer_t *tokenizer) {
     return hlir_node_make_tlc_function(name, prototype, argument_names, parser_stmt(tokenizer), source_location);
 }
 
-hlir_node_t *parse_extern(tokenizer_t *tokenizer) {
+static hlir_node_t *parse_extern(tokenizer_t *tokenizer) {
     source_location_t source_location = util_loc(tokenizer, util_consume(tokenizer, TOKEN_KIND_KEYWORD_EXTERN));
 
     util_consume(tokenizer, TOKEN_KIND_KEYWORD_FUNCTION);
@@ -100,6 +100,15 @@ hlir_node_t *parse_extern(tokenizer_t *tokenizer) {
     return hlir_node_make_tlc_extern(name, prototype, source_location);
 }
 
+static hlir_node_t *parse_declaration(tokenizer_t *tokenizer) {
+    source_location_t source_location = util_loc(tokenizer, util_consume(tokenizer, TOKEN_KIND_KEYWORD_LET));
+    token_t token_name = util_consume(tokenizer, TOKEN_KIND_IDENTIFIER);
+    util_consume(tokenizer, TOKEN_KIND_COLON);
+    hlir_type_t *type = util_parse_type(tokenizer);
+    util_consume(tokenizer, TOKEN_KIND_SEMI_COLON);
+    return hlir_node_make_tlc_declaration(util_text_make_from_token(tokenizer, token_name), type, source_location);
+}
+
 hlir_node_t *parser_tlc(tokenizer_t *tokenizer) {
     token_t token = tokenizer_peek(tokenizer);
     switch(token.kind) {
@@ -107,6 +116,7 @@ hlir_node_t *parser_tlc(tokenizer_t *tokenizer) {
         case TOKEN_KIND_KEYWORD_FUNCTION: return parse_function(tokenizer);
         case TOKEN_KIND_KEYWORD_EXTERN: return parse_extern(tokenizer);
         case TOKEN_KIND_KEYWORD_TYPE: return parse_type(tokenizer);
+        case TOKEN_KIND_KEYWORD_LET: return parse_declaration(tokenizer);
         default: diag_error(util_loc(tokenizer, token), "expected top level construct, got %s", token_kind_stringify(token.kind));
     }
     __builtin_unreachable();
