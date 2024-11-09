@@ -1,0 +1,6 @@
+extern fn printf(fmt: *char, ...): i32;
+
+fn main(): uint {
+    printf("\43\104el\108o\n" as *char);
+    return 0;
+}
