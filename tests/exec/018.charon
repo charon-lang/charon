@@ -5,5 +5,8 @@ fn main(): uint {
 
     printf("%c\n" as *char, 'x');
     printf("%c\n" as *char, '\43');
+
+    '\0';
+
     return 0;
 }
