@@ -9,8 +9,14 @@
 #include <stdlib.h>
 #include <ctype.h>
 
+static char *add_char(char *str, size_t str_size, char ch) {
+    str = realloc(str, str_size);
+    str[str_size - 1] = ch;
+    return str;
+}
+
 static char *helper_string_escape(const char *src, size_t src_length, source_location_t source_location) {
-    char *dest = malloc(src_length + 1);
+    char *dest = NULL;
     int dest_index = 0;
 
     bool escaped = false;
@@ -18,54 +24,58 @@ static char *helper_string_escape(const char *src, size_t src_length, source_loc
     int escape_sequence_length = 0;
 
     for(size_t i = 0; i < src_length; i++) {
-        reset:
         char c = src[i];
-        if(escaped) {
-            if(escape_sequence_length > 0) {
-                if(c >= '0' && c <= '9') {
-                    escape_sequence[escape_sequence_length++] = c;
-                    if(escape_sequence_length <= 4) continue;
-                }
-                uintmax_t value = strtoull(escape_sequence, NULL, 10);
-                if(errno == ERANGE || value > UINT8_MAX) diag_error(source_location, "numeric constant of escape sequence too large");
-                dest[dest_index++] = (char) value;
 
-                escaped = false;
-                escape_sequence_length = 0;
-                memset(escape_sequence, '\0', sizeof(escape_sequence));
-                goto reset;
+        if(!escaped) {
+            if(c == '\\') {
+                escaped = true;
+            } else {
+                dest = add_char(dest, ++dest_index, c);
             }
-            switch(c) {
-                case '\'': dest[dest_index++] = '\''; break;
-                case '"': dest[dest_index++] = '\"'; break;
-                case '?': dest[dest_index++] = '\?'; break;
-                case '\\': dest[dest_index++] = '\\'; break;
-                case 'a': dest[dest_index++] = '\a'; break;
-                case 'b': dest[dest_index++] = '\b'; break;
-                case 'f': dest[dest_index++] = '\f'; break;
-                case 'n': dest[dest_index++] = '\n'; break;
-                case 'r': dest[dest_index++] = '\r'; break;
-                case 't': dest[dest_index++] = '\t'; break;
-                case 'v': dest[dest_index++] = '\v'; break;
-                default:
-                    if(c >= '0' && c <= '9') {
-                        escape_sequence[escape_sequence_length++] = c;
-                        continue;
-                    }
-                    diag_warn(source_location, "unknown escape sequence `\\%c`", c);
-                    dest[dest_index++] = c;
-                    break;
-            }
+            continue;
+        }
+
+        if(c >= '0' && c <= '9') {
+            escape_sequence[escape_sequence_length++] = c;
+            if(escape_sequence_length < 3 && i != src_length - 1) continue;
+            goto write_escape;
+        }
+
+        if(escape_sequence_length > 0) {
+            i--;
+            write_escape:
+            uintmax_t value = strtoull(escape_sequence, NULL, 10);
+            if(errno == ERANGE || value > UINT8_MAX) diag_error(source_location, "numeric constant of escape sequence too large");
+            dest = add_char(dest, ++dest_index, (char) value);
+
             escaped = false;
+            escape_sequence_length = 0;
+            memset(escape_sequence, '\0', sizeof(escape_sequence));
             continue;
         }
-        if(c == '\\') {
-            escaped = true;
-            continue;
+
+        switch(c) {
+            case '\'': dest = add_char(dest, ++dest_index, '\''); break;
+            case '"': dest = add_char(dest, ++dest_index, '\"'); break;
+            case '?': dest = add_char(dest, ++dest_index, '\?'); break;
+            case '\\': dest = add_char(dest, ++dest_index, '\\'); break;
+            case 'a': dest = add_char(dest, ++dest_index, '\a'); break;
+            case 'b': dest = add_char(dest, ++dest_index, '\b'); break;
+            case 'f': dest = add_char(dest, ++dest_index, '\f'); break;
+            case 'n': dest = add_char(dest, ++dest_index, '\n'); break;
+            case 'r': dest = add_char(dest, ++dest_index, '\r'); break;
+            case 't': dest = add_char(dest, ++dest_index, '\t'); break;
+            case 'v': dest = add_char(dest, ++dest_index, '\v'); break;
+            default:
+                diag_warn(source_location, "unknown escape sequence `\\%c`", c);
+                dest = add_char(dest, ++dest_index, c);
+                break;
         }
-        dest[dest_index++] = c;
+
+        escaped = false;
     }
-    dest[dest_index] = '\0';
+
+    dest = add_char(dest, ++dest_index, '\0');
     return dest;
 }
 
@@ -130,9 +140,13 @@ static hlir_node_t *parse_literal_string_raw(tokenizer_t *tokenizer) {
 static hlir_node_t *parse_literal_char(tokenizer_t *tokenizer) {
     token_t token_char = util_consume(tokenizer, TOKEN_KIND_CONST_CHAR);
     char *text = util_text_make_from_token(tokenizer, token_char);
-    char value = text[1];
+    char *value = helper_string_escape(&text[1], strlen(text) - 2, util_loc(tokenizer, token_char));
+    if(strlen(value) == 0) diag_error(util_loc(tokenizer, token_char), "zero characters in character literal");
+    if(strlen(value) > 1) diag_error(util_loc(tokenizer, token_char), "multiple characters in character literal");
+    char value_char = value[0];
+    free(value);
     free(text);
-    return hlir_node_make_expr_literal_char(value, util_loc(tokenizer, token_char));
+    return hlir_node_make_expr_literal_char(value_char, util_loc(tokenizer, token_char));
 }
 
 static hlir_node_t *parse_literal_bool(tokenizer_t *tokenizer) {
