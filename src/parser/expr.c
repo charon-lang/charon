@@ -7,19 +7,51 @@
 #include <string.h>
 #include <errno.h>
 #include <stdlib.h>
+#include <ctype.h>
 
 static char *helper_string_escape(const char *src, size_t src_length, source_location_t source_location) {
     char *dest = malloc(src_length + 1);
     int dest_index = 0;
+
     bool escaped = false;
+    char escape_sequence[4] = {};
+    int escape_sequence_length = 0;
+
     for(size_t i = 0; i < src_length; i++) {
+        reset:
         char c = src[i];
         if(escaped) {
+            if(escape_sequence_length > 0) {
+                if(c >= '0' && c <= '9') {
+                    escape_sequence[escape_sequence_length++] = c;
+                    if(escape_sequence_length <= 4) continue;
+                }
+                uintmax_t value = strtoull(escape_sequence, NULL, 10);
+                if(errno == ERANGE || value > UINT8_MAX) diag_error(source_location, "numeric constant of escape sequence too large");
+                dest[dest_index++] = (char) value;
+
+                escaped = false;
+                escape_sequence_length = 0;
+                memset(escape_sequence, '\0', sizeof(escape_sequence));
+                goto reset;
+            }
             switch(c) {
-                case 'n': dest[dest_index++] = '\n'; break;
-                case 't': dest[dest_index++] = '\t'; break;
+                case '\'': dest[dest_index++] = '\''; break;
+                case '"': dest[dest_index++] = '\"'; break;
+                case '?': dest[dest_index++] = '\?'; break;
                 case '\\': dest[dest_index++] = '\\'; break;
+                case 'a': dest[dest_index++] = '\a'; break;
+                case 'b': dest[dest_index++] = '\b'; break;
+                case 'f': dest[dest_index++] = '\f'; break;
+                case 'n': dest[dest_index++] = '\n'; break;
+                case 'r': dest[dest_index++] = '\r'; break;
+                case 't': dest[dest_index++] = '\t'; break;
+                case 'v': dest[dest_index++] = '\v'; break;
                 default:
+                    if(c >= '0' && c <= '9') {
+                        escape_sequence[escape_sequence_length++] = c;
+                        continue;
+                    }
                     diag_warn(source_location, "unknown escape sequence `\\%c`", c);
                     dest[dest_index++] = c;
                     break;
