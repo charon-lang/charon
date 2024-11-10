@@ -140,7 +140,8 @@ int main(int argc, char *argv[]) {
                 tokenizer_free(tokenizer);
 
                 llir_namespace_t *root_namespace = llir_namespace_make(NULL);
-                llir_node_t *llir_root_node = semantics(root_node, root_namespace);
+                llir_type_cache_t *anon_type_cache = llir_type_cache_make();
+                llir_node_t *llir_root_node = semantics(root_node, root_namespace, anon_type_cache);
 
                 char *extension = find_extension(argv[i], '.', '/');
                 if(extension == NULL || strcmp(extension, ".charon") != 0) {
@@ -150,10 +151,12 @@ int main(int argc, char *argv[]) {
                 char *extensionless_path = strip_extension(argv[i], '.', '/');
 
                 switch(format) {
-                    case OBJECT: codegen(llir_root_node, root_namespace, add_extension(extensionless_path, "o", '.'), optstr, code_model); break;
-                    case IR: codegen_ir(llir_root_node, root_namespace, add_extension(extensionless_path, "ll", '.')); break;
+                    case OBJECT: codegen(llir_root_node, root_namespace, anon_type_cache, add_extension(extensionless_path, "o", '.'), optstr, code_model); break;
+                    case IR: codegen_ir(llir_root_node, root_namespace, anon_type_cache, add_extension(extensionless_path, "ll", '.')); break;
                 }
                 free(extensionless_path);
+
+                llir_type_cache_free(anon_type_cache);
 
                 source_free(source);
             }

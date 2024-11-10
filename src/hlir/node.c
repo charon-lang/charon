@@ -150,9 +150,9 @@ hlir_node_t *hlir_node_make_expr_variable(const char *name, source_location_t so
     return node;
 }
 
-hlir_node_t *hlir_node_make_expr_call(const char *function_name, hlir_node_list_t arguments, source_location_t source_location) {
+hlir_node_t *hlir_node_make_expr_call(hlir_node_t *function_reference, hlir_node_list_t arguments, source_location_t source_location) {
     hlir_node_t *node = node_make(HLIR_NODE_TYPE_EXPR_CALL, source_location);
-    node->expr_call.function_name = function_name;
+    node->expr_call.function_reference = function_reference;
     node->expr_call.arguments = arguments;
     return node;
 }

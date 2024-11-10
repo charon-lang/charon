@@ -10,6 +10,7 @@
 
 typedef struct {
     llir_namespace_t *root_namespace;
+    llir_type_cache_t *anon_type_cache;
 } context_t;
 
 static llir_type_t *lower_type(context_t *context, llir_namespace_t *current_namespace, hlir_type_t *type, source_location_t source_location) {
@@ -19,51 +20,35 @@ static llir_type_t *lower_type(context_t *context, llir_namespace_t *current_nam
         return referred_type;
     }
 
-    llir_type_t *new_type = malloc(sizeof(llir_type_t));
     switch(type->kind) {
-        case HLIR_TYPE_KIND_VOID: new_type->kind = LLIR_TYPE_KIND_VOID; break;
-        case HLIR_TYPE_KIND_INTEGER:
-            new_type->kind = LLIR_TYPE_KIND_INTEGER;
-            new_type->integer.is_signed = type->integer.is_signed;
-            new_type->integer.bit_size = type->integer.bit_size;
-            break;
-        case HLIR_TYPE_KIND_POINTER:
-            new_type->kind = LLIR_TYPE_KIND_POINTER;
-            new_type->pointer.pointee = lower_type(context, current_namespace, type->pointer.pointee, source_location);
-            break;
-        case HLIR_TYPE_KIND_TUPLE:
-            new_type->kind = LLIR_TYPE_KIND_TUPLE;
-            new_type->tuple.type_count = type->tuple.type_count;
-            new_type->tuple.types = malloc(new_type->tuple.type_count * sizeof(llir_type_t *));
-            for(size_t i = 0; i < new_type->tuple.type_count; i++) new_type->tuple.types[i] = lower_type(context, current_namespace, type->tuple.types[i], source_location);
-            break;
-        case HLIR_TYPE_KIND_ARRAY:
-            new_type->kind = LLIR_TYPE_KIND_ARRAY;
-            new_type->array.size = type->array.size;
-            new_type->array.type = lower_type(context, current_namespace, type->array.type, source_location);
-            break;
-        case HLIR_TYPE_KIND_STRUCTURE:
-            new_type->kind = LLIR_TYPE_KIND_STRUCTURE;
-            new_type->structure.member_count = type->structure.member_count;
-            new_type->structure.members = malloc(new_type->structure.member_count * sizeof(llir_type_structure_member_t));
-            for(size_t i = 0; i < new_type->structure.member_count; i++) {
-                for(size_t j = i + 1; j < new_type->structure.member_count; j++) if(strcmp(type->structure.members[i].name, type->structure.members[j].name) == 0) diag_error(source_location, "duplicate member `%s`", type->structure.members[i].name);
-                new_type->structure.members[i] = (llir_type_structure_member_t) {
+        case HLIR_TYPE_KIND_VOID: return llir_type_cache_get_void(context->anon_type_cache);
+        case HLIR_TYPE_KIND_INTEGER: return llir_type_cache_get_integer(context->anon_type_cache, type->integer.bit_size, type->integer.is_signed);
+        case HLIR_TYPE_KIND_POINTER: return llir_type_cache_get_pointer(context->anon_type_cache, lower_type(context, current_namespace, type->pointer.pointee, source_location));
+        case HLIR_TYPE_KIND_TUPLE: {
+            llir_type_t **types = malloc(type->tuple.type_count * sizeof(llir_type_t *));
+            for(size_t i = 0; i < type->tuple.type_count; i++) types[i] = lower_type(context, current_namespace, type->tuple.types[i], source_location);
+            return llir_type_cache_get_tuple(context->anon_type_cache, type->tuple.type_count, types);
+        }
+        case HLIR_TYPE_KIND_ARRAY: return llir_type_cache_get_array(context->anon_type_cache, lower_type(context, current_namespace, type->array.type, source_location), type->array.size);
+        case HLIR_TYPE_KIND_STRUCTURE: {
+            llir_type_structure_member_t *members = malloc(type->structure.member_count * sizeof(llir_type_structure_member_t));
+            for(size_t i = 0; i < type->structure.member_count; i++) {
+                for(size_t j = i + 1; j < type->structure.member_count; j++) if(strcmp(type->structure.members[i].name, type->structure.members[j].name) == 0) diag_error(source_location, "duplicate member `%s`", type->structure.members[i].name);
+                members[i] = (llir_type_structure_member_t) {
                     .name = type->structure.members[i].name,
                     .type = lower_type(context, current_namespace, type->structure.members[i].type, source_location)
                 };
+                // TODO we need to confirm we arent doing recursive embedding somehow
             }
-            break;
-        case HLIR_TYPE_KIND_FUNCTION:
-            new_type->kind = LLIR_TYPE_KIND_FUNCTION;
-            new_type->function.return_type = lower_type(context, current_namespace, type->function.return_type, source_location);
-            new_type->function.varargs = type->function.varargs;
-            new_type->function.argument_count = type->function.argument_count;
-            new_type->function.arguments = malloc(new_type->function.argument_count * sizeof(llir_type_t *));
-            for(size_t i = 0; i < new_type->function.argument_count; i++) new_type->function.arguments[i] = lower_type(context, current_namespace, type->function.arguments[i], source_location);
-            break;
+            return llir_type_cache_get_structure(context->anon_type_cache, type->structure.member_count, members);
+        }
+        case HLIR_TYPE_KIND_FUNCTION: {
+            llir_type_t **arguments = malloc(type->function.argument_count * sizeof(llir_type_t *));
+            for(size_t i = 0; i < type->function.argument_count; i++) arguments[i] = lower_type(context, current_namespace, type->function.arguments[i], source_location);
+            return llir_type_cache_get_function(context->anon_type_cache, type->function.argument_count, arguments, type->function.varargs, lower_type(context, current_namespace, type->function.return_type, source_location));
+        }
     }
-    return new_type;
+    assert(false);
 }
 
 static llir_node_t *lower_node(context_t *context, llir_namespace_t *current_namespace, hlir_node_t *node) {
@@ -230,7 +215,7 @@ static llir_node_t *lower_node(context_t *context, llir_namespace_t *current_nam
             HLIR_NODE_LIST_FOREACH(&node->expr_call.arguments, llir_node_list_append(&arguments, lower_node(context, current_namespace, node)));
 
             new_node->type = LLIR_NODE_TYPE_EXPR_CALL;
-            new_node->expr.call.function_name = node->expr_call.function_name;
+            new_node->expr.call.function_reference = lower_node(context, current_namespace, node->expr_call.function_reference);
             new_node->expr.call.arguments = arguments;
             return new_node;
         }
@@ -283,6 +268,7 @@ static void pass_two(context_t *context, llir_namespace_t *current_namespace, hl
             llir_namespace_add_symbol_function(current_namespace, node->tlc_function.name, lower_type(context, current_namespace, node->tlc_function.type, node->source_location));
             break;
         case HLIR_NODE_TYPE_TLC_EXTERN:
+            if(current_namespace != context->root_namespace) diag_error(node->source_location, "extern can only be declared in the root");
             if(llir_namespace_exists_symbol(current_namespace, node->tlc_extern.name)) diag_error(node->source_location, "symbol `%s` already exists", node->tlc_extern.name);
             llir_namespace_add_symbol_function(current_namespace, node->tlc_extern.name, lower_type(context, current_namespace, node->tlc_extern.type, node->source_location));
             break;
@@ -405,12 +391,14 @@ static void pass_one(context_t *context, llir_namespace_t *current_namespace, hl
 //     }
 // }
 
-llir_node_t *semantics(hlir_node_t *root_node, llir_namespace_t *root_namespace) {
+llir_node_t *semantics(hlir_node_t *root_node, llir_namespace_t *root_namespace, llir_type_cache_t *anon_type_cache) {
     assert(root_node->type == HLIR_NODE_TYPE_ROOT);
 
     context_t context = {
-        .root_namespace = root_namespace
+        .root_namespace = root_namespace,
+        .anon_type_cache = anon_type_cache
     };
+
     pass_one(&context, context.root_namespace, root_node);
     pass_two(&context, context.root_namespace, root_node);
     llir_node_t *llir_root_node = lower_node(&context, context.root_namespace, root_node);

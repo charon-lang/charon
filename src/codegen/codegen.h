@@ -8,5 +8,5 @@
 #include <llvm-c/TargetMachine.h>
 #include <llvm-c/Transforms/PassBuilder.h>
 
-void codegen_ir(llir_node_t *root_node, llir_namespace_t *root_namespace, const char *path);
-void codegen(llir_node_t *root_node, llir_namespace_t *root_namespace, const char *path, const char *passes, LLVMCodeModel code_model);
+void codegen_ir(llir_node_t *root_node, llir_namespace_t *root_namespace, llir_type_cache_t *anon_type_cache, const char *path);
+void codegen(llir_node_t *root_node, llir_namespace_t *root_namespace, llir_type_cache_t *anon_type_cache, const char *path, const char *passes, LLVMCodeModel code_model);

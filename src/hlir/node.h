@@ -182,7 +182,7 @@ struct hlir_node {
             const char *name;
         } expr_variable;
         struct {
-            const char *function_name;
+            hlir_node_t *function_reference;
             hlir_node_list_t arguments;
         } expr_call;
         struct {
@@ -234,7 +234,7 @@ hlir_node_t *hlir_node_make_expr_literal_bool(bool value, source_location_t sour
 hlir_node_t *hlir_node_make_expr_binary(hlir_node_binary_operation_t operation, hlir_node_t *left, hlir_node_t *right, source_location_t source_location);
 hlir_node_t *hlir_node_make_expr_unary(hlir_node_unary_operation_t operation, hlir_node_t *operand, source_location_t source_location);
 hlir_node_t *hlir_node_make_expr_variable(const char *name, source_location_t source_location);
-hlir_node_t *hlir_node_make_expr_call(const char *function_name, hlir_node_list_t arguments, source_location_t source_location);
+hlir_node_t *hlir_node_make_expr_call(hlir_node_t *function_reference, hlir_node_list_t arguments, source_location_t source_location);
 hlir_node_t *hlir_node_make_expr_tuple(hlir_node_list_t values, source_location_t source_location);
 hlir_node_t *hlir_node_make_expr_cast(hlir_node_t *value, hlir_type_t *type, source_location_t source_location);
 hlir_node_t *hlir_node_make_expr_subscript_index(hlir_node_t *value, hlir_node_t *index, source_location_t source_location);

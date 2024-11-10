@@ -169,17 +169,6 @@ static hlir_node_t *parse_identifier(tokenizer_t *tokenizer) {
 
             hlir_node_t *value = parse_identifier(tokenizer);
             return hlir_node_make_expr_selector(name, value, util_loc(tokenizer, token_name));
-        case TOKEN_KIND_PARENTHESES_LEFT:
-            util_consume(tokenizer, TOKEN_KIND_PARENTHESES_LEFT);
-
-            hlir_node_list_t arguments = HLIR_NODE_LIST_INIT;
-            if(tokenizer_peek(tokenizer).kind != TOKEN_KIND_PARENTHESES_RIGHT) {
-                do {
-                    hlir_node_list_append(&arguments, parser_expr(tokenizer));
-                } while(util_try_consume(tokenizer, TOKEN_KIND_COMMA));
-            }
-            util_consume(tokenizer, TOKEN_KIND_PARENTHESES_RIGHT);
-            return hlir_node_make_expr_call(name, arguments, util_loc(tokenizer, token_name));
         default: return hlir_node_make_expr_variable(name, util_loc(tokenizer, token_name));
     }
     __builtin_unreachable();
@@ -231,6 +220,16 @@ static hlir_node_t *parse_unary_post(tokenizer_t *tokenizer) {
             util_consume(tokenizer, TOKEN_KIND_BRACKET_RIGHT);
             value = hlir_node_make_expr_subscript_index(value, index, source_location);
             continue;
+        }
+        if(util_try_consume(tokenizer, TOKEN_KIND_PARENTHESES_LEFT)) {
+            hlir_node_list_t arguments = HLIR_NODE_LIST_INIT;
+            if(tokenizer_peek(tokenizer).kind != TOKEN_KIND_PARENTHESES_RIGHT) {
+                do {
+                    hlir_node_list_append(&arguments, parser_expr(tokenizer));
+                } while(util_try_consume(tokenizer, TOKEN_KIND_COMMA));
+            }
+            util_consume(tokenizer, TOKEN_KIND_PARENTHESES_RIGHT);
+            value = hlir_node_make_expr_call(value, arguments, source_location);
         }
         if(util_try_consume(tokenizer, TOKEN_KIND_PERIOD)) {
             if(tokenizer_peek(tokenizer).kind == TOKEN_KIND_CONST_NUMBER_DEC) {

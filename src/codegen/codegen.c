@@ -7,12 +7,15 @@
 #include <stdlib.h>
 #include <string.h>
 
+#define LLIR_TYPE_BOOL llir_type_cache_get_integer(context->anon_type_cache, 1, false)
+
 typedef struct {
     LLVMContextRef llvm_context;
     LLVMBuilderRef llvm_builder;
     LLVMModuleRef llvm_module;
 
     llir_namespace_t *root_namespace;
+    llir_type_cache_t *anon_type_cache;
 
     struct {
         llir_type_t *type;
@@ -95,6 +98,7 @@ static LLVMTypeRef llir_type_to_llvm(context_t *context, llir_type_t *type) {
             for(size_t i = 0; i < type->structure.member_count; i++) types[i] = llir_type_to_llvm(context, type->structure.members[i].type);
             return LLVMStructTypeInContext(context->llvm_context, types, type->structure.member_count, false);
         }
+        case LLIR_TYPE_KIND_FUNCTION_REFERENCE: return LLVMPointerTypeInContext(context->llvm_context, 0);
     }
     assert(false);
 }
@@ -131,20 +135,11 @@ static scope_variable_t *scope_variable_find(scope_t *scope, const char *name) {
 
 static value_t resolve_ref(context_t *context, value_t value) {
     if(!value.is_ref) return value;
+    LLVMValueRef temp = LLVMBuildLoad2(context->llvm_builder, llir_type_to_llvm(context, value.type), value.llvm_value, "resolve_ref");
     return (value_t) {
         .type = value.type,
-        .llvm_value = LLVMBuildLoad2(context->llvm_builder, llir_type_to_llvm(context, value.type), value.llvm_value, "resolve_ref")
+        .llvm_value = temp
     };
-}
-
-
-// TODO vvv
-static llir_type_t *get_temporary_booltype() {
-    llir_type_t *type = malloc(sizeof(llir_type_t));
-    type->kind = LLIR_TYPE_KIND_INTEGER;
-    type->integer.bit_size = 1;
-    type->integer.is_signed = false;
-    return type;
 }
 
 // //
@@ -266,7 +261,7 @@ static void cg_stmt_if(CG_STMT_PARAMS) {
     LLVMBasicBlockRef bb_end = LLVMCreateBasicBlockInContext(context->llvm_context, "if.end");
 
     value_t condition = cg_expr(context, current_namespace, scope, node->stmt_if.condition);
-    if(!llir_type_eq(condition.type, get_temporary_booltype())) diag_error(node->stmt_if.condition->source_location, "condition is not a boolean");
+    if(!llir_type_eq(condition.type, LLIR_TYPE_BOOL)) diag_error(node->stmt_if.condition->source_location, "condition is not a boolean");
     LLVMBuildCondBr(context->llvm_builder, condition.llvm_value, bb_then, node->stmt_if.else_body != NULL ? bb_else : bb_end);
 
     bool then_returned = false;
@@ -311,7 +306,7 @@ static void cg_stmt_while(CG_STMT_PARAMS) {
     LLVMPositionBuilderAtEnd(context->llvm_builder, bb_top);
     if(node->stmt_while.condition != NULL) {
         value_t condition = cg_expr(context, current_namespace, scope, node->stmt_while.condition);
-        if(!llir_type_eq(condition.type, get_temporary_booltype())) diag_error(node->stmt_while.condition->source_location, "condition is not a boolean");
+        if(!llir_type_eq(condition.type, LLIR_TYPE_BOOL)) diag_error(node->stmt_while.condition->source_location, "condition is not a boolean");
         LLVMBuildCondBr(context->llvm_builder, condition.llvm_value, bb_then, bb_end);
     } else {
         LLVMBuildBr(context->llvm_builder, bb_then);
@@ -332,25 +327,15 @@ static void cg_stmt_while(CG_STMT_PARAMS) {
 // Expressions
 
 static value_t cg_expr_literal_numeric(CG_EXPR_PARAMS) {
-    // TODO vvv
-    llir_type_t *type = malloc(sizeof(llir_type_t));
-    type->kind = LLIR_TYPE_KIND_INTEGER;
-    type->integer.bit_size = 64;
-    type->integer.is_signed = false;
-
+    llir_type_t *type = llir_type_cache_get_integer(context->anon_type_cache, 64, false);
     return (value_t) {
-        .type = type,
+        .type = type, // TODO: signed?
         .llvm_value = LLVMConstInt(llir_type_to_llvm(context, type), node->expr.literal.numeric_value, type->integer.is_signed)
     };
 }
 
 static value_t cg_expr_literal_char(CG_EXPR_PARAMS) {
-    // TODO vvv
-    llir_type_t *type = malloc(sizeof(llir_type_t));
-    type->kind = LLIR_TYPE_KIND_INTEGER;
-    type->integer.bit_size = 8;
-    type->integer.is_signed = false;
-
+    llir_type_t *type = llir_type_cache_get_integer(context->anon_type_cache, 8, false);
     return (value_t) {
         .type = type,
         .llvm_value = LLVMConstInt(llir_type_to_llvm(context, type), node->expr.literal.char_value, false)
@@ -359,16 +344,7 @@ static value_t cg_expr_literal_char(CG_EXPR_PARAMS) {
 
 static value_t cg_expr_literal_string(CG_EXPR_PARAMS) {
     size_t size = strlen(node->expr.literal.string_value) + 1;
-
-    // TODO vvv
-    llir_type_t *chartype = malloc(sizeof(llir_type_t));
-    chartype->kind = LLIR_TYPE_KIND_INTEGER;
-    chartype->integer.bit_size = 8;
-    chartype->integer.is_signed = false;
-    llir_type_t *type = malloc(sizeof(llir_type_t));
-    type->kind = LLIR_TYPE_KIND_ARRAY;
-    type->array.size = size;
-    type->array.type = chartype;
+    llir_type_t *type = llir_type_cache_get_array(context->anon_type_cache, llir_type_cache_get_integer(context->anon_type_cache, 8, false), size);
 
     LLVMValueRef value = LLVMAddGlobal(context->llvm_module, llir_type_to_llvm(context, type), "expr.literal_string");
     LLVMSetLinkage(value, LLVMInternalLinkage);
@@ -382,7 +358,7 @@ static value_t cg_expr_literal_string(CG_EXPR_PARAMS) {
 }
 
 static value_t cg_expr_literal_bool(CG_EXPR_PARAMS) {
-    llir_type_t *type = get_temporary_booltype();
+    llir_type_t *type = LLIR_TYPE_BOOL;
     return (value_t) {
         .type = type,
         .llvm_value = LLVMConstInt(llir_type_to_llvm(context, type), node->expr.literal.bool_value, false)
@@ -405,11 +381,11 @@ static value_t cg_expr_binary(CG_EXPR_PARAMS) {
     left = resolve_ref(context, left);
     switch(node->expr.binary.operation) {
         case LLIR_NODE_BINARY_OPERATION_EQUAL: return (value_t) {
-            .type = get_temporary_booltype(),
+            .type = LLIR_TYPE_BOOL,
             .llvm_value = LLVMBuildICmp(context->llvm_builder, LLVMIntEQ, left.llvm_value, right.llvm_value, "expr.binary.eq")
         };
         case LLIR_NODE_BINARY_OPERATION_NOT_EQUAL: return (value_t) {
-            .type = get_temporary_booltype(),
+            .type = LLIR_TYPE_BOOL,
             .llvm_value = LLVMBuildICmp(context->llvm_builder, LLVMIntNE, left.llvm_value, right.llvm_value, "expr.binary.ne")
         };
         default: break;
@@ -438,19 +414,19 @@ static value_t cg_expr_binary(CG_EXPR_PARAMS) {
             .llvm_value = type->integer.is_signed ? LLVMBuildSRem(context->llvm_builder, left.llvm_value, right.llvm_value, "expr.binary.srem") : LLVMBuildURem(context->llvm_builder, left.llvm_value, right.llvm_value, "expr.binary.urem")
         };
         case LLIR_NODE_BINARY_OPERATION_GREATER: return (value_t) {
-            .type = get_temporary_booltype(),
+            .type = LLIR_TYPE_BOOL,
             .llvm_value = LLVMBuildICmp(context->llvm_builder, type->integer.is_signed ? LLVMIntSGT : LLVMIntUGT, left.llvm_value, right.llvm_value, "expr.binary.gt")
         };
         case LLIR_NODE_BINARY_OPERATION_GREATER_EQUAL: return (value_t) {
-            .type = get_temporary_booltype(),
+            .type = LLIR_TYPE_BOOL,
             .llvm_value = LLVMBuildICmp(context->llvm_builder, type->integer.is_signed ? LLVMIntSGE : LLVMIntUGE, left.llvm_value, right.llvm_value, "expr.binary.ge")
         };
         case LLIR_NODE_BINARY_OPERATION_LESS: return (value_t) {
-            .type = get_temporary_booltype(),
+            .type = LLIR_TYPE_BOOL,
             .llvm_value = LLVMBuildICmp(context->llvm_builder, type->integer.is_signed ? LLVMIntSLT : LLVMIntULT, left.llvm_value, right.llvm_value, "expr.binary.lt")
         };
         case LLIR_NODE_BINARY_OPERATION_LESS_EQUAL: return (value_t) {
-            .type = get_temporary_booltype(),
+            .type = LLIR_TYPE_BOOL,
             .llvm_value = LLVMBuildICmp(context->llvm_builder, type->integer.is_signed ? LLVMIntSLE : LLVMIntULE, left.llvm_value, right.llvm_value, "expr.binary.le")
         };
         case LLIR_NODE_BINARY_OPERATION_SHIFT_LEFT: return (value_t) {
@@ -470,11 +446,7 @@ static value_t cg_expr_unary(CG_EXPR_PARAMS) {
     if(node->expr.unary.operation == LLIR_NODE_UNARY_OPERATION_REF) {
         if(!operand.is_ref) diag_error(node->source_location, "references can only be made to variables");
 
-        // TODO vvv
-        llir_type_t *type = malloc(sizeof(llir_type_t));
-        type->kind = LLIR_TYPE_KIND_POINTER;
-        type->pointer.pointee = operand.type;
-
+        llir_type_t *type = llir_type_cache_get_pointer(context->anon_type_cache, operand.type);
         return (value_t) {
             .type = type,
             .llvm_value = operand.llvm_value
@@ -494,7 +466,7 @@ static value_t cg_expr_unary(CG_EXPR_PARAMS) {
         case LLIR_NODE_UNARY_OPERATION_NOT:
             if(operand.type->kind != LLIR_TYPE_KIND_INTEGER) diag_error(node->source_location, "unary operation \"not\" on a non-numeric value");
             return (value_t) {
-                .type = get_temporary_booltype(),
+                .type = LLIR_TYPE_BOOL,
                 .llvm_value = LLVMBuildICmp(context->llvm_builder, LLVMIntEQ, operand.llvm_value, LLVMConstInt(llir_type_to_llvm(context, operand.type), 0, false), "")
             };
         case LLIR_NODE_UNARY_OPERATION_NEGATIVE:
@@ -510,21 +482,34 @@ static value_t cg_expr_unary(CG_EXPR_PARAMS) {
 static value_t cg_expr_variable(CG_EXPR_PARAMS) {
     LLVMValueRef llvm_value;
     llir_type_t *type;
+    bool is_ref;
 
     scope_variable_t *scope_variable = scope_variable_find(scope, node->expr.variable.name);
     if(scope_variable != NULL) {
         llvm_value = scope_variable->llvm_value;
         type = scope_variable->type;
+        is_ref = true;
         goto found;
     } else {
-        llir_symbol_t *symbol = llir_namespace_find_symbol(current_namespace, node->expr.call.function_name);
+        llir_symbol_t *symbol = llir_namespace_find_symbol(current_namespace, node->expr.variable.name);
         if(symbol == NULL) {
-            symbol = llir_namespace_find_symbol(context->root_namespace, node->expr.call.function_name);
+            symbol = llir_namespace_find_symbol(context->root_namespace, node->expr.variable.name);
             if(symbol == NULL) goto not_found;
         }
+        switch(symbol->kind) {
+            case LLIR_SYMBOL_KIND_VARIABLE:
+                llvm_value = symbol->variable.codegen_data;
+                type = symbol->variable.type;
+                is_ref = true;
+                break;
+            case LLIR_SYMBOL_KIND_FUNCTION:
+                llvm_value = symbol->function.codegen_data;
+                type = llir_type_cache_get_function_reference(context->anon_type_cache, symbol->function.type);
+                is_ref = false;
+                break;
+            default: goto not_found;
+        }
 
-        llvm_value = symbol->variable.codegen_data;
-        type = symbol->variable.type;
         goto found;
     }
 
@@ -532,40 +517,20 @@ static value_t cg_expr_variable(CG_EXPR_PARAMS) {
     found:
 
     return (value_t) {
-        .is_ref = true,
+        .is_ref = is_ref,
         .type = type,
         .llvm_value = llvm_value
     };
 }
 
 static value_t cg_expr_call(CG_EXPR_PARAMS) {
-    LLVMValueRef llvm_fn;
-    llir_type_t *type;
+    value_t value = cg_expr(context, current_namespace, scope, node->expr.call.function_reference);
+    if(value.type->kind != LLIR_TYPE_KIND_FUNCTION_REFERENCE) diag_error(node->source_location, "not a function");
 
-    scope_variable_t *scope_variable = scope_variable_find(scope, node->expr.call.function_name);
-    if(scope_variable != NULL) {
-        if(scope_variable->type->kind != LLIR_TYPE_KIND_FUNCTION) goto not_function;
-        llvm_fn = scope_variable->llvm_value;
-        type = scope_variable->type;
-        goto found;
-    } else {
-        llir_symbol_t *symbol = llir_namespace_find_symbol(current_namespace, node->expr.call.function_name);
-        if(symbol == NULL) {
-            symbol = llir_namespace_find_symbol(context->root_namespace, node->expr.call.function_name);
-            if(symbol == NULL) diag_error(node->source_location, "no such function");
-        }
-        if(symbol->kind != LLIR_SYMBOL_KIND_FUNCTION) goto not_function;
+    llir_type_t *fn_type = value.type->function_reference.function_type;
 
-        llvm_fn = symbol->function.codegen_data;
-        type = symbol->function.type;
-        goto found;
-    }
-
-    not_function: diag_error(node->source_location, "not a function");
-    found:
-
-    if(node->expr.call.arguments.count < type->function.argument_count) diag_error(node->source_location, "missing arguments");
-    if(!type->function.varargs && node->expr.call.arguments.count > type->function.argument_count) diag_error(node->source_location, "invalid number of arguments");
+    if(node->expr.call.arguments.count < fn_type->function.argument_count) diag_error(node->source_location, "missing arguments");
+    if(!fn_type->function.varargs && node->expr.call.arguments.count > fn_type->function.argument_count) diag_error(node->source_location, "invalid number of arguments");
 
     LLVMValueRef llvm_value;
     size_t argument_count = llir_node_list_count(&node->expr.call.arguments);
@@ -573,16 +538,16 @@ static value_t cg_expr_call(CG_EXPR_PARAMS) {
         LLVMValueRef arguments[node->expr.call.arguments.count];
         LLIR_NODE_LIST_FOREACH(&node->expr.call.arguments, {
             value_t argument = cg_expr(context, current_namespace, scope, node);
-            if(type->function.argument_count > i && !llir_type_eq(argument.type, type->function.arguments[i])) diag_error(node->source_location, "argument has invalid type");
+            if(fn_type->function.argument_count > i && !llir_type_eq(argument.type, fn_type->function.arguments[i])) diag_error(node->source_location, "argument has invalid type");
             arguments[i] = argument.llvm_value;
         });
-        llvm_value = LLVMBuildCall2(context->llvm_builder, llir_type_to_llvm(context, type), llvm_fn, arguments, argument_count, "");
+        llvm_value = LLVMBuildCall2(context->llvm_builder, llir_type_to_llvm(context, fn_type), value.llvm_value, arguments, argument_count, "");
     } else {
-        llvm_value = LLVMBuildCall2(context->llvm_builder, llir_type_to_llvm(context, type), llvm_fn, NULL, 0, "");
+        llvm_value = LLVMBuildCall2(context->llvm_builder, llir_type_to_llvm(context, fn_type), value.llvm_value, NULL, 0, "");
     }
 
     return (value_t) {
-        .type = type->function.return_type,
+        .type = fn_type->function.return_type,
         .llvm_value = llvm_value
     };
 }
@@ -596,7 +561,7 @@ static value_t cg_expr_tuple(CG_EXPR_PARAMS) {
         llvm_values[i] = value.llvm_value;
     });
 
-    llir_type_t *type = llir_type_tuple_make(node->expr.tuple.values.count, types);
+    llir_type_t *type = llir_type_cache_get_tuple(context->anon_type_cache, node->expr.tuple.values.count, types);
     LLVMTypeRef llvm_type = llir_type_to_llvm(context, type);
 
     LLVMValueRef llvm_allocated_tuple = LLVMBuildAlloca(context->llvm_builder, llvm_type, "expr.tuple");
@@ -825,7 +790,7 @@ static void populate_namespace(context_t *context, llir_namespace_t *namespace) 
     }
 }
 
-void codegen(llir_node_t *root_node, llir_namespace_t *root_namespace, const char *path, const char *passes, LLVMCodeModel code_model) {
+void codegen(llir_node_t *root_node, llir_namespace_t *root_namespace, llir_type_cache_t *anon_type_cache, const char *path, const char *passes, LLVMCodeModel code_model) {
     assert(root_node->type == LLIR_NODE_TYPE_ROOT);
 
     char *error_message;
@@ -850,6 +815,7 @@ void codegen(llir_node_t *root_node, llir_namespace_t *root_namespace, const cha
     context.llvm_builder = LLVMCreateBuilderInContext(context.llvm_context);
     context.llvm_module = LLVMModuleCreateWithNameInContext("CharonModule", context.llvm_context);
     context.root_namespace = root_namespace;
+    context.anon_type_cache = anon_type_cache;
 
     populate_namespace(&context, root_namespace);
     cg_root(&context, context.root_namespace, root_node);
@@ -878,12 +844,13 @@ void codegen(llir_node_t *root_node, llir_namespace_t *root_namespace, const cha
     LLVMContextDispose(context.llvm_context);
 }
 
-void codegen_ir(llir_node_t *root_node, llir_namespace_t *root_namespace, const char *path) {
+void codegen_ir(llir_node_t *root_node, llir_namespace_t *root_namespace, llir_type_cache_t *anon_type_cache, const char *path) {
     context_t context;
     context.llvm_context = LLVMContextCreate();
     context.llvm_builder = LLVMCreateBuilderInContext(context.llvm_context);
     context.llvm_module = LLVMModuleCreateWithNameInContext("CharonModule", context.llvm_context);
     context.root_namespace = root_namespace;
+    context.anon_type_cache = anon_type_cache;
 
     populate_namespace(&context, root_namespace);
     cg_root(&context, context.root_namespace, root_node);

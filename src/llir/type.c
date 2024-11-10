@@ -4,44 +4,168 @@
 #include <string.h>
 #include <stdlib.h>
 
+enum {
+    PRIMITIVE_U64,
+    PRIMITIVE_I64,
+    PRIMITIVE_U8,
+    PRIMITIVE_U32,
+    PRIMITIVE_I32,
+    PRIMITIVE_U1,
+    PRIMITIVE_VOID,
+    PRIMITIVE_U16,
+    PRIMITIVE_I16,
+    PRIMITIVE_I8,
+
+    PRIMITIVE_COUNT
+};
+
 static llir_type_t *make_type(llir_type_kind_t kind) {
     llir_type_t *type = malloc(sizeof(llir_type_t));
     type->kind = kind;
     return type;
 }
 
-bool llir_type_eq(llir_type_t *a, llir_type_t *b) {
-    if(a->kind != b->kind) return false;
-    switch(a->kind) {
-        case LLIR_TYPE_KIND_VOID: return true;
-        case LLIR_TYPE_KIND_INTEGER: return a->integer.bit_size == b->integer.bit_size && a->integer.is_signed == b->integer.is_signed;
-        case LLIR_TYPE_KIND_POINTER: return llir_type_eq(a->pointer.pointee, b->pointer.pointee);
-        case LLIR_TYPE_KIND_TUPLE:
-            if(a->tuple.type_count != b->tuple.type_count) return false;
-            for(size_t i = 0; i < a->tuple.type_count; i++) if(!llir_type_eq(a->tuple.types[i], b->tuple.types[i])) return false;
-            return true;
-        case LLIR_TYPE_KIND_ARRAY:
-            if(a->array.size != b->array.size) return false;
-            return llir_type_eq(a->array.type, b->array.type);
-        case LLIR_TYPE_KIND_STRUCTURE:
-            if(a->structure.member_count != b->structure.member_count) return false;
-            for(size_t i = 0; i < a->structure.member_count; i++) {
-                if(strcmp(a->structure.members[i].name, b->structure.members[i].name) != 0) return false;
-                if(!llir_type_eq(a->structure.members[i].type, b->structure.members[i].type)) return false;
-            }
-            return true;
-        case LLIR_TYPE_KIND_FUNCTION:
-            if(a->function.varargs != b->function.varargs) return false;
-            if(a->function.argument_count != b->function.argument_count) return false;
-            for(size_t i = 0; i < a->function.argument_count; i++) if(!llir_type_eq(a->function.arguments[i], b->function.arguments[i])) return false;
-            return llir_type_eq(a->function.return_type, b->function.return_type);
-    }
-    assert(false);
+static llir_type_t *make_type_integer(size_t bit_size, bool is_signed) {
+    llir_type_t *type = make_type(LLIR_TYPE_KIND_INTEGER);
+    type->integer.bit_size = bit_size;
+    type->integer.is_signed = is_signed;
+    return type;
 }
 
-llir_type_t *llir_type_tuple_make(size_t type_count, llir_type_t **types) {
+static void cache_add(llir_type_cache_t *cache, llir_type_t *type) {
+    cache->types = reallocarray(cache->types, ++cache->type_count, sizeof(llir_type_t *));
+    cache->types[cache->type_count - 1] = type;
+}
+
+bool llir_type_eq(llir_type_t *a, llir_type_t *b) {
+    return a == b;
+}
+
+llir_type_cache_t *llir_type_cache_make() {
+    llir_type_cache_t *cache = malloc(sizeof(llir_type_cache_t));
+    cache->type_count = PRIMITIVE_COUNT;
+    cache->types = reallocarray(NULL, cache->type_count, sizeof(llir_type_t *));
+
+    cache->types[PRIMITIVE_VOID] = make_type(LLIR_TYPE_KIND_VOID);
+    cache->types[PRIMITIVE_U1] = make_type_integer(1, false);
+    cache->types[PRIMITIVE_U8] = make_type_integer(8, false);
+    cache->types[PRIMITIVE_U16] = make_type_integer(16, false);
+    cache->types[PRIMITIVE_U32] = make_type_integer(32, false);
+    cache->types[PRIMITIVE_U64] = make_type_integer(64, false);
+    cache->types[PRIMITIVE_I8] = make_type_integer(8, true);
+    cache->types[PRIMITIVE_I16] = make_type_integer(16, true);
+    cache->types[PRIMITIVE_I32] = make_type_integer(32, true);
+    cache->types[PRIMITIVE_I64] = make_type_integer(64, true);
+
+    return cache;
+}
+
+void llir_type_cache_free(llir_type_cache_t *cache) {
+    if(cache->types != NULL) free(cache->types);
+    free(cache);
+}
+
+llir_type_t *llir_type_cache_get_void(llir_type_cache_t *cache) {
+    return cache->types[PRIMITIVE_VOID];
+}
+
+llir_type_t *llir_type_cache_get_integer(llir_type_cache_t *cache, size_t bit_size, bool is_signed) {
+    for(size_t i = 0; i < cache->type_count; i++) {
+        if(cache->types[i]->kind != LLIR_TYPE_KIND_INTEGER) continue;
+        if(cache->types[i]->integer.bit_size != bit_size || cache->types[i]->integer.is_signed != is_signed) continue;
+        return cache->types[i];
+    }
+    llir_type_t *type = make_type_integer(bit_size, is_signed);
+    cache_add(cache, type);
+    return type;
+}
+
+llir_type_t *llir_type_cache_get_pointer(llir_type_cache_t *cache, llir_type_t *pointee) {
+    for(size_t i = 0; i < cache->type_count; i++) {
+        if(cache->types[i]->kind != LLIR_TYPE_KIND_POINTER) continue;
+        if(!llir_type_eq(cache->types[i]->pointer.pointee, pointee)) continue;
+        return cache->types[i];
+    }
+    llir_type_t *type = make_type(LLIR_TYPE_KIND_POINTER);
+    type->pointer.pointee = pointee;
+    cache_add(cache, type);
+    return type;
+}
+
+llir_type_t *llir_type_cache_get_tuple(llir_type_cache_t *cache, size_t type_count, llir_type_t **types) {
+    for(size_t i = 0; i < cache->type_count; i++) {
+        if(cache->types[i]->kind != LLIR_TYPE_KIND_TUPLE) continue;
+        if(cache->types[i]->tuple.type_count != type_count) continue;
+        for(size_t j = 0; j < cache->types[i]->tuple.type_count; j++) if(!llir_type_eq(cache->types[i]->tuple.types[j], types[j])) goto cont;
+        return cache->types[i];
+        cont:
+    }
     llir_type_t *type = make_type(LLIR_TYPE_KIND_TUPLE);
     type->tuple.type_count = type_count;
     type->tuple.types = types;
+    cache_add(cache, type);
+    return type;
+}
+
+llir_type_t *llir_type_cache_get_array(llir_type_cache_t *cache, llir_type_t *element_type, size_t size) {
+    for(size_t i = 0; i < cache->type_count; i++) {
+        if(cache->types[i]->kind != LLIR_TYPE_KIND_ARRAY) continue;
+        if(cache->types[i]->array.size != size) continue;
+        if(!llir_type_eq(cache->types[i]->array.type, element_type)) continue;
+        return cache->types[i];
+    }
+    llir_type_t *type = make_type(LLIR_TYPE_KIND_ARRAY);
+    type->array.type = element_type;
+    type->array.size = size;
+    cache_add(cache, type);
+    return type;
+}
+
+llir_type_t *llir_type_cache_get_structure(llir_type_cache_t *cache, size_t member_count, llir_type_structure_member_t *members) {
+    for(size_t i = 0; i < cache->type_count; i++) {
+        if(cache->types[i]->kind != LLIR_TYPE_KIND_STRUCTURE) continue;
+        if(cache->types[i]->structure.member_count != member_count) continue;
+        for(size_t j = 0; j < cache->types[i]->structure.member_count; j++) {
+            if(strcmp(cache->types[i]->structure.members[j].name, members[j].name) != 0) goto cont;
+            if(!llir_type_eq(cache->types[i]->structure.members[j].type, members[j].type)) goto cont;
+        }
+        return cache->types[i];
+        cont:
+    }
+    llir_type_t *type = make_type(LLIR_TYPE_KIND_STRUCTURE);
+    type->structure.member_count = member_count;
+    type->structure.members = members;
+    cache_add(cache, type);
+    return type;
+}
+
+llir_type_t *llir_type_cache_get_function(llir_type_cache_t *cache, size_t argument_count, llir_type_t **arguments, bool varargs, llir_type_t *return_type) {
+    for(size_t i = 0; i < cache->type_count; i++) {
+        if(cache->types[i]->kind != LLIR_TYPE_KIND_FUNCTION) continue;
+        if(cache->types[i]->function.varargs != varargs) continue;
+        if(cache->types[i]->function.argument_count != argument_count) continue;
+        if(!llir_type_eq(cache->types[i]->function.return_type, return_type)) continue;
+        for(size_t j = 0; j < cache->types[i]->function.argument_count; j++) if(!llir_type_eq(cache->types[i]->function.arguments[j], arguments[j])) goto cont;
+        return cache->types[i];
+        cont:
+    }
+    llir_type_t *type = make_type(LLIR_TYPE_KIND_FUNCTION);
+    type->function.varargs = varargs;
+    type->function.argument_count = argument_count;
+    type->function.return_type = return_type;
+    type->function.arguments = arguments;
+    cache_add(cache, type);
+    return type;
+}
+
+llir_type_t *llir_type_cache_get_function_reference(llir_type_cache_t *cache, llir_type_t *function_type) {
+    for(size_t i = 0; i < cache->type_count; i++) {
+        if(cache->types[i]->kind != LLIR_TYPE_KIND_FUNCTION_REFERENCE) continue;
+        if(!llir_type_eq(cache->types[i]->function_reference.function_type, function_type)) continue;
+        return cache->types[i];
+    }
+    llir_type_t *type = make_type(LLIR_TYPE_KIND_FUNCTION_REFERENCE);
+    type->function_reference.function_type = function_type;
+    cache_add(cache, type);
     return type;
 }
