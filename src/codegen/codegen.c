@@ -453,6 +453,14 @@ static value_t cg_expr_binary(CG_EXPR_PARAMS) {
             .type = get_temporary_booltype(),
             .llvm_value = LLVMBuildICmp(context->llvm_builder, type->integer.is_signed ? LLVMIntSLE : LLVMIntULE, left.llvm_value, right.llvm_value, "expr.binary.le")
         };
+        case LLIR_NODE_BINARY_OPERATION_SHIFT_LEFT: return (value_t) {
+            .type = type,
+            .llvm_value = LLVMBuildShl(context->llvm_builder, left.llvm_value, right.llvm_value, "expr.binary.shl")
+        };
+        case LLIR_NODE_BINARY_OPERATION_SHIFT_RIGHT: return (value_t) {
+            .type = type,
+            .llvm_value = type->integer.is_signed ? LLVMBuildAShr(context->llvm_builder, left.llvm_value, right.llvm_value, "expr.binary.ashr") : LLVMBuildLShr(context->llvm_builder, left.llvm_value, right.llvm_value, "expr.binary.lshr")
+        };
         default: assert(false);
     }
 }
