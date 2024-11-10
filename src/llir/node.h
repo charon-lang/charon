@@ -79,7 +79,9 @@ typedef enum {
     LLIR_NODE_BINARY_OPERATION_LESS,
     LLIR_NODE_BINARY_OPERATION_LESS_EQUAL,
     LLIR_NODE_BINARY_OPERATION_EQUAL,
-    LLIR_NODE_BINARY_OPERATION_NOT_EQUAL
+    LLIR_NODE_BINARY_OPERATION_NOT_EQUAL,
+    LLIR_NODE_BINARY_OPERATION_SHIFT_LEFT,
+    LLIR_NODE_BINARY_OPERATION_SHIFT_RIGHT
 } llir_node_binary_operation_t;
 
 typedef enum {
@@ -164,7 +166,7 @@ struct llir_node {
                     const char *name;
                 } variable;
                 struct {
-                    const char *function_name;
+                    llir_node_t *function_reference;
                     llir_node_list_t arguments;
                 } call;
                 struct {

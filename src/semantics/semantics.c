@@ -188,6 +188,8 @@ static llir_node_t *lower_node(context_t *context, llir_namespace_t *current_nam
                 case HLIR_NODE_BINARY_OPERATION_LESS_EQUAL: operation = LLIR_NODE_BINARY_OPERATION_LESS_EQUAL; break;
                 case HLIR_NODE_BINARY_OPERATION_EQUAL: operation = LLIR_NODE_BINARY_OPERATION_EQUAL; break;
                 case HLIR_NODE_BINARY_OPERATION_NOT_EQUAL: operation = LLIR_NODE_BINARY_OPERATION_NOT_EQUAL; break;
+                case HLIR_NODE_BINARY_OPERATION_SHIFT_LEFT: operation = LLIR_NODE_BINARY_OPERATION_SHIFT_LEFT; break;
+                case HLIR_NODE_BINARY_OPERATION_SHIFT_RIGHT: operation = LLIR_NODE_BINARY_OPERATION_SHIFT_RIGHT; break;
             }
 
             new_node->type = LLIR_NODE_TYPE_EXPR_BINARY;
