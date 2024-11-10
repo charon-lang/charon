@@ -5,6 +5,10 @@ type Test struct {
     b: uint;
 }
 
+type W struct {
+    i: *W;
+}
+
 let x: uint;
 let test: Test;
 
@@ -22,6 +26,12 @@ fn main(): uint {
     test.b = 20;
 
     printf("%lu\n" as *char, test.a + test.b);
+
+    let a: W;
+    let b: W;
+
+    a.i = &b;
+    b.i = &a;
 
     return 0;
 }
