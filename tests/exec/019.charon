@@ -1,0 +1,16 @@
+extern fn printf(fmt: *char, ...): i32;
+
+fn brr(x: uint) {
+    printf("HELLO %lu\n" as *char, x);
+}
+
+fn main(): uint {
+
+    let test = brr;
+
+    test(6);
+
+    (*&test)(5);
+
+    return 0;
+}
