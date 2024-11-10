@@ -109,6 +109,8 @@ static hlir_node_t *helper_binary_operation(tokenizer_t *tokenizer, hlir_node_t 
             case TOKEN_KIND_LESS_EQUAL: operation = HLIR_NODE_BINARY_OPERATION_LESS_EQUAL; break;
             case TOKEN_KIND_EQUAL_EQUAL: operation = HLIR_NODE_BINARY_OPERATION_EQUAL; break;
             case TOKEN_KIND_NOT_EQUAL: operation = HLIR_NODE_BINARY_OPERATION_NOT_EQUAL; break;
+            case TOKEN_KIND_SHIFT_LEFT: operation = HLIR_NODE_BINARY_OPERATION_SHIFT_LEFT; break;
+            case TOKEN_KIND_SHIFT_RIGHT: operation = HLIR_NODE_BINARY_OPERATION_SHIFT_RIGHT; break;
             default: diag_error(util_loc(tokenizer, token_operation), "expected a binary operator");
         }
         left = hlir_node_make_expr_binary(operation, left, func(tokenizer), util_loc(tokenizer, token_operation));
@@ -266,8 +268,12 @@ static hlir_node_t *parse_unary_pre(tokenizer_t *tokenizer) {
     return hlir_node_make_expr_unary(operation, parse_unary_pre(tokenizer), util_loc(tokenizer, token_operator));
 }
 
+static hlir_node_t *parse_shift(tokenizer_t *tokenizer) {
+    return helper_binary_operation(tokenizer, parse_unary_pre, 2, TOKEN_KIND_SHIFT_LEFT, TOKEN_KIND_SHIFT_RIGHT);
+}
+
 static hlir_node_t *parse_factor(tokenizer_t *tokenizer) {
-    return helper_binary_operation(tokenizer, parse_unary_pre, 3, TOKEN_KIND_STAR, TOKEN_KIND_SLASH, TOKEN_KIND_PERCENTAGE);
+    return helper_binary_operation(tokenizer, parse_shift, 3, TOKEN_KIND_STAR, TOKEN_KIND_SLASH, TOKEN_KIND_PERCENTAGE);
 }
 
 static hlir_node_t *parse_term(tokenizer_t *tokenizer) {
