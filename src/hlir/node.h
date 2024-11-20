@@ -2,6 +2,7 @@
 
 #include "lib/source.h"
 #include "hlir/type.h"
+#include "hlir/attribute.h"
 
 #include <stddef.h>
 #include <stdint.h>
@@ -113,6 +114,7 @@ typedef struct {
 struct hlir_node {
     hlir_node_type_t type;
     source_location_t source_location;
+    hlir_attribute_list_t attributes;
     union {
         struct {
             hlir_node_list_t tlcs;
@@ -212,20 +214,20 @@ struct hlir_node {
 size_t hlir_node_list_count(hlir_node_list_t *list);
 void hlir_node_list_append(hlir_node_list_t *list, hlir_node_t *node);
 
-hlir_node_t *hlir_node_make_root(hlir_node_list_t tlcs, source_location_t source_location);
+hlir_node_t *hlir_node_make_root(hlir_node_list_t tlcs, hlir_attribute_list_t attributes, source_location_t source_location);
 
-hlir_node_t *hlir_node_make_tlc_module(const char *name, hlir_node_list_t tlcs, source_location_t source_location);
-hlir_node_t *hlir_node_make_tlc_function(const char *name, hlir_type_t *type, const char **argument_names, hlir_node_t *statement, source_location_t source_location);
-hlir_node_t *hlir_node_make_tlc_extern(const char *name, hlir_type_t *type, source_location_t source_location);
-hlir_node_t *hlir_node_make_tlc_type_definition(const char *name, hlir_type_t *type, source_location_t source_location);
-hlir_node_t *hlir_node_make_tlc_declaration(const char *name, hlir_type_t *type, source_location_t source_location);
+hlir_node_t *hlir_node_make_tlc_module(const char *name, hlir_node_list_t tlcs, hlir_attribute_list_t attributes, source_location_t source_location);
+hlir_node_t *hlir_node_make_tlc_function(const char *name, hlir_type_t *type, const char **argument_names, hlir_node_t *statement, hlir_attribute_list_t attributes, source_location_t source_location);
+hlir_node_t *hlir_node_make_tlc_extern(const char *name, hlir_type_t *type, hlir_attribute_list_t attributes, source_location_t source_location);
+hlir_node_t *hlir_node_make_tlc_type_definition(const char *name, hlir_type_t *type, hlir_attribute_list_t attributes, source_location_t source_location);
+hlir_node_t *hlir_node_make_tlc_declaration(const char *name, hlir_type_t *type, hlir_attribute_list_t attributes, source_location_t source_location);
 
-hlir_node_t *hlir_node_make_stmt_block(hlir_node_list_t statements, source_location_t source_location);
-hlir_node_t *hlir_node_make_stmt_declaration(const char *name, hlir_type_t *type, hlir_node_t *initial, source_location_t source_location);
-hlir_node_t *hlir_node_make_stmt_expression(hlir_node_t *expression, source_location_t source_location);
-hlir_node_t *hlir_node_make_stmt_return(hlir_node_t *value, source_location_t source_location);
-hlir_node_t *hlir_node_make_stmt_if(hlir_node_t *condition, hlir_node_t *body, hlir_node_t *else_body, source_location_t source_location);
-hlir_node_t *hlir_node_make_stmt_while(hlir_node_t *condition, hlir_node_t *body, source_location_t source_location);
+hlir_node_t *hlir_node_make_stmt_block(hlir_node_list_t statements, hlir_attribute_list_t attributes, source_location_t source_location);
+hlir_node_t *hlir_node_make_stmt_declaration(const char *name, hlir_type_t *type, hlir_node_t *initial, hlir_attribute_list_t attributes, source_location_t source_location);
+hlir_node_t *hlir_node_make_stmt_expression(hlir_node_t *expression, hlir_attribute_list_t attributes, source_location_t source_location);
+hlir_node_t *hlir_node_make_stmt_return(hlir_node_t *value, hlir_attribute_list_t attributes, source_location_t source_location);
+hlir_node_t *hlir_node_make_stmt_if(hlir_node_t *condition, hlir_node_t *body, hlir_node_t *else_body, hlir_attribute_list_t attributes, source_location_t source_location);
+hlir_node_t *hlir_node_make_stmt_while(hlir_node_t *condition, hlir_node_t *body, hlir_attribute_list_t attributes, source_location_t source_location);
 
 hlir_node_t *hlir_node_make_expr_literal_numeric(uintmax_t value, source_location_t source_location);
 hlir_node_t *hlir_node_make_expr_literal_string(const char *value, source_location_t source_location);

@@ -20,16 +20,26 @@ static llir_type_t *lower_type(context_t *context, llir_namespace_t *current_nam
         return referred_type;
     }
 
+    llir_type_t *new_type = NULL;
     switch(type->kind) {
-        case HLIR_TYPE_KIND_VOID: return llir_type_cache_get_void(context->anon_type_cache);
-        case HLIR_TYPE_KIND_INTEGER: return llir_type_cache_get_integer(context->anon_type_cache, type->integer.bit_size, type->integer.is_signed);
-        case HLIR_TYPE_KIND_POINTER: return llir_type_cache_get_pointer(context->anon_type_cache, lower_type(context, current_namespace, type->pointer.pointee, source_location));
+        case HLIR_TYPE_KIND_VOID:
+            new_type = llir_type_cache_get_void(context->anon_type_cache);
+            break;
+        case HLIR_TYPE_KIND_INTEGER:
+            new_type = llir_type_cache_get_integer(context->anon_type_cache, type->integer.bit_size, type->integer.is_signed);
+            break;
+        case HLIR_TYPE_KIND_POINTER:
+            new_type = llir_type_cache_get_pointer(context->anon_type_cache, lower_type(context, current_namespace, type->pointer.pointee, source_location));
+            break;
         case HLIR_TYPE_KIND_TUPLE: {
             llir_type_t **types = malloc(type->tuple.type_count * sizeof(llir_type_t *));
             for(size_t i = 0; i < type->tuple.type_count; i++) types[i] = lower_type(context, current_namespace, type->tuple.types[i], source_location);
-            return llir_type_cache_get_tuple(context->anon_type_cache, type->tuple.type_count, types);
+            new_type = llir_type_cache_get_tuple(context->anon_type_cache, type->tuple.type_count, types);
+            break;
         }
-        case HLIR_TYPE_KIND_ARRAY: return llir_type_cache_get_array(context->anon_type_cache, lower_type(context, current_namespace, type->array.type, source_location), type->array.size);
+        case HLIR_TYPE_KIND_ARRAY:
+            new_type = llir_type_cache_get_array(context->anon_type_cache, lower_type(context, current_namespace, type->array.type, source_location), type->array.size);
+            break;
         case HLIR_TYPE_KIND_STRUCTURE: {
             llir_type_structure_member_t *members = malloc(type->structure.member_count * sizeof(llir_type_structure_member_t));
             for(size_t i = 0; i < type->structure.member_count; i++) {
@@ -40,15 +50,22 @@ static llir_type_t *lower_type(context_t *context, llir_namespace_t *current_nam
                 };
                 // TODO we need to confirm we arent doing recursive embedding somehow
             }
-            return llir_type_cache_get_structure(context->anon_type_cache, type->structure.member_count, members);
+            new_type = llir_type_cache_get_structure(context->anon_type_cache, type->structure.member_count, members, attr_packed != NULL);
+            break;
         }
         case HLIR_TYPE_KIND_FUNCTION: {
             llir_type_t **arguments = malloc(type->function.argument_count * sizeof(llir_type_t *));
             for(size_t i = 0; i < type->function.argument_count; i++) arguments[i] = lower_type(context, current_namespace, type->function.arguments[i], source_location);
-            return llir_type_cache_get_function(context->anon_type_cache, type->function.argument_count, arguments, type->function.varargs, lower_type(context, current_namespace, type->function.return_type, source_location));
+            new_type = llir_type_cache_get_function(context->anon_type_cache, type->function.argument_count, arguments, type->function.varargs, lower_type(context, current_namespace, type->function.return_type, source_location));
+            break;
         }
     }
-    assert(false);
+    assert(new_type != NULL);
+    for(size_t i = 0; i < type->attributes.attribute_count; i++) {
+        if(type->attributes.attributes[i].consumed) continue;
+        diag_warn(type->attributes.attributes[i].source_location, "Unhandled attribute");
+    }
+    return new_type;
 }
 
 static llir_node_t *lower_node(context_t *context, llir_namespace_t *current_namespace, hlir_node_t *node) {
@@ -69,7 +86,7 @@ static llir_node_t *lower_node(context_t *context, llir_namespace_t *current_nam
 
             new_node->type = LLIR_NODE_TYPE_ROOT;
             new_node->root.tlcs = tlcs;
-            return new_node;
+            break;
         }
 
         case HLIR_NODE_TYPE_TLC_MODULE: {
@@ -82,7 +99,7 @@ static llir_node_t *lower_node(context_t *context, llir_namespace_t *current_nam
             new_node->type = LLIR_NODE_TYPE_TLC_MODULE;
             new_node->tlc_module.name = node->tlc_module.name;
             new_node->tlc_module.tlcs = tlcs;
-            return new_node;
+            break;
         }
         case HLIR_NODE_TYPE_TLC_FUNCTION: {
             llir_symbol_t *symbol = llir_namespace_find_symbol_with_kind(current_namespace, node->tlc_function.name, LLIR_SYMBOL_KIND_FUNCTION);
@@ -93,11 +110,14 @@ static llir_node_t *lower_node(context_t *context, llir_namespace_t *current_nam
             new_node->tlc_function.argument_names = node->tlc_function.argument_names;
             new_node->tlc_function.statement = node->tlc_function.statement == NULL ? NULL : lower_node(context, current_namespace, node->tlc_function.statement);
             new_node->tlc_function.type = symbol->function.type;
-            return new_node;
+            break;
         }
-        case HLIR_NODE_TYPE_TLC_EXTERN: return NULL;
-        case HLIR_NODE_TYPE_TLC_TYPE_DEFINITION: return NULL;
-        case HLIR_NODE_TYPE_TLC_DECLARATION: return NULL;
+        case HLIR_NODE_TYPE_TLC_EXTERN:
+        case HLIR_NODE_TYPE_TLC_TYPE_DEFINITION:
+        case HLIR_NODE_TYPE_TLC_DECLARATION:
+            free(new_node);
+            new_node = NULL;
+            break;
 
         case HLIR_NODE_TYPE_STMT_BLOCK: {
             llir_node_list_t statements = LLIR_NODE_LIST_INIT;
@@ -105,58 +125,58 @@ static llir_node_t *lower_node(context_t *context, llir_namespace_t *current_nam
 
             new_node->type = LLIR_NODE_TYPE_STMT_BLOCK;
             new_node->stmt_block.statements = statements;
-            return new_node;
+            break;
         }
         case HLIR_NODE_TYPE_STMT_DECLARATION: {
             new_node->type = LLIR_NODE_TYPE_STMT_DECLARATION;
             new_node->stmt_declaration.name = node->stmt_declaration.name;
             new_node->stmt_declaration.type = node->stmt_declaration.type == NULL ? NULL : lower_type(context, current_namespace, node->stmt_declaration.type, node->source_location);
             new_node->stmt_declaration.initial = node->stmt_declaration.initial == NULL ? NULL : lower_node(context, current_namespace, node->stmt_declaration.initial);
-            return new_node;
+            break;
         }
         case HLIR_NODE_TYPE_STMT_EXPRESSION: {
             new_node->type = LLIR_NODE_TYPE_STMT_EXPRESSION;
             new_node->stmt_expression.expression = lower_node(context, current_namespace, node->stmt_expression.expression);
-            return new_node;
+            break;
         }
         case HLIR_NODE_TYPE_STMT_RETURN: {
             new_node->type = LLIR_NODE_TYPE_STMT_RETURN;
             new_node->stmt_return.value = node->stmt_return.value == NULL ? NULL : lower_node(context, current_namespace, node->stmt_return.value);
-            return new_node;
+            break;
         }
         case HLIR_NODE_TYPE_STMT_IF: {
             new_node->type = LLIR_NODE_TYPE_STMT_IF;
             new_node->stmt_if.condition = lower_node(context, current_namespace, node->stmt_if.condition);
             new_node->stmt_if.body = node->stmt_if.body == NULL ? NULL : lower_node(context, current_namespace, node->stmt_if.body);
             new_node->stmt_if.else_body = node->stmt_if.else_body == NULL ? NULL : lower_node(context, current_namespace, node->stmt_if.else_body);
-            return new_node;
+            break;
         }
         case HLIR_NODE_TYPE_STMT_WHILE: {
             new_node->type = LLIR_NODE_TYPE_STMT_WHILE;
             new_node->stmt_while.condition = node->stmt_while.condition == NULL ? NULL : lower_node(context, current_namespace, node->stmt_while.condition);
             new_node->stmt_while.body = node->stmt_while.body == NULL ? NULL : lower_node(context, current_namespace, node->stmt_while.body);
-            return new_node;
+            break;
         }
 
         case HLIR_NODE_TYPE_EXPR_LITERAL_NUMERIC: {
             new_node->type = LLIR_NODE_TYPE_EXPR_LITERAL_NUMERIC;
             new_node->expr.literal.numeric_value = node->expr_literal.numeric_value;
-            return new_node;
+            break;
         }
         case HLIR_NODE_TYPE_EXPR_LITERAL_STRING: {
             new_node->type = LLIR_NODE_TYPE_EXPR_LITERAL_STRING;
             new_node->expr.literal.string_value = node->expr_literal.string_value;
-            return new_node;
+            break;
         }
         case HLIR_NODE_TYPE_EXPR_LITERAL_CHAR: {
             new_node->type = LLIR_NODE_TYPE_EXPR_LITERAL_CHAR;
             new_node->expr.literal.char_value = node->expr_literal.char_value;
-            return new_node;
+            break;
         }
         case HLIR_NODE_TYPE_EXPR_LITERAL_BOOL: {
             new_node->type = LLIR_NODE_TYPE_EXPR_LITERAL_BOOL;
             new_node->expr.literal.bool_value = node->expr_literal.bool_value;
-            return new_node;
+            break;
         }
         case HLIR_NODE_TYPE_EXPR_BINARY: {
             llir_node_binary_operation_t operation;
@@ -181,7 +201,7 @@ static llir_node_t *lower_node(context_t *context, llir_namespace_t *current_nam
             new_node->expr.binary.operation = operation;
             new_node->expr.binary.left = lower_node(context, current_namespace, node->expr_binary.left);
             new_node->expr.binary.right = lower_node(context, current_namespace, node->expr_binary.right);
-            return new_node;
+            break;
         }
         case HLIR_NODE_TYPE_EXPR_UNARY: {
             llir_node_unary_operation_t operation;
@@ -195,12 +215,12 @@ static llir_node_t *lower_node(context_t *context, llir_namespace_t *current_nam
             new_node->type = LLIR_NODE_TYPE_EXPR_UNARY;
             new_node->expr.unary.operation = operation;
             new_node->expr.unary.operand = lower_node(context, current_namespace, node->expr_unary.operand);
-            return new_node;
+            break;
         }
         case HLIR_NODE_TYPE_EXPR_VARIABLE: {
             new_node->type = LLIR_NODE_TYPE_EXPR_VARIABLE;
             new_node->expr.variable.name = node->expr_variable.name;
-            return new_node;
+            break;
         }
         case HLIR_NODE_TYPE_EXPR_TUPLE: {
             llir_node_list_t values = LLIR_NODE_LIST_INIT;
@@ -208,7 +228,7 @@ static llir_node_t *lower_node(context_t *context, llir_namespace_t *current_nam
 
             new_node->type = LLIR_NODE_TYPE_EXPR_TUPLE;
             new_node->expr.tuple.values = values;
-            return new_node;
+            break;
         }
         case HLIR_NODE_TYPE_EXPR_CALL: {
             llir_node_list_t arguments = LLIR_NODE_LIST_INIT;
@@ -217,13 +237,13 @@ static llir_node_t *lower_node(context_t *context, llir_namespace_t *current_nam
             new_node->type = LLIR_NODE_TYPE_EXPR_CALL;
             new_node->expr.call.function_reference = lower_node(context, current_namespace, node->expr_call.function_reference);
             new_node->expr.call.arguments = arguments;
-            return new_node;
+            break;
         }
         case HLIR_NODE_TYPE_EXPR_CAST: {
             new_node->type = LLIR_NODE_TYPE_EXPR_CAST;
             new_node->expr.cast.type = lower_type(context, current_namespace, node->expr_cast.type, node->source_location);
             new_node->expr.cast.value = lower_node(context, current_namespace, node->expr_cast.value);
-            return new_node;
+            break;
         }
         case HLIR_NODE_TYPE_EXPR_SUBSCRIPT: {
             new_node->type = LLIR_NODE_TYPE_EXPR_SUBSCRIPT;
@@ -242,16 +262,20 @@ static llir_node_t *lower_node(context_t *context, llir_namespace_t *current_nam
                     new_node->expr.subscript.member = node->expr_subscript.member;
                     break;
             }
-            return new_node;
+            break;
         }
         case HLIR_NODE_TYPE_EXPR_SELECTOR: {
             new_node->type = LLIR_NODE_TYPE_EXPR_SELECTOR;
             new_node->expr.selector.name = node->expr_selector.name;
             new_node->expr.selector.value = lower_node(context, current_namespace, node->expr_selector.value);
-            return new_node;
+            break;
         }
     }
-    assert(false);
+    for(size_t i = 0; i < node->attributes.attribute_count; i++) {
+        if(node->attributes.attributes[i].consumed) continue;
+        diag_warn(node->attributes.attributes[i].source_location, "Unhandled attribute");
+    }
+    return new_node;
 }
 
 static void pass_two(context_t *context, llir_namespace_t *current_namespace, hlir_node_t *node) {

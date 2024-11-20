@@ -1,5 +1,7 @@
 #pragma once
 
+#include "hlir/attribute.h"
+
 #include <stddef.h>
 
 typedef enum {
@@ -21,6 +23,7 @@ typedef struct {
 
 struct hlir_type {
     bool is_reference;
+    hlir_attribute_list_t attributes;
     union {
         struct {
             hlir_type_kind_t kind;
@@ -58,27 +61,27 @@ struct hlir_type {
     };
 };
 
-hlir_type_t *hlir_type_reference_make(const char *type_name);
+hlir_type_t *hlir_type_reference_make(const char *type_name, hlir_attribute_list_t attributes);
 
-hlir_type_t *hlir_type_get_void();
-hlir_type_t *hlir_type_get_bool();
-hlir_type_t *hlir_type_get_char();
-hlir_type_t *hlir_type_get_ptr();
+hlir_type_t *hlir_type_get_void(hlir_attribute_list_t attributes);
+hlir_type_t *hlir_type_get_bool(hlir_attribute_list_t attributes);
+hlir_type_t *hlir_type_get_char(hlir_attribute_list_t attributes);
+hlir_type_t *hlir_type_get_ptr(hlir_attribute_list_t attributes);
 
-hlir_type_t *hlir_type_get_uint();
-hlir_type_t *hlir_type_get_u8();
-hlir_type_t *hlir_type_get_u16();
-hlir_type_t *hlir_type_get_u32();
-hlir_type_t *hlir_type_get_u64();
+hlir_type_t *hlir_type_get_uint(hlir_attribute_list_t attributes);
+hlir_type_t *hlir_type_get_u8(hlir_attribute_list_t attributes);
+hlir_type_t *hlir_type_get_u16(hlir_attribute_list_t attributes);
+hlir_type_t *hlir_type_get_u32(hlir_attribute_list_t attributes);
+hlir_type_t *hlir_type_get_u64(hlir_attribute_list_t attributes);
 
-hlir_type_t *hlir_type_get_int();
-hlir_type_t *hlir_type_get_i8();
-hlir_type_t *hlir_type_get_i16();
-hlir_type_t *hlir_type_get_i32();
-hlir_type_t *hlir_type_get_i64();
+hlir_type_t *hlir_type_get_int(hlir_attribute_list_t attributes);
+hlir_type_t *hlir_type_get_i8(hlir_attribute_list_t attributes);
+hlir_type_t *hlir_type_get_i16(hlir_attribute_list_t attributes);
+hlir_type_t *hlir_type_get_i32(hlir_attribute_list_t attributes);
+hlir_type_t *hlir_type_get_i64(hlir_attribute_list_t attributes);
 
-hlir_type_t *hlir_type_pointer_make(hlir_type_t *pointee);
-hlir_type_t *hlir_type_tuple_make(size_t type_count, hlir_type_t **types);
-hlir_type_t *hlir_type_array_make(hlir_type_t *type, size_t size);
-hlir_type_t *hlir_type_structure_make(size_t member_count, hlir_type_structure_member_t *members);
-hlir_type_t *hlir_type_function_make(size_t argument_count, hlir_type_t **arguments, bool varargs, hlir_type_t *return_type);
+hlir_type_t *hlir_type_pointer_make(hlir_type_t *pointee, hlir_attribute_list_t attributes);
+hlir_type_t *hlir_type_tuple_make(size_t type_count, hlir_type_t **types, hlir_attribute_list_t attributes);
+hlir_type_t *hlir_type_array_make(hlir_type_t *type, size_t size, hlir_attribute_list_t attributes);
+hlir_type_t *hlir_type_structure_make(size_t member_count, hlir_type_structure_member_t *members, hlir_attribute_list_t attributes);
+hlir_type_t *hlir_type_function_make(size_t argument_count, hlir_type_t **arguments, bool varargs, hlir_type_t *return_type, hlir_attribute_list_t attributes);
