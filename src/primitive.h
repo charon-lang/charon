@@ -1,0 +1,5 @@
+#pragma once
+
+#define PRIMITIVE_POINTER_SIZE 64
+#define PRIMITIVE_CHAR_SIZE 8
+#define PRIMITIVE_INT_SIZE 64
