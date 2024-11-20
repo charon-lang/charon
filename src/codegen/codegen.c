@@ -395,6 +395,41 @@ static value_t cg_expr_literal_bool(CG_EXPR_PARAMS) {
 }
 
 static value_t cg_expr_binary(CG_EXPR_PARAMS) {
+    switch(node->expr.binary.operation) {
+        enum { LOGICAL_AND, LOGICAL_OR } op;
+        case LLIR_NODE_BINARY_OPERATION_LOGICAL_AND: op = LOGICAL_AND; goto logical;
+        case LLIR_NODE_BINARY_OPERATION_LOGICAL_OR: op = LOGICAL_OR; goto logical;
+        logical: {
+            LLVMValueRef llvm_func = LLVMGetBasicBlockParent(LLVMGetInsertBlock(context->llvm_builder));
+
+            LLVMBasicBlockRef bb_phi = LLVMAppendBasicBlockInContext(context->llvm_context, llvm_func, "expr.binary.logical.phi");
+            LLVMBasicBlockRef bb_end = LLVMAppendBasicBlockInContext(context->llvm_context, llvm_func, "expr.binary.logical.end");
+
+            LLVMBasicBlockRef blocks[2];
+
+            // Left
+            value_t left = cg_expr(context, current_namespace, scope, node->expr.binary.left);
+            if(!llir_type_eq(left.type, LLIR_TYPE_BOOL)) diag_error(node->expr.binary.left->source_location, "condition is not a boolean");
+            LLVMBuildCondBr(context->llvm_builder, left.llvm_value, op == LOGICAL_OR ? bb_phi : bb_end, op == LOGICAL_OR ? bb_end : bb_phi);
+            blocks[0] = LLVMGetInsertBlock(context->llvm_builder);
+
+            // Right
+            LLVMPositionBuilderAtEnd(context->llvm_builder, bb_end);
+            value_t right = cg_expr(context, current_namespace, scope, node->expr.binary.right);
+            if(!llir_type_eq(right.type, LLIR_TYPE_BOOL)) diag_error(node->expr.binary.right->source_location, "condition is not a boolean");
+            LLVMBuildBr(context->llvm_builder, bb_phi);
+            blocks[1] = LLVMGetInsertBlock(context->llvm_builder);
+
+            // Phi
+            LLVMPositionBuilderAtEnd(context->llvm_builder, bb_phi);
+            LLVMValueRef phi = LLVMBuildPhi(context->llvm_builder, llir_type_to_llvm(context, LLIR_TYPE_BOOL), "expr.binary.logical.value");
+            LLVMAddIncoming(phi, (LLVMValueRef[]) { left.llvm_value, right.llvm_value }, blocks, 2);
+
+            return (value_t) { .type = LLIR_TYPE_BOOL, .llvm_value = phi };
+        }
+        default: break;
+    }
+
     value_t right = cg_expr(context, current_namespace, scope, node->expr.binary.right);
     value_t left = cg_expr_ext(context, current_namespace, scope, node->expr.binary.left, false);
 
@@ -469,6 +504,18 @@ static value_t cg_expr_binary(CG_EXPR_PARAMS) {
         case LLIR_NODE_BINARY_OPERATION_SHIFT_RIGHT: return (value_t) {
             .type = type,
             .llvm_value = type->integer.is_signed ? LLVMBuildAShr(context->llvm_builder, left.llvm_value, right.llvm_value, "expr.binary.ashr") : LLVMBuildLShr(context->llvm_builder, left.llvm_value, right.llvm_value, "expr.binary.lshr")
+        };
+        case LLIR_NODE_BINARY_OPERATION_AND: return (value_t) {
+            .type = type,
+            .llvm_value = LLVMBuildAnd(context->llvm_builder, left.llvm_value, right.llvm_value, "expr.binary.and")
+        };
+        case LLIR_NODE_BINARY_OPERATION_OR: return (value_t) {
+            .type = type,
+            .llvm_value = LLVMBuildOr(context->llvm_builder, left.llvm_value, right.llvm_value, "expr.binary.or")
+        };
+        case LLIR_NODE_BINARY_OPERATION_XOR: return (value_t) {
+            .type = type,
+            .llvm_value = LLVMBuildXor(context->llvm_builder, left.llvm_value, right.llvm_value, "expr.binary.xor")
         };
         default: assert(false);
     }
