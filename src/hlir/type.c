@@ -22,7 +22,7 @@ static hlir_type_t *make_type(hlir_type_kind_t kind, hlir_attribute_list_t attri
     return type;
 }
 
-static hlir_type_t *make_int_type(size_t bit_size, bool is_signed, hlir_attribute_list_t attributes) {
+hlir_type_t *hlir_type_integer_make(size_t bit_size, bool is_signed, hlir_attribute_list_t attributes) {
     hlir_type_t *type = make_type(HLIR_TYPE_KIND_INTEGER, attributes);
     type->integer.bit_size = bit_size,
     type->integer.is_signed = is_signed;
@@ -36,22 +36,9 @@ hlir_type_t *hlir_type_reference_make(const char *type_name, hlir_attribute_list
     return type;
 }
 
-DEFINE_GET(void, make_type(HLIR_TYPE_KIND_VOID, attributes));
-DEFINE_GET(bool, make_int_type(1, false, attributes));
-DEFINE_GET_ALIAS(char, u8);
-DEFINE_GET_ALIAS(ptr, u64);
-
-DEFINE_GET_ALIAS(uint, u64);
-DEFINE_GET(u64, make_int_type(64, false, attributes))
-DEFINE_GET(u32, make_int_type(32, false, attributes))
-DEFINE_GET(u16, make_int_type(16, false, attributes))
-DEFINE_GET(u8, make_int_type(8, false, attributes))
-
-DEFINE_GET_ALIAS(int, i64);
-DEFINE_GET(i64, make_int_type(64, true, attributes))
-DEFINE_GET(i32, make_int_type(32, true, attributes))
-DEFINE_GET(i16, make_int_type(16, true, attributes))
-DEFINE_GET(i8, make_int_type(8, true, attributes))
+hlir_type_t *hlir_type_void_make(hlir_attribute_list_t attributes) {
+    return make_type(HLIR_TYPE_KIND_VOID, attributes);
+}
 
 hlir_type_t *hlir_type_pointer_make(hlir_type_t *pointee, hlir_attribute_list_t attributes) {
     hlir_type_t *type = make_type(HLIR_TYPE_KIND_POINTER, attributes);

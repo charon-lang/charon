@@ -1,5 +1,6 @@
 #include "util.h"
 
+#include "primitive.h"
 #include "lib/source.h"
 #include "lib/diag.h"
 
@@ -93,19 +94,21 @@ hlir_type_t *util_parse_type(tokenizer_t *tokenizer) {
     if(util_try_consume(tokenizer, TOKEN_KIND_STAR)) return hlir_type_pointer_make(util_parse_type(tokenizer), attributes);
 
     token_t token_identifier = util_consume(tokenizer, TOKEN_KIND_IDENTIFIER);
-    if(util_token_cmp(tokenizer, token_identifier, "bool") == 0) return hlir_type_get_bool(attributes);
-    if(util_token_cmp(tokenizer, token_identifier, "char") == 0) return hlir_type_get_char(attributes);
-    if(util_token_cmp(tokenizer, token_identifier, "ptr") == 0) return hlir_type_get_ptr(attributes);
-    if(util_token_cmp(tokenizer, token_identifier, "uint") == 0) return hlir_type_get_uint(attributes);
-    if(util_token_cmp(tokenizer, token_identifier, "u8") == 0) return hlir_type_get_u8(attributes);
-    if(util_token_cmp(tokenizer, token_identifier, "u16") == 0) return hlir_type_get_u16(attributes);
-    if(util_token_cmp(tokenizer, token_identifier, "u32") == 0) return hlir_type_get_u32(attributes);
-    if(util_token_cmp(tokenizer, token_identifier, "u64") == 0) return hlir_type_get_u64(attributes);
-    if(util_token_cmp(tokenizer, token_identifier, "int") == 0) return hlir_type_get_int(attributes);
-    if(util_token_cmp(tokenizer, token_identifier, "i8") == 0) return hlir_type_get_i8(attributes);
-    if(util_token_cmp(tokenizer, token_identifier, "i16") == 0) return hlir_type_get_i16(attributes);
-    if(util_token_cmp(tokenizer, token_identifier, "i32") == 0) return hlir_type_get_i32(attributes);
-    if(util_token_cmp(tokenizer, token_identifier, "i64") == 0) return hlir_type_get_i64(attributes);
+    if(util_token_cmp(tokenizer, token_identifier, "bool") == 0) return hlir_type_integer_make(1, false, attributes);
+    if(util_token_cmp(tokenizer, token_identifier, "char") == 0) return hlir_type_integer_make(PRIMITIVE_CHAR_SIZE, false, attributes);
+    if(util_token_cmp(tokenizer, token_identifier, "ptr") == 0) return hlir_type_integer_make(PRIMITIVE_POINTER_SIZE, false, attributes);
+
+    if(util_token_cmp(tokenizer, token_identifier, "uint") == 0) return hlir_type_integer_make(PRIMITIVE_INT_SIZE, false, attributes);
+    if(util_token_cmp(tokenizer, token_identifier, "u8") == 0) return hlir_type_integer_make(8, false, attributes);
+    if(util_token_cmp(tokenizer, token_identifier, "u16") == 0) return hlir_type_integer_make(16, false, attributes);
+    if(util_token_cmp(tokenizer, token_identifier, "u32") == 0) return hlir_type_integer_make(32, false, attributes);
+    if(util_token_cmp(tokenizer, token_identifier, "u64") == 0) return hlir_type_integer_make(64, false, attributes);
+
+    if(util_token_cmp(tokenizer, token_identifier, "int") == 0) return hlir_type_integer_make(PRIMITIVE_INT_SIZE, true, attributes);
+    if(util_token_cmp(tokenizer, token_identifier, "i8") == 0) return hlir_type_integer_make(8, true, attributes);
+    if(util_token_cmp(tokenizer, token_identifier, "i16") == 0) return hlir_type_integer_make(16, true, attributes);
+    if(util_token_cmp(tokenizer, token_identifier, "i32") == 0) return hlir_type_integer_make(32, true, attributes);
+    if(util_token_cmp(tokenizer, token_identifier, "i64") == 0) return hlir_type_integer_make(64, true, attributes);
 
     return hlir_type_reference_make(util_text_make_from_token(tokenizer, token_identifier), attributes);
 }
