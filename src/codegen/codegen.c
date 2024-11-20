@@ -104,6 +104,34 @@ static LLVMTypeRef llir_type_to_llvm(context_t *context, llir_type_t *type) {
     assert(false);
 }
 
+static bool try_coerce(context_t *context, llir_type_t *to_type, value_t *value) {
+    if(llir_type_eq(to_type, value->type)) return true;
+
+    if(to_type->kind == LLIR_TYPE_KIND_INTEGER) {
+        if(value->type->kind != LLIR_TYPE_KIND_INTEGER) return false;
+        if(value->type->integer.is_signed != to_type->integer.is_signed) return false;
+        if(value->type->integer.bit_size > to_type->integer.bit_size) return false;
+
+        value->type = to_type;
+        if(to_type->integer.is_signed) {
+            value->llvm_value = LLVMBuildSExt(context->llvm_builder, value->llvm_value, llir_type_to_llvm(context, to_type), "coerce.sext");
+        } else {
+            value->llvm_value = LLVMBuildZExt(context->llvm_builder, value->llvm_value, llir_type_to_llvm(context, to_type), "coerce.zext");
+        }
+        return true;
+    }
+
+    if(to_type->kind == LLIR_TYPE_KIND_POINTER) {
+        if(value->type->kind != LLIR_TYPE_KIND_ARRAY) return false;
+        if(!llir_type_eq(to_type->pointer.pointee, value->type->array.type)) return false;
+
+        value->type = to_type;
+        return true;
+    }
+
+    return false;
+}
+
 static scope_t *scope_enter(scope_t *current) {
     scope_t *scope = malloc(sizeof(scope_t));
     scope->parent = current;
@@ -223,7 +251,7 @@ static void cg_stmt_declaration(CG_STMT_PARAMS) {
         if(type == NULL) {
             type = value.type;
         } else {
-            if(!llir_type_eq(value.type, type)) diag_error(node->source_location, "declarations initial value does not match its explicit type");
+            if(!try_coerce(context, type, &value)) diag_error(node->source_location, "declarations initial value does not match its explicit type");
         }
         llvm_value = value.llvm_value;
     }
@@ -251,7 +279,7 @@ static void cg_stmt_return(CG_STMT_PARAMS) {
     }
     if(node->stmt_return.value == NULL) diag_error(node->source_location, "no return value");
     value_t value = cg_expr(context, current_namespace, scope, node->stmt_return.value);
-    if(!llir_type_eq(value.type, context->return_state.type)) diag_error(node->source_location, "invalid type");
+    if(!try_coerce(context, context->return_state.type, &value)) diag_error(node->source_location, "invalid type");
     LLVMBuildRet(context->llvm_builder, value.llvm_value);
 }
 
@@ -370,16 +398,20 @@ static value_t cg_expr_binary(CG_EXPR_PARAMS) {
     value_t right = cg_expr(context, current_namespace, scope, node->expr.binary.right);
     value_t left = cg_expr_ext(context, current_namespace, scope, node->expr.binary.left, false);
 
-    llir_type_t *type = right.type;
-    if(!llir_type_eq(type, left.type)) diag_error(node->source_location, "conflicting types in binary expression");
-
     if(node->expr.binary.operation == LLIR_NODE_BINARY_OPERATION_ASSIGN) {
+        if(!try_coerce(context, left.type, &right)) diag_error(node->source_location, "conflicting types in assignment");
         if(!left.is_ref) diag_error(node->source_location, "invalid lvalue");
         LLVMBuildStore(context->llvm_builder, right.llvm_value, left.llvm_value);
         return right;
     }
 
     left = resolve_ref(context, left);
+    llir_type_t *type = left.type;
+    if(!try_coerce(context, type, &right)) {
+        type = right.type;
+        if(!try_coerce(context, type, &left)) diag_error(node->source_location, "conflicting types in binary expression");
+    }
+
     switch(node->expr.binary.operation) {
         case LLIR_NODE_BINARY_OPERATION_EQUAL: return (value_t) {
             .type = LLIR_TYPE_BOOL,
@@ -538,8 +570,9 @@ static value_t cg_expr_call(CG_EXPR_PARAMS) {
     if(argument_count > 0) {
         LLVMValueRef arguments[node->expr.call.arguments.count];
         LLIR_NODE_LIST_FOREACH(&node->expr.call.arguments, {
-            value_t argument = cg_expr(context, current_namespace, scope, node);
-            if(fn_type->function.argument_count > i && !llir_type_eq(argument.type, fn_type->function.arguments[i])) diag_error(node->source_location, "argument has invalid type");
+            value_t argument = cg_expr_ext(context, current_namespace, scope, node, false);
+            if(fn_type->function.argument_count > i && !try_coerce(context, fn_type->function.arguments[i], &argument)) diag_error(node->source_location, "argument has invalid type");
+            argument = resolve_ref(context, argument);
             arguments[i] = argument.llvm_value;
         });
         llvm_value = LLVMBuildCall2(context->llvm_builder, llir_type_to_llvm(context, fn_type), value.llvm_value, arguments, argument_count, "");
@@ -621,7 +654,7 @@ static value_t cg_expr_cast(CG_EXPR_PARAMS) {
     if(type_from->kind == LLIR_TYPE_KIND_ARRAY && type_to->kind == LLIR_TYPE_KIND_POINTER) {
         if(llir_type_eq(type_from->array.type, type_to->pointer.pointee)) return (value_t) {
             .type = type_to,
-            .llvm_value = value_from.llvm_value // TODO: validate we dont actually need a cast here
+            .llvm_value = value_from.llvm_value
         };
     }
 
