@@ -4,5 +4,5 @@ fn main(argc: i32, argv: *char) {
     let x = 1000;
     let y: u8 = x as u8;
     let z: u32 = y as u32;
-    printf("> %u\n" as *char, z);
+    printf("> %u\n", z);
 }

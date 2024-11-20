@@ -4,10 +4,10 @@ extern fn free(ptr: ptr);
 
 fn main() {
     let brr = 0x80000 as *char;
-    printf("%p\n" as *char, brr);
+    printf("%p\n", brr);
 
     let back = brr as uint;
-    printf("%#lx\n" as *char, back);
+    printf("%#lx\n", back);
 
     let data = malloc(16);
 

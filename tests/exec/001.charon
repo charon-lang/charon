@@ -4,9 +4,9 @@ fn main(argc: i32, argv: *char) {
     let x: uint = 100;
     let y: uint = 5 + x * 2;
 
-    let fmt: *char = "hello world %lu %i\n" as *char;
+    let fmt: *char = "hello world %lu %i\n";
 
     printf(fmt, y, argc);
 
-    printf("Hello world\n" as *char);
+    printf("Hello world\n");
 }

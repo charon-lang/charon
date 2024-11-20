@@ -16,16 +16,16 @@ fn main(): uint {
 
     x = 505;
 
-    printf("%lu\n" as *char, x);
+    printf("%lu\n", x);
 
     x += 20;
 
-    printf("%lu\n" as *char, x);
+    printf("%lu\n", x);
 
     test.a = 15;
     test.b = 20;
 
-    printf("%lu\n" as *char, test.a + test.b);
+    printf("%lu\n", test.a + test.b);
 
     let a: W;
     let b: W;

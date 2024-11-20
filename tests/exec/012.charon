@@ -2,12 +2,12 @@ extern fn printf(fmt: *u8, ...): i32;
 
 module Hello {
     fn world() {
-        printf("world\n" as *char);
+        printf("world\n");
     }
 
     module World {
         fn city() {
-            printf("city\n" as *char);
+            printf("city\n");
         }
     }
 
@@ -15,7 +15,7 @@ module Hello {
 }
 
 fn main(): i32 {
-    printf("womp\n" as *char);
+    printf("womp\n");
 
     Hello::world();
     Hello::World::city();

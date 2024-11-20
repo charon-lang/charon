@@ -3,11 +3,11 @@ extern fn putchar(ch: i32);
 
 fn main(): uint {
     putchar('x' as i32);
-    putchar(("hello" as *char)[1] as i32);
+    putchar(("hello")[1] as i32);
     putchar('x' as i32);
-    printf("\n" as *char);
+    printf("\n");
 
-    let str: *char = "hello\n" as *char;
+    let str: *char = "hello\n";
 
     printstr(str);
 

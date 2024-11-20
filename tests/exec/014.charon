@@ -6,5 +6,5 @@ fn main(): uint {
 }
 
 fn hello() {
-    printf("hello\n" as *char);
+    printf("hello\n");
 }

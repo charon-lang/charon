@@ -13,7 +13,7 @@ fn z() {
 }
 
 fn main() {
-    printf("> %lu\n" as *char, x());
-    printf("> %lu\n" as *char, add(5, 10));
+    printf("> %lu\n", x());
+    printf("> %lu\n", add(5, 10));
     z();
 }

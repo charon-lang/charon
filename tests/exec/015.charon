@@ -11,10 +11,10 @@ fn main(): uint {
     test.b = 15;
     test.a = 5;
 
-    printf("%lu %lu\n" as *char, test.a, test.b);
+    printf("%lu %lu\n", test.a, test.b);
 
-    printf("%lu\n" as *char, sum(&test));
-    printf("%lu\n" as *char, sum2(&test));
+    printf("%lu\n", sum(&test));
+    printf("%lu\n", sum2(&test));
 
     return 0;
 }

@@ -4,7 +4,7 @@ type X @packed struct {}
 
 fn main(): uint {
 
-    printf("Hello world\n" as *char);
+    printf("Hello world\n");
 
     return 0;
 }

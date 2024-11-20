@@ -1,0 +1,16 @@
+extern fn printf(fmt: *char, ...): i32;
+
+fn main(): u32 {
+
+    let x: uint = 5 as u8;
+    x = 4 as u8;
+
+    let a: u8 = 5 as u8;
+    let b: u16 = 5 as u16;
+    x = a + b;
+    x = b + a;
+
+    printf("Hello\n");
+
+    return 0 as u8;
+}

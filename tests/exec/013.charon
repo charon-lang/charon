@@ -10,10 +10,10 @@ fn main(): uint {
 
     let i = 0;
     while(i < 5) {
-        printf("%lu " as *char, x[i]);
+        printf("%lu ", x[i]);
         i += 1;
     }
-    printf("\n" as *char);
+    printf("\n");
 
     return 0;
 }
