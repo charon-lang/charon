@@ -101,7 +101,11 @@ static llir_node_t *lower_node(context_t *context, llir_namespace_t *current_nam
             assert(symbol != NULL);
 
             llir_node_list_t tlcs = LLIR_NODE_LIST_INIT;
-            HLIR_NODE_LIST_FOREACH(&node->tlc_module.tlcs, llir_node_list_append(&tlcs, lower_node(context, symbol->module.namespace, node)));
+            HLIR_NODE_LIST_FOREACH(&node->tlc_module.tlcs, {
+                llir_node_t *lowered_node = lower_node(context, symbol->module.namespace, node);
+                if(lowered_node == NULL) continue;
+                llir_node_list_append(&tlcs, lowered_node);
+            });
 
             new_node->type = LLIR_NODE_TYPE_TLC_MODULE;
             new_node->tlc_module.name = node->tlc_module.name;
