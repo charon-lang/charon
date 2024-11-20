@@ -6,7 +6,7 @@ fn brr(x: uint) {
 
 fn main(): uint {
 
-    let test = brr;
+    let test: fn(x: uint) = brr;
 
     test(6);
 
