@@ -1,0 +1,44 @@
+extern fn printf(fmt: *char, ...): i32;
+
+fn x(): bool {
+    return true;
+}
+
+fn y(): bool {
+    return false;
+}
+
+fn main(): uint {
+
+    let xx = x();
+    let yy = y();
+
+    if(xx && yy) {
+        printf("Hello\n");
+    } else {
+        printf("World\n");
+        if(xx || yy) {
+            printf("1\n");
+        } else {
+            printf("2\n");
+        }
+    }
+
+    if(xx && 5 > 1) {
+        printf("3\n");
+    }
+
+    if(xx && false && true) {
+        printf("4\n");
+    }
+
+    if(xx && false || true) {
+        printf("5\n");
+    }
+
+    if((xx && false) || true) {
+        printf("6\n");
+    }
+
+    return 0;
+}
