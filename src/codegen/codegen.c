@@ -1,5 +1,6 @@
 #include "codegen.h"
 
+#include "primitive.h"
 #include "lib/diag.h"
 #include "lib/log.h"
 #include "llir/symbol.h"
@@ -327,7 +328,7 @@ static void cg_stmt_while(CG_STMT_PARAMS) {
 // Expressions
 
 static value_t cg_expr_literal_numeric(CG_EXPR_PARAMS) {
-    llir_type_t *type = llir_type_cache_get_integer(context->anon_type_cache, 64, false);
+    llir_type_t *type = llir_type_cache_get_integer(context->anon_type_cache, PRIMITIVE_INT_SIZE, false);
     return (value_t) {
         .type = type, // TODO: signed?
         .llvm_value = LLVMConstInt(llir_type_to_llvm(context, type), node->expr.literal.numeric_value, type->integer.is_signed)
@@ -335,7 +336,7 @@ static value_t cg_expr_literal_numeric(CG_EXPR_PARAMS) {
 }
 
 static value_t cg_expr_literal_char(CG_EXPR_PARAMS) {
-    llir_type_t *type = llir_type_cache_get_integer(context->anon_type_cache, 8, false);
+    llir_type_t *type = llir_type_cache_get_integer(context->anon_type_cache, PRIMITIVE_CHAR_SIZE, false);
     return (value_t) {
         .type = type,
         .llvm_value = LLVMConstInt(llir_type_to_llvm(context, type), node->expr.literal.char_value, false)
@@ -344,7 +345,7 @@ static value_t cg_expr_literal_char(CG_EXPR_PARAMS) {
 
 static value_t cg_expr_literal_string(CG_EXPR_PARAMS) {
     size_t size = strlen(node->expr.literal.string_value) + 1;
-    llir_type_t *type = llir_type_cache_get_array(context->anon_type_cache, llir_type_cache_get_integer(context->anon_type_cache, 8, false), size);
+    llir_type_t *type = llir_type_cache_get_array(context->anon_type_cache, llir_type_cache_get_integer(context->anon_type_cache, PRIMITIVE_CHAR_SIZE, false), size);
 
     LLVMValueRef value = LLVMAddGlobal(context->llvm_module, llir_type_to_llvm(context, type), "expr.literal_string");
     LLVMSetLinkage(value, LLVMInternalLinkage);
