@@ -786,7 +786,7 @@ static value_t cg_expr_selector(CG_EXPR_PARAMS) {
     llir_symbol_t *symbol = llir_namespace_find_symbol_with_kind(current_namespace, node->expr.selector.name, LLIR_SYMBOL_KIND_MODULE);
     if(symbol == NULL) {
         symbol = llir_namespace_find_symbol_with_kind(context->root_namespace, node->expr.selector.name, LLIR_SYMBOL_KIND_MODULE);
-    if(symbol == NULL) diag_error(node->source_location, "unknown module `%s`", node->expr.selector.name);
+        if(symbol == NULL) diag_error(node->source_location, "unknown module `%s`", node->expr.selector.name);
     }
     return cg_expr_ext(context, symbol->module.namespace, scope, node->expr.selector.value, false);
 }

@@ -235,6 +235,7 @@ static hlir_node_t *parse_unary_post(tokenizer_t *tokenizer) {
             }
             util_consume(tokenizer, TOKEN_KIND_PARENTHESES_RIGHT);
             value = hlir_node_make_expr_call(value, arguments, source_location);
+            continue;
         }
         if(util_try_consume(tokenizer, TOKEN_KIND_PERIOD)) {
             if(tokenizer_peek(tokenizer).kind == TOKEN_KIND_CONST_NUMBER_DEC) {
