@@ -62,6 +62,10 @@ static llir_type_t *lower_type(context_t *context, llir_namespace_t *current_nam
             new_type = llir_type_cache_get_function(context->anon_type_cache, type->function.argument_count, arguments, type->function.varargs, lower_type(context, current_namespace, type->function.return_type, source_location));
             break;
         }
+        case HLIR_TYPE_KIND_FUNCTION_REFERENCE: {
+            new_type = llir_type_cache_get_function_reference(context->anon_type_cache, lower_type(context, current_namespace, type->function_reference.function_type, source_location));
+            break;
+        }
     }
     assert(new_type != NULL);
     for(size_t i = 0; i < type->attributes.attribute_count; i++) {

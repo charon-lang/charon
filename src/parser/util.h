@@ -19,4 +19,6 @@ uintmax_t util_number_make_from_token(tokenizer_t *tokenizer, token_t token);
 
 hlir_type_t *util_parse_type(tokenizer_t *tokenizer);
 
+hlir_type_t *util_parse_prototype(tokenizer_t *tokenizer, const char ***argument_names);
+
 hlir_attribute_list_t util_parse_hlir_attributes(tokenizer_t *tokenizer);

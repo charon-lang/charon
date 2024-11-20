@@ -11,7 +11,8 @@ typedef enum {
     HLIR_TYPE_KIND_TUPLE,
     HLIR_TYPE_KIND_ARRAY,
     HLIR_TYPE_KIND_STRUCTURE,
-    HLIR_TYPE_KIND_FUNCTION
+    HLIR_TYPE_KIND_FUNCTION,
+    HLIR_TYPE_KIND_FUNCTION_REFERENCE
 } hlir_type_kind_t;
 
 typedef struct hlir_type hlir_type_t;
@@ -53,6 +54,9 @@ struct hlir_type {
                     hlir_type_t **arguments;
                     bool varargs;
                 } function;
+                struct {
+                    hlir_type_t *function_type;
+                } function_reference;
             };
         };
         struct {
@@ -70,3 +74,4 @@ hlir_type_t *hlir_type_tuple_make(size_t type_count, hlir_type_t **types, hlir_a
 hlir_type_t *hlir_type_array_make(hlir_type_t *type, size_t size, hlir_attribute_list_t attributes);
 hlir_type_t *hlir_type_structure_make(size_t member_count, hlir_type_structure_member_t *members, hlir_attribute_list_t attributes);
 hlir_type_t *hlir_type_function_make(size_t argument_count, hlir_type_t **arguments, bool varargs, hlir_type_t *return_type, hlir_attribute_list_t attributes);
+hlir_type_t *hlir_type_function_reference_make(hlir_type_t *function_type, hlir_attribute_list_t attributes);

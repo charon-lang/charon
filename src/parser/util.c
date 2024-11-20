@@ -92,6 +92,7 @@ hlir_type_t *util_parse_type(tokenizer_t *tokenizer) {
         return hlir_type_array_make(util_parse_type(tokenizer), size, attributes);
     }
     if(util_try_consume(tokenizer, TOKEN_KIND_STAR)) return hlir_type_pointer_make(util_parse_type(tokenizer), attributes);
+    if(util_try_consume(tokenizer, TOKEN_KIND_KEYWORD_FUNCTION)) return hlir_type_function_reference_make(util_parse_prototype(tokenizer, NULL), attributes);
 
     token_t token_identifier = util_consume(tokenizer, TOKEN_KIND_IDENTIFIER);
     if(util_token_cmp(tokenizer, token_identifier, "bool") == 0) return hlir_type_integer_make(1, false, attributes);
@@ -111,6 +112,38 @@ hlir_type_t *util_parse_type(tokenizer_t *tokenizer) {
     if(util_token_cmp(tokenizer, token_identifier, "i64") == 0) return hlir_type_integer_make(64, true, attributes);
 
     return hlir_type_reference_make(util_text_make_from_token(tokenizer, token_identifier), attributes);
+}
+
+hlir_type_t *util_parse_prototype(tokenizer_t *tokenizer, const char ***argument_names) {
+    bool varargs = false;
+    hlir_type_t **arguments = NULL;
+    size_t argument_count = 0;
+    hlir_type_t *return_type = hlir_type_void_make(HLIR_ATTRIBUTE_LIST_INIT);
+
+    util_consume(tokenizer, TOKEN_KIND_PARENTHESES_LEFT);
+    if(tokenizer_peek(tokenizer).kind != TOKEN_KIND_PARENTHESES_RIGHT) {
+        do {
+            if(util_try_consume(tokenizer, TOKEN_KIND_TRIPLE_PERIOD)) {
+                varargs = true;
+                break;
+            }
+
+            token_t token_identifier = util_consume(tokenizer, TOKEN_KIND_IDENTIFIER);
+            util_consume(tokenizer, TOKEN_KIND_COLON);
+
+            arguments = reallocarray(arguments, ++argument_count, sizeof(hlir_type_t *));
+            arguments[argument_count - 1] = util_parse_type(tokenizer);
+            if(argument_names != NULL) {
+                *argument_names = reallocarray(*argument_names, argument_count, sizeof(char *));
+                (*argument_names)[argument_count - 1] = util_text_make_from_token(tokenizer, token_identifier);
+            }
+        } while(util_try_consume(tokenizer, TOKEN_KIND_COMMA));
+    }
+    util_consume(tokenizer, TOKEN_KIND_PARENTHESES_RIGHT);
+
+    if(util_try_consume(tokenizer, TOKEN_KIND_COLON)) return_type = util_parse_type(tokenizer);
+
+    return hlir_type_function_make(argument_count, arguments, varargs, return_type, HLIR_ATTRIBUTE_LIST_INIT);
 }
 
 hlir_attribute_list_t util_parse_hlir_attributes(tokenizer_t *tokenizer) {

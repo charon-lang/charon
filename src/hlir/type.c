@@ -75,3 +75,9 @@ hlir_type_t *hlir_type_function_make(size_t argument_count, hlir_type_t **argume
     type->function.varargs = varargs;
     return type;
 }
+
+hlir_type_t *hlir_type_function_reference_make(hlir_type_t *function_type, hlir_attribute_list_t attributes) {
+    hlir_type_t *type = make_type(HLIR_TYPE_KIND_FUNCTION_REFERENCE, attributes);
+    type->function_reference.function_type = function_type;
+    return type;
+}
