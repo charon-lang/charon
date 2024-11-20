@@ -1,0 +1,10 @@
+extern fn printf(fmt: *char, ...): i32;
+
+type X @packed struct {}
+
+fn main(): uint {
+
+    printf("Hello world\n" as *char);
+
+    return 0;
+}
