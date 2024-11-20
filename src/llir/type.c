@@ -121,9 +121,10 @@ llir_type_t *llir_type_cache_get_array(llir_type_cache_t *cache, llir_type_t *el
     return type;
 }
 
-llir_type_t *llir_type_cache_get_structure(llir_type_cache_t *cache, size_t member_count, llir_type_structure_member_t *members) {
+llir_type_t *llir_type_cache_get_structure(llir_type_cache_t *cache, size_t member_count, llir_type_structure_member_t *members, bool packed) {
     for(size_t i = 0; i < cache->type_count; i++) {
         if(cache->types[i]->kind != LLIR_TYPE_KIND_STRUCTURE) continue;
+        if(cache->types[i]->structure.packed != packed) continue;
         if(cache->types[i]->structure.member_count != member_count) continue;
         for(size_t j = 0; j < cache->types[i]->structure.member_count; j++) {
             if(strcmp(cache->types[i]->structure.members[j].name, members[j].name) != 0) goto cont;
@@ -133,6 +134,7 @@ llir_type_t *llir_type_cache_get_structure(llir_type_cache_t *cache, size_t memb
         cont:
     }
     llir_type_t *type = make_type(LLIR_TYPE_KIND_STRUCTURE);
+    type->structure.packed = packed;
     type->structure.member_count = member_count;
     type->structure.members = members;
     cache_add(cache, type);

@@ -96,7 +96,7 @@ static LLVMTypeRef llir_type_to_llvm(context_t *context, llir_type_t *type) {
         case LLIR_TYPE_KIND_STRUCTURE: {
             LLVMTypeRef types[type->structure.member_count];
             for(size_t i = 0; i < type->structure.member_count; i++) types[i] = llir_type_to_llvm(context, type->structure.members[i].type);
-            return LLVMStructTypeInContext(context->llvm_context, types, type->structure.member_count, false);
+            return LLVMStructTypeInContext(context->llvm_context, types, type->structure.member_count, type->structure.packed);
         }
         case LLIR_TYPE_KIND_FUNCTION_REFERENCE: return LLVMPointerTypeInContext(context->llvm_context, 0);
     }

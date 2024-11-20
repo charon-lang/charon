@@ -41,6 +41,9 @@ static llir_type_t *lower_type(context_t *context, llir_namespace_t *current_nam
             new_type = llir_type_cache_get_array(context->anon_type_cache, lower_type(context, current_namespace, type->array.type, source_location), type->array.size);
             break;
         case HLIR_TYPE_KIND_STRUCTURE: {
+            hlir_attribute_t *attr_packed = hlir_attribute_find(&type->attributes, HLIR_ATTRIBUTE_KIND_PACKED);
+            if(attr_packed != NULL) attr_packed->consumed = true;
+
             llir_type_structure_member_t *members = malloc(type->structure.member_count * sizeof(llir_type_structure_member_t));
             for(size_t i = 0; i < type->structure.member_count; i++) {
                 for(size_t j = i + 1; j < type->structure.member_count; j++) if(strcmp(type->structure.members[i].name, type->structure.members[j].name) == 0) diag_error(source_location, "duplicate member `%s`", type->structure.members[i].name);

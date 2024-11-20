@@ -39,6 +39,7 @@ struct llir_type {
             size_t size;
         } array;
         struct {
+            bool packed;
             size_t member_count;
             llir_type_structure_member_t *members;
         } structure;
@@ -69,6 +70,6 @@ llir_type_t *llir_type_cache_get_integer(llir_type_cache_t *cache, size_t bit_si
 llir_type_t *llir_type_cache_get_pointer(llir_type_cache_t *cache, llir_type_t *pointee);
 llir_type_t *llir_type_cache_get_tuple(llir_type_cache_t *cache, size_t type_count, llir_type_t **types);
 llir_type_t *llir_type_cache_get_array(llir_type_cache_t *cache, llir_type_t *element_type, size_t size);
-llir_type_t *llir_type_cache_get_structure(llir_type_cache_t *cache, size_t member_count, llir_type_structure_member_t *members);
+llir_type_t *llir_type_cache_get_structure(llir_type_cache_t *cache, size_t member_count, llir_type_structure_member_t *members, bool packed);
 llir_type_t *llir_type_cache_get_function(llir_type_cache_t *cache, size_t argument_count, llir_type_t **arguments, bool varargs, llir_type_t *return_type);
 llir_type_t *llir_type_cache_get_function_reference(llir_type_cache_t *cache, llir_type_t *function_type);
