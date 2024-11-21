@@ -18,6 +18,7 @@
         case HLIR_NODE_TYPE_TLC_EXTERN: \
         case HLIR_NODE_TYPE_TLC_TYPE_DEFINITION: \
         case HLIR_NODE_TYPE_TLC_DECLARATION: \
+        case HLIR_NODE_TYPE_TLC_ENUMERATION: \
             BODY; break;
 
 #define HLIR_CASE_STMT(BODY) \
@@ -54,6 +55,7 @@ typedef enum {
     HLIR_NODE_TYPE_TLC_EXTERN,
     HLIR_NODE_TYPE_TLC_TYPE_DEFINITION,
     HLIR_NODE_TYPE_TLC_DECLARATION,
+    HLIR_NODE_TYPE_TLC_ENUMERATION,
 
     HLIR_NODE_TYPE_STMT_BLOCK,
     HLIR_NODE_TYPE_STMT_DECLARATION,
@@ -151,6 +153,11 @@ struct hlir_node {
             const char *name;
             hlir_type_t *type;
         } tlc_declaration;
+        struct {
+            const char *name;
+            size_t member_count;
+            const char **members;
+        } tlc_enumeration;
 
         struct {
             hlir_node_list_t statements;
@@ -230,6 +237,7 @@ hlir_node_t *hlir_node_make_tlc_function(const char *name, hlir_type_function_t 
 hlir_node_t *hlir_node_make_tlc_extern(const char *name, hlir_type_function_t *function_type, hlir_attribute_list_t attributes, source_location_t source_location);
 hlir_node_t *hlir_node_make_tlc_type_definition(const char *name, hlir_type_t *type, hlir_attribute_list_t attributes, source_location_t source_location);
 hlir_node_t *hlir_node_make_tlc_declaration(const char *name, hlir_type_t *type, hlir_attribute_list_t attributes, source_location_t source_location);
+hlir_node_t *hlir_node_make_tlc_enumeration(const char *name, size_t member_count, const char **members, hlir_attribute_list_t attributes, source_location_t source_location);
 
 hlir_node_t *hlir_node_make_stmt_block(hlir_node_list_t statements, hlir_attribute_list_t attributes, source_location_t source_location);
 hlir_node_t *hlir_node_make_stmt_declaration(const char *name, hlir_type_t *type, hlir_node_t *initial, hlir_attribute_list_t attributes, source_location_t source_location);

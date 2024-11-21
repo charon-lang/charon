@@ -65,6 +65,14 @@ hlir_node_t *hlir_node_make_tlc_declaration(const char *name, hlir_type_t *type,
     return node;
 }
 
+hlir_node_t *hlir_node_make_tlc_enumeration(const char *name, size_t member_count, const char **members, hlir_attribute_list_t attributes, source_location_t source_location) {
+    hlir_node_t *node = node_make(HLIR_NODE_TYPE_TLC_ENUMERATION, attributes, source_location);
+    node->tlc_enumeration.name = name;
+    node->tlc_enumeration.member_count = member_count;
+    node->tlc_enumeration.members = members;
+    return node;
+}
+
 hlir_node_t *hlir_node_make_stmt_block(hlir_node_list_t statements, hlir_attribute_list_t attributes, source_location_t source_location) {
     hlir_node_t *node = node_make(HLIR_NODE_TYPE_STMT_BLOCK, attributes, source_location);
     node->stmt_block.statements = statements;
