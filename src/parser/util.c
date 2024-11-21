@@ -92,7 +92,7 @@ hlir_type_t *util_parse_type(tokenizer_t *tokenizer) {
         return hlir_type_array_make(util_parse_type(tokenizer), size, attributes);
     }
     if(util_try_consume(tokenizer, TOKEN_KIND_STAR)) return hlir_type_pointer_make(util_parse_type(tokenizer), attributes);
-    if(util_try_consume(tokenizer, TOKEN_KIND_KEYWORD_FUNCTION)) return hlir_type_function_reference_make(util_parse_prototype(tokenizer, NULL), attributes);
+    if(util_try_consume(tokenizer, TOKEN_KIND_KEYWORD_FUNCTION)) return hlir_type_function_reference_make(util_parse_function_type(tokenizer, NULL), attributes);
 
     token_t token_identifier = util_consume(tokenizer, TOKEN_KIND_IDENTIFIER);
     if(util_token_cmp(tokenizer, token_identifier, "bool") == 0) return hlir_type_integer_make(1, false, attributes);
@@ -114,7 +114,7 @@ hlir_type_t *util_parse_type(tokenizer_t *tokenizer) {
     return hlir_type_reference_make(util_text_make_from_token(tokenizer, token_identifier), attributes);
 }
 
-hlir_type_function_t *util_parse_prototype(tokenizer_t *tokenizer, const char ***argument_names) {
+hlir_type_function_t *util_parse_function_type(tokenizer_t *tokenizer, const char ***argument_names) {
     bool varargs = false;
     hlir_type_t **arguments = NULL;
     size_t argument_count = 0;

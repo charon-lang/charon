@@ -41,7 +41,7 @@ bool llir_type_eq(llir_type_t *a, llir_type_t *b) {
     return a == b;
 }
 
-static llir_type_function_eq(llir_type_function_t *a, llir_type_function_t *b) {
+static bool llir_type_function_eq(llir_type_function_t *a, llir_type_function_t *b) {
     return a == b;
 }
 
@@ -166,7 +166,7 @@ llir_type_function_t *llir_type_cache_get_function_type(llir_type_cache_t *cache
         if(cache->function_types[i]->argument_count != argument_count) continue;
         if(!llir_type_eq(cache->function_types[i]->return_type, return_type)) continue;
         for(size_t j = 0; j < cache->function_types[i]->argument_count; j++) if(!llir_type_eq(cache->function_types[i]->arguments[j], arguments[j])) goto cont;
-        return cache->types[i];
+        return cache->function_types[i];
         cont:
     }
     llir_type_function_t *function_type = malloc(sizeof(llir_type_function_t));

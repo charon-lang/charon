@@ -623,9 +623,9 @@ static value_t cg_expr_call(CG_EXPR_PARAMS) {
             argument = resolve_ref(context, argument);
             arguments[i] = argument.llvm_value;
         });
-        llvm_value = LLVMBuildCall2(context->llvm_builder, llir_type_to_llvm(context, fn_type), value.llvm_value, arguments, argument_count, "");
+        llvm_value = LLVMBuildCall2(context->llvm_builder, llir_type_function_to_llvm(context, fn_type), value.llvm_value, arguments, argument_count, "");
     } else {
-        llvm_value = LLVMBuildCall2(context->llvm_builder, llir_type_to_llvm(context, fn_type), value.llvm_value, NULL, 0, "");
+        llvm_value = LLVMBuildCall2(context->llvm_builder, llir_type_function_to_llvm(context, fn_type), value.llvm_value, NULL, 0, "");
     }
 
     return (value_t) {

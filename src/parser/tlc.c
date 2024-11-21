@@ -29,9 +29,9 @@ static hlir_node_t *parse_function(tokenizer_t *tokenizer, hlir_attribute_list_t
     util_consume(tokenizer, TOKEN_KIND_KEYWORD_FUNCTION);
     const char *name = util_text_make_from_token(tokenizer, util_consume(tokenizer, TOKEN_KIND_IDENTIFIER));
     const char **argument_names = NULL;
-    hlir_type_t *prototype = util_parse_prototype(tokenizer, &argument_names);
+    hlir_type_function_t *function_type = util_parse_function_type(tokenizer, &argument_names);
 
-    return hlir_node_make_tlc_function(name, prototype, argument_names, parser_stmt(tokenizer), attributes, source_location);
+    return hlir_node_make_tlc_function(name, function_type, argument_names, parser_stmt(tokenizer), attributes, source_location);
 }
 
 static hlir_node_t *parse_extern(tokenizer_t *tokenizer, hlir_attribute_list_t attributes) {
@@ -39,10 +39,10 @@ static hlir_node_t *parse_extern(tokenizer_t *tokenizer, hlir_attribute_list_t a
 
     util_consume(tokenizer, TOKEN_KIND_KEYWORD_FUNCTION);
     const char *name = util_text_make_from_token(tokenizer, util_consume(tokenizer, TOKEN_KIND_IDENTIFIER));
-    hlir_type_t *prototype = util_parse_prototype(tokenizer, NULL);
+    hlir_type_function_t *function_type = util_parse_function_type(tokenizer, NULL);
 
     util_consume(tokenizer, TOKEN_KIND_SEMI_COLON);
-    return hlir_node_make_tlc_extern(name, prototype, attributes, source_location);
+    return hlir_node_make_tlc_extern(name, function_type, attributes, source_location);
 }
 
 static hlir_node_t *parse_declaration(tokenizer_t *tokenizer, hlir_attribute_list_t attributes) {
