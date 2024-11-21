@@ -1,5 +1,6 @@
 #include "semantics.h"
 
+#include "primitive.h"
 #include "lib/diag.h"
 #include "llir/symbol.h"
 #include "llir/type.h"
@@ -134,6 +135,7 @@ static llir_node_t *lower_node(context_t *context, llir_namespace_t *current_nam
         case HLIR_NODE_TYPE_TLC_EXTERN:
         case HLIR_NODE_TYPE_TLC_TYPE_DEFINITION:
         case HLIR_NODE_TYPE_TLC_DECLARATION:
+        case HLIR_NODE_TYPE_TLC_ENUMERATION:
             free(new_node);
             new_node = NULL;
             break;
@@ -340,6 +342,7 @@ static void pass_two(context_t *context, llir_namespace_t *current_namespace, hl
             if(llir_namespace_exists_symbol(current_namespace, node->tlc_declaration.name)) diag_error(node->source_location, "symbol `%s` already exists", node->tlc_declaration.name);
             llir_namespace_add_symbol_variable(current_namespace, node->tlc_declaration.name, lower_type(context, current_namespace, node->tlc_declaration.type, node->source_location));
             break;
+        case HLIR_NODE_TYPE_TLC_ENUMERATION: break;
 
         HLIR_CASE_STMT();
         HLIR_CASE_EXPRESSION();
@@ -362,93 +365,18 @@ static void pass_one(context_t *context, llir_namespace_t *current_namespace, hl
             llir_namespace_add_type(current_namespace, node->tlc_type_definition.name);
             break;
         case HLIR_NODE_TYPE_TLC_DECLARATION: break;
+        case HLIR_NODE_TYPE_TLC_ENUMERATION:
+            if(llir_namespace_exists_symbol(current_namespace, node->tlc_enumeration.name)) diag_error(node->source_location, "symbol `%s` already exists", node->tlc_enumeration.name);
+            if(llir_namespace_exists_type(current_namespace, node->tlc_enumeration.name)) diag_error(node->source_location, "type `%s` already exists", node->tlc_enumeration.name);
+            llir_namespace_add_type(current_namespace, node->tlc_enumeration.name);
+            llir_type_t *type = llir_namespace_update_type(current_namespace, node->tlc_enumeration.name, *llir_type_cache_get_enumeration(context->anon_type_cache, PRIMITIVE_ENUM_SIZE, node->tlc_enumeration.member_count));
+            llir_namespace_add_symbol_enumeration(current_namespace, node->tlc_enumeration.name, type, node->tlc_enumeration.members);
+            break;
 
         HLIR_CASE_STMT()
         HLIR_CASE_EXPRESSION()
     }
 }
-
-// static llir_type_t *evaluate_expr_types(context_t *context, llir_namespace_t *current_namespace, llir_node_t *node) {
-//     switch(node->type) {
-//         case LLIR_NODE_TYPE_EXPR_LITERAL_NUMERIC: {
-//         }
-//         case LLIR_NODE_TYPE_EXPR_LITERAL_STRING: {
-//         }
-//         case LLIR_NODE_TYPE_EXPR_LITERAL_CHAR: {
-//         }
-//         case LLIR_NODE_TYPE_EXPR_LITERAL_BOOL: {
-//         }
-//         case LLIR_NODE_TYPE_EXPR_BINARY: {
-//         }
-//         case LLIR_NODE_TYPE_EXPR_UNARY: {
-//         }
-//         case LLIR_NODE_TYPE_EXPR_VARIABLE: {
-//         }
-//         case LLIR_NODE_TYPE_EXPR_TUPLE: {
-//         }
-//         case LLIR_NODE_TYPE_EXPR_CALL: {
-//         }
-//         case LLIR_NODE_TYPE_EXPR_CAST: {
-//         }
-//         case LLIR_NODE_TYPE_EXPR_SUBSCRIPT: {
-//         }
-//         case LLIR_NODE_TYPE_EXPR_SELECTOR: {
-//         }
-
-//         LLIR_CASE_TLC(assert(false));
-//         LLIR_CASE_STMT(assert(false));
-//     }
-//     assert(false);
-// }
-
-// static void evaluate_types(context_t *context, llir_namespace_t *current_namespace, llir_node_t *node) {
-//     switch(node->type) {
-//         case LLIR_NODE_TYPE_ROOT: LLIR_NODE_LIST_FOREACH(&node->root.tlcs, evaluate_types(context, current_namespace, node)); break;
-
-//         case LLIR_NODE_TYPE_TLC_MODULE: {
-//             llir_symbol_t *symbol = llir_namespace_find_symbol_with_kind(current_namespace, node->tlc_module.name, LLIR_SYMBOL_KIND_MODULE);
-//             assert(symbol != NULL);
-
-//             LLIR_NODE_LIST_FOREACH(&node->tlc_module.tlcs, evaluate_types(context, symbol->module.namespace, node));
-//         } break;
-//         case LLIR_NODE_TYPE_TLC_FUNCTION: {
-//             llir_symbol_t *symbol = llir_namespace_find_symbol_with_kind(current_namespace, node->tlc_function.name, LLIR_SYMBOL_KIND_FUNCTION);
-//             assert(symbol != NULL);
-
-//             if(node->tlc_function.statement != NULL) evaluate_types(context, current_namespace, node->tlc_function.statement);
-//         } break;
-
-//         case LLIR_NODE_TYPE_STMT_BLOCK: LLIR_NODE_LIST_FOREACH(&node->stmt_block.statements, evaluate_types(context, current_namespace, node)); break;
-//         case LLIR_NODE_TYPE_STMT_DECLARATION: if(node->stmt_declaration.initial != NULL) evaluate_expr_types(context, current_namespace, node->stmt_declaration.initial); break;
-//         case LLIR_NODE_TYPE_STMT_EXPRESSION: evaluate_expr_types(context, current_namespace, node->stmt_expression.expression); break;
-//         case LLIR_NODE_TYPE_STMT_RETURN: if(node->stmt_return.value != NULL) evaluate_expr_types(context, current_namespace, node->stmt_return.value); break;
-//         case LLIR_NODE_TYPE_STMT_IF:
-//             evaluate_expr_types(context, current_namespace, node->stmt_if.condition);
-//             if(node->stmt_if.body != NULL) evaluate_types(context, current_namespace, node->stmt_if.body);
-//             if(node->stmt_if.else_body != NULL) evaluate_types(context, current_namespace, node->stmt_if.else_body);
-//             break;
-//         case LLIR_NODE_TYPE_STMT_WHILE:
-//             if(node->stmt_while.condition != NULL) evaluate_expr_types(context, current_namespace, node->stmt_while.condition);
-//             if(node->stmt_while.body != NULL) evaluate_types(context, current_namespace, node->stmt_while.body);
-//             break;
-
-//         LLIR_CASE_EXPRESSION(assert(false));
-//     }
-// }
-
-// static void print_namespace(llir_namespace_t *namespace, size_t depth) {
-//     printf("%*sthis: %#lx\n", depth, "", namespace);
-//     printf("%*sparent: %#lx\n", depth, "", namespace->parent);
-//     printf("%*stypes:\n", depth, "");
-//     for(size_t i = 0; i < namespace->type_count; i++) {
-//         printf("%*s  - %s\n", depth, "", namespace->types[i]->name);
-//     }
-//     printf("%*ssymbols:\n", depth, "");
-//     for(size_t i = 0; i < namespace->symbol_count; i++) {
-//         printf("%*s  - %s (%#lx)\n", depth, "", namespace->symbols[i]->name, &namespace->symbols[i]);
-//         if(namespace->symbols[i]->kind == LLIR_SYMBOL_KIND_MODULE) print_namespace(namespace->symbols[i]->module.namespace, depth + 4);
-//     }
-// }
 
 llir_node_t *semantics(hlir_node_t *root_node, llir_namespace_t *root_namespace, llir_type_cache_t *anon_type_cache) {
     assert(root_node->type == HLIR_NODE_TYPE_ROOT);
