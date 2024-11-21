@@ -310,10 +310,9 @@ static void pass_two(context_t *context, llir_namespace_t *current_namespace, hl
             break;
         }
         case HLIR_NODE_TYPE_TLC_EXTERN: {
-            if(current_namespace != context->root_namespace) diag_error(node->source_location, "extern can only be declared in the root");
             if(llir_namespace_exists_symbol(current_namespace, node->tlc_extern.name)) diag_error(node->source_location, "symbol `%s` already exists", node->tlc_extern.name);
             hlir_attribute_t *attr_link = hlir_attribute_find(&node->attributes, HLIR_ATTRIBUTE_KIND_LINK);
-            llir_namespace_add_symbol_function(current_namespace, node->tlc_extern.name, attr_link == NULL ? NULL : attr_link->link.name, lower_function_type(context, current_namespace, node->tlc_extern.function_type, node->source_location));
+            llir_namespace_add_symbol_function(current_namespace, node->tlc_extern.name, attr_link == NULL ? node->tlc_extern.name : attr_link->link.name, lower_function_type(context, current_namespace, node->tlc_extern.function_type, node->source_location));
             break;
         }
         case HLIR_NODE_TYPE_TLC_TYPE_DEFINITION:
