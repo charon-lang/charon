@@ -62,6 +62,8 @@ static hlir_node_t *parse_simple(tokenizer_t *tokenizer, hlir_attribute_list_t a
     switch(tokenizer_peek(tokenizer).kind) {
         case TOKEN_KIND_KEYWORD_RETURN: node = parse_return(tokenizer, attributes); break;
         case TOKEN_KIND_KEYWORD_LET: node = parse_declaration(tokenizer, attributes); break;
+        case TOKEN_KIND_KEYWORD_CONTINUE: node = hlir_node_make_stmt_continue(attributes, util_loc(tokenizer, util_consume(tokenizer, TOKEN_KIND_KEYWORD_CONTINUE))); break;
+        case TOKEN_KIND_KEYWORD_BREAK: node = hlir_node_make_stmt_break(attributes, util_loc(tokenizer, util_consume(tokenizer, TOKEN_KIND_KEYWORD_BREAK))); break;
         default: node = parse_expression(tokenizer, attributes); break;
     }
     util_consume(tokenizer, TOKEN_KIND_SEMI_COLON);
