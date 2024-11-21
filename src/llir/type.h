@@ -9,7 +9,8 @@ typedef enum {
     LLIR_TYPE_KIND_TUPLE,
     LLIR_TYPE_KIND_ARRAY,
     LLIR_TYPE_KIND_STRUCTURE,
-    LLIR_TYPE_KIND_FUNCTION_REFERENCE
+    LLIR_TYPE_KIND_FUNCTION_REFERENCE,
+    LLIR_TYPE_KIND_ENUMERATION
 } llir_type_kind_t;
 
 typedef struct llir_type llir_type_t;
@@ -46,6 +47,10 @@ struct llir_type {
         struct {
             llir_type_function_t *function_type;
         } function_reference;
+        struct {
+            size_t bit_size;
+            size_t member_count;
+        } enumeration;
     };
 };
 
@@ -75,5 +80,6 @@ llir_type_t *llir_type_cache_get_tuple(llir_type_cache_t *cache, size_t type_cou
 llir_type_t *llir_type_cache_get_array(llir_type_cache_t *cache, llir_type_t *element_type, size_t size);
 llir_type_t *llir_type_cache_get_structure(llir_type_cache_t *cache, size_t member_count, llir_type_structure_member_t *members, bool packed);
 llir_type_t *llir_type_cache_get_function_reference(llir_type_cache_t *cache, llir_type_function_t *function_type);
+llir_type_t *llir_type_cache_get_enumeration(llir_type_cache_t *cache, size_t bit_size, size_t member_count);
 
 llir_type_function_t *llir_type_cache_get_function_type(llir_type_cache_t *cache, size_t argument_count, llir_type_t **arguments, bool varargs, llir_type_t *return_type);

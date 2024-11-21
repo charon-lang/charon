@@ -6,7 +6,8 @@
 typedef enum {
     LLIR_SYMBOL_KIND_MODULE,
     LLIR_SYMBOL_KIND_FUNCTION,
-    LLIR_SYMBOL_KIND_VARIABLE
+    LLIR_SYMBOL_KIND_VARIABLE,
+    LLIR_SYMBOL_KIND_ENUMERATION
 } llir_symbol_kind_t;
 
 typedef struct llir_symbol llir_symbol_t;
@@ -28,5 +29,9 @@ struct llir_symbol {
             llir_type_t *type;
             void *codegen_data;
         } variable;
+        struct {
+            llir_type_t *type;
+            const char **members;
+        } enumeration;
     };
 };

@@ -64,6 +64,13 @@ llir_symbol_t *llir_namespace_add_symbol_variable(llir_namespace_t *namespace, c
     return symbol;
 }
 
+llir_symbol_t *llir_namespace_add_symbol_enumeration(llir_namespace_t *namespace, const char *name, llir_type_t *type, const char **members) {
+    llir_symbol_t *symbol = add_symbol(namespace, name, LLIR_SYMBOL_KIND_ENUMERATION);
+    symbol->enumeration.type = type;
+    symbol->enumeration.members = members;
+    return symbol;
+}
+
 llir_type_t *llir_namespace_find_type(llir_namespace_t *namespace, const char *name) {
     for(size_t i = 0; i < namespace->type_count; i++) {
         if(strcmp(name, namespace->types[i]->name) != 0) continue;
@@ -86,8 +93,9 @@ void llir_namespace_add_type(llir_namespace_t *namespace, const char *name) {
     namespace->types[namespace->type_count - 1] = entry;
 }
 
-void llir_namespace_update_type(llir_namespace_t *namespace, const char *name, llir_type_t type) {
+llir_type_t *llir_namespace_update_type(llir_namespace_t *namespace, const char *name, llir_type_t type) {
     llir_type_t *p = llir_namespace_find_type(namespace, name);
     assert(p != NULL);
     *p = type;
+    return p;
 }
