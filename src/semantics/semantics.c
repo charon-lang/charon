@@ -186,6 +186,14 @@ static llir_node_t *lower_node(context_t *context, llir_namespace_t *current_nam
             new_node->type = LLIR_NODE_TYPE_STMT_BREAK;
             break;
         }
+        case HLIR_NODE_TYPE_STMT_FOR: {
+            new_node->type = LLIR_NODE_TYPE_STMT_FOR;
+            new_node->stmt_for.declaration = node->stmt_for.declaration == NULL ? NULL : lower_node(context, current_namespace, node->stmt_for.declaration);
+            new_node->stmt_for.condition = node->stmt_for.condition == NULL ? NULL : lower_node(context, current_namespace, node->stmt_for.condition);
+            new_node->stmt_for.expr_after = node->stmt_for.expr_after == NULL ? NULL : lower_node(context, current_namespace, node->stmt_for.expr_after);
+            new_node->stmt_for.body = node->stmt_for.body == NULL ? NULL : lower_node(context, current_namespace, node->stmt_for.body);
+            break;
+        }
 
         case HLIR_NODE_TYPE_EXPR_LITERAL_NUMERIC: {
             new_node->type = LLIR_NODE_TYPE_EXPR_LITERAL_NUMERIC;

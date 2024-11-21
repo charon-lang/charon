@@ -25,6 +25,7 @@
         case LLIR_NODE_TYPE_STMT_WHILE: \
         case LLIR_NODE_TYPE_STMT_CONTINUE: \
         case LLIR_NODE_TYPE_STMT_BREAK: \
+        case LLIR_NODE_TYPE_STMT_FOR: \
             BODY; break;
 
 #define LLIR_CASE_EXPRESSION(BODY) \
@@ -56,6 +57,7 @@ typedef enum {
     LLIR_NODE_TYPE_STMT_WHILE,
     LLIR_NODE_TYPE_STMT_CONTINUE,
     LLIR_NODE_TYPE_STMT_BREAK,
+    LLIR_NODE_TYPE_STMT_FOR,
 
     LLIR_NODE_TYPE_EXPR_LITERAL_NUMERIC,
     LLIR_NODE_TYPE_EXPR_LITERAL_STRING,
@@ -154,6 +156,10 @@ struct llir_node {
             llir_node_t *condition; /* nullable */
             llir_node_t *body; /* nullable */
         } stmt_while;
+        struct {
+            llir_node_t *declaration, *condition, *expr_after; /* nullable */
+            llir_node_t *body; /* nullable */
+        } stmt_for;
 
         struct {
             union {
