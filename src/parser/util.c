@@ -155,10 +155,22 @@ hlir_attribute_list_t util_parse_hlir_attributes(tokenizer_t *tokenizer) {
 
     while(util_try_consume(tokenizer, TOKEN_KIND_AT)) {
         token_t token_identifier = util_consume(tokenizer, TOKEN_KIND_IDENTIFIER);
+
         if(util_token_cmp(tokenizer, token_identifier, "packed") == 0) {
             hlir_attribute_list_add_packed(&list, util_loc(tokenizer, token_identifier));
+            continue;
         }
-        else diag_error(util_loc(tokenizer, token_identifier), "invalid attribute");
+
+        if(util_token_cmp(tokenizer, token_identifier, "link") == 0) {
+            util_consume(tokenizer, TOKEN_KIND_PARENTHESES_LEFT);
+            token_t string_token = util_consume(tokenizer, TOKEN_KIND_CONST_STRING);
+            char *str = util_text_make_from_token_inset(tokenizer, string_token, 1);
+            util_consume(tokenizer, TOKEN_KIND_PARENTHESES_RIGHT);
+            hlir_attribute_list_add_link(&list, str, util_loc(tokenizer, token_identifier));
+            continue;
+        }
+
+        diag_error(util_loc(tokenizer, token_identifier), "invalid attribute");
     }
 
     return list;
