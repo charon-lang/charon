@@ -117,8 +117,18 @@ hlir_node_t *hlir_node_make_stmt_while(hlir_node_t *condition, hlir_node_t *body
 hlir_node_t *hlir_node_make_stmt_continue(hlir_attribute_list_t attributes, source_location_t source_location) {
     return node_make(HLIR_NODE_TYPE_STMT_CONTINUE, attributes, source_location);
 }
+
 hlir_node_t *hlir_node_make_stmt_break(hlir_attribute_list_t attributes, source_location_t source_location) {
     return node_make(HLIR_NODE_TYPE_STMT_BREAK, attributes, source_location);
+}
+
+hlir_node_t *hlir_node_make_stmt_for(hlir_node_t *declaration, hlir_node_t *condition, hlir_node_t *expr_after, hlir_node_t *body, hlir_attribute_list_t attributes, source_location_t source_location) {
+    hlir_node_t *node = node_make(HLIR_NODE_TYPE_STMT_FOR, attributes, source_location);
+    node->stmt_for.declaration = declaration;
+    node->stmt_for.condition = condition;
+    node->stmt_for.expr_after = expr_after;
+    node->stmt_for.body = body;
+    return node;
 }
 
 hlir_node_t *hlir_node_make_expr_literal_numeric(uintmax_t value, source_location_t source_location) {

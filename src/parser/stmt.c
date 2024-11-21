@@ -46,6 +46,33 @@ static hlir_node_t *parse_while(tokenizer_t *tokenizer, hlir_attribute_list_t at
     return hlir_node_make_stmt_while(condition, body, attributes, util_loc(tokenizer, token_while));
 }
 
+static hlir_node_t *parse_for(tokenizer_t *tokenizer, hlir_attribute_list_t attributes) {
+    token_t token_for = util_consume(tokenizer, TOKEN_KIND_KEYWORD_FOR);
+    util_consume(tokenizer, TOKEN_KIND_PARENTHESES_LEFT);
+
+    hlir_node_t *decl = NULL;
+    if(!util_try_consume(tokenizer, TOKEN_KIND_SEMI_COLON)) {
+        decl = parse_declaration(tokenizer, util_parse_hlir_attributes(tokenizer));
+        util_consume(tokenizer, TOKEN_KIND_SEMI_COLON);
+    }
+
+    hlir_node_t *condition = NULL;
+    if(!util_try_consume(tokenizer, TOKEN_KIND_SEMI_COLON)) {
+        condition = parser_expr(tokenizer);
+        util_consume(tokenizer, TOKEN_KIND_SEMI_COLON);
+    }
+
+    hlir_node_t *after = NULL;
+    if(!util_try_consume(tokenizer, TOKEN_KIND_PARENTHESES_RIGHT)) {
+        after = parser_expr(tokenizer);
+        util_consume(tokenizer, TOKEN_KIND_PARENTHESES_RIGHT);
+    }
+
+    hlir_node_t *body = parser_stmt(tokenizer);
+
+    return hlir_node_make_stmt_for(decl, condition, after, body, attributes, util_loc(tokenizer, token_for));
+}
+
 static hlir_node_t *parse_block(tokenizer_t *tokenizer, hlir_attribute_list_t attributes) {
     source_location_t source_location = util_loc(tokenizer, util_consume(tokenizer, TOKEN_KIND_BRACE_LEFT));
     hlir_node_list_t statements = HLIR_NODE_LIST_INIT;
@@ -76,6 +103,7 @@ hlir_node_t *parser_stmt(tokenizer_t *tokenizer) {
         case TOKEN_KIND_SEMI_COLON: return NULL;
         case TOKEN_KIND_KEYWORD_IF: return parse_if(tokenizer, attributes);
         case TOKEN_KIND_KEYWORD_WHILE: return parse_while(tokenizer, attributes);
+        case TOKEN_KIND_KEYWORD_FOR: return parse_for(tokenizer, attributes);
         case TOKEN_KIND_BRACE_LEFT: return parse_block(tokenizer, attributes);
         default: return parse_simple(tokenizer, attributes);
     }

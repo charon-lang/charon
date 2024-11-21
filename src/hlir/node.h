@@ -30,6 +30,7 @@
         case HLIR_NODE_TYPE_STMT_WHILE: \
         case HLIR_NODE_TYPE_STMT_CONTINUE: \
         case HLIR_NODE_TYPE_STMT_BREAK: \
+        case HLIR_NODE_TYPE_STMT_FOR: \
             BODY; break;
 
 #define HLIR_CASE_EXPRESSION(BODY) \
@@ -65,6 +66,7 @@ typedef enum {
     HLIR_NODE_TYPE_STMT_WHILE,
     HLIR_NODE_TYPE_STMT_CONTINUE,
     HLIR_NODE_TYPE_STMT_BREAK,
+    HLIR_NODE_TYPE_STMT_FOR,
 
     HLIR_NODE_TYPE_EXPR_LITERAL_NUMERIC,
     HLIR_NODE_TYPE_EXPR_LITERAL_STRING,
@@ -181,6 +183,10 @@ struct hlir_node {
             hlir_node_t *condition; /* nullable */
             hlir_node_t *body; /* nullable */
         } stmt_while;
+        struct {
+            hlir_node_t *declaration, *condition, *expr_after; /* nullable */
+            hlir_node_t *body; /* nullable */
+        } stmt_for;
 
         union {
             uintmax_t numeric_value;
@@ -247,6 +253,7 @@ hlir_node_t *hlir_node_make_stmt_if(hlir_node_t *condition, hlir_node_t *body, h
 hlir_node_t *hlir_node_make_stmt_while(hlir_node_t *condition, hlir_node_t *body, hlir_attribute_list_t attributes, source_location_t source_location);
 hlir_node_t *hlir_node_make_stmt_continue(hlir_attribute_list_t attributes, source_location_t source_location);
 hlir_node_t *hlir_node_make_stmt_break(hlir_attribute_list_t attributes, source_location_t source_location);
+hlir_node_t *hlir_node_make_stmt_for(hlir_node_t *declaration, hlir_node_t *condition, hlir_node_t *expr_after, hlir_node_t *body, hlir_attribute_list_t attributes, source_location_t source_location);
 
 hlir_node_t *hlir_node_make_expr_literal_numeric(uintmax_t value, source_location_t source_location);
 hlir_node_t *hlir_node_make_expr_literal_string(const char *value, source_location_t source_location);
