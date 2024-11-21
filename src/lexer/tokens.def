@@ -13,6 +13,7 @@ TOKEN(KEYWORD_STRUCT,   "struct",   "^struct\\b"        )
 TOKEN(KEYWORD_CONTINUE, "continue", "^continue\\b"      )
 TOKEN(KEYWORD_BREAK,    "break",    "^break\\b"         )
 TOKEN(KEYWORD_ENUM,     "enum",     "^enum\\b"          )
+TOKEN(KEYWORD_FOR,      "for",      "^for\\b"           )
 
 // Constants
 TOKEN(CONST_NUMBER_HEX, "number",   "^0x[a-fA-F\\d]+"   )
