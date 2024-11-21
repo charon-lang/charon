@@ -1,6 +1,6 @@
 #include "semantics.h"
 
-#include "primitive.h"
+#include "constants.h"
 #include "lib/diag.h"
 #include "llir/symbol.h"
 #include "llir/type.h"
@@ -369,7 +369,7 @@ static void pass_one(context_t *context, llir_namespace_t *current_namespace, hl
             if(llir_namespace_exists_symbol(current_namespace, node->tlc_enumeration.name)) diag_error(node->source_location, "symbol `%s` already exists", node->tlc_enumeration.name);
             if(llir_namespace_exists_type(current_namespace, node->tlc_enumeration.name)) diag_error(node->source_location, "type `%s` already exists", node->tlc_enumeration.name);
             llir_namespace_add_type(current_namespace, node->tlc_enumeration.name);
-            llir_type_t *type = llir_namespace_update_type(current_namespace, node->tlc_enumeration.name, *llir_type_cache_get_enumeration(context->anon_type_cache, PRIMITIVE_ENUM_SIZE, node->tlc_enumeration.member_count));
+            llir_type_t *type = llir_namespace_update_type(current_namespace, node->tlc_enumeration.name, *llir_type_cache_get_enumeration(context->anon_type_cache, CONSTANTS_ENUM_SIZE, node->tlc_enumeration.member_count));
             llir_namespace_add_symbol_enumeration(current_namespace, node->tlc_enumeration.name, type, node->tlc_enumeration.members);
             break;
 

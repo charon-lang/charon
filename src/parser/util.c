@@ -1,6 +1,6 @@
 #include "util.h"
 
-#include "primitive.h"
+#include "constants.h"
 #include "lib/source.h"
 #include "lib/diag.h"
 
@@ -108,16 +108,16 @@ hlir_type_t *util_parse_type(tokenizer_t *tokenizer) {
     }
 
     if(util_token_cmp(tokenizer, token_identifier, "bool") == 0) return hlir_type_integer_make(1, false, attributes);
-    if(util_token_cmp(tokenizer, token_identifier, "char") == 0) return hlir_type_integer_make(PRIMITIVE_CHAR_SIZE, false, attributes);
-    if(util_token_cmp(tokenizer, token_identifier, "ptr") == 0) return hlir_type_integer_make(PRIMITIVE_POINTER_SIZE, false, attributes);
+    if(util_token_cmp(tokenizer, token_identifier, "char") == 0) return hlir_type_integer_make(CONSTANTS_CHAR_SIZE, false, attributes);
+    if(util_token_cmp(tokenizer, token_identifier, "ptr") == 0) return hlir_type_integer_make(CONSTANTS_POINTER_SIZE, false, attributes);
 
-    if(util_token_cmp(tokenizer, token_identifier, "uint") == 0) return hlir_type_integer_make(PRIMITIVE_INT_SIZE, false, attributes);
+    if(util_token_cmp(tokenizer, token_identifier, "uint") == 0) return hlir_type_integer_make(CONSTANTS_INT_SIZE, false, attributes);
     if(util_token_cmp(tokenizer, token_identifier, "u8") == 0) return hlir_type_integer_make(8, false, attributes);
     if(util_token_cmp(tokenizer, token_identifier, "u16") == 0) return hlir_type_integer_make(16, false, attributes);
     if(util_token_cmp(tokenizer, token_identifier, "u32") == 0) return hlir_type_integer_make(32, false, attributes);
     if(util_token_cmp(tokenizer, token_identifier, "u64") == 0) return hlir_type_integer_make(64, false, attributes);
 
-    if(util_token_cmp(tokenizer, token_identifier, "int") == 0) return hlir_type_integer_make(PRIMITIVE_INT_SIZE, true, attributes);
+    if(util_token_cmp(tokenizer, token_identifier, "int") == 0) return hlir_type_integer_make(CONSTANTS_INT_SIZE, true, attributes);
     if(util_token_cmp(tokenizer, token_identifier, "i8") == 0) return hlir_type_integer_make(8, true, attributes);
     if(util_token_cmp(tokenizer, token_identifier, "i16") == 0) return hlir_type_integer_make(16, true, attributes);
     if(util_token_cmp(tokenizer, token_identifier, "i32") == 0) return hlir_type_integer_make(32, true, attributes);
