@@ -26,11 +26,15 @@ token_t util_consume(tokenizer_t *tokenizer, token_kind_t kind) {
     diag_error(util_loc(tokenizer, token), "expected %s got %s", token_kind_stringify(kind), token_kind_stringify(token.kind));
 }
 
-char *util_text_make_from_token(tokenizer_t *tokenizer, token_t token) {
-    char *text = malloc(token.size + 1);
-    memcpy(text, tokenizer->source->data_buffer + token.offset, token.size);
-    text[token.size] = '\0';
+char *util_text_make_from_token_inset(tokenizer_t *tokenizer, token_t token, size_t inset) {
+    char *text = malloc(token.size + 1 - inset * 2);
+    memcpy(text, tokenizer->source->data_buffer + token.offset + inset, token.size - inset * 2);
+    text[token.size - inset * 2] = '\0';
     return text;
+}
+
+char *util_text_make_from_token(tokenizer_t *tokenizer, token_t token) {
+    return util_text_make_from_token_inset(tokenizer, token, 0);
 }
 
 int util_token_cmp(tokenizer_t *tokenizer, token_t token, const char *string) {

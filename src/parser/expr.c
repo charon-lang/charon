@@ -133,24 +133,22 @@ static hlir_node_t *parse_literal_numeric(tokenizer_t *tokenizer) {
 
 static hlir_node_t *parse_literal_string(tokenizer_t *tokenizer) {
     token_t token_string = util_consume(tokenizer, TOKEN_KIND_CONST_STRING);
-    char *text = util_text_make_from_token(tokenizer, token_string);
-    string_t value = helper_string_escape(util_loc(tokenizer, token_string), &text[1], strlen(text) - 2);
+    char *text = util_text_make_from_token_inset(tokenizer, token_string, 1);
+    string_t value = helper_string_escape(util_loc(tokenizer, token_string), text, strlen(text));
     free(text);
     return hlir_node_make_expr_literal_string(value.data, util_loc(tokenizer, token_string));
 }
 
 static hlir_node_t *parse_literal_string_raw(tokenizer_t *tokenizer) {
     token_t token_string = util_consume(tokenizer, TOKEN_KIND_CONST_STRING_RAW);
-    char *text = util_text_make_from_token(tokenizer, token_string);
-    char *value = strndup(text + 2, strlen(text) - 4);
-    free(text);
+    char *value = util_text_make_from_token_inset(tokenizer, token_string, 2);
     return hlir_node_make_expr_literal_string(value, util_loc(tokenizer, token_string));
 }
 
 static hlir_node_t *parse_literal_char(tokenizer_t *tokenizer) {
     token_t token_char = util_consume(tokenizer, TOKEN_KIND_CONST_CHAR);
-    char *text = util_text_make_from_token(tokenizer, token_char);
-    string_t value = helper_string_escape(util_loc(tokenizer, token_char), &text[1], strlen(text) - 2);
+    char *text = util_text_make_from_token_inset(tokenizer, token_char, 1);
+    string_t value = helper_string_escape(util_loc(tokenizer, token_char), text, strlen(text));
     if(value.data_length == 0) diag_error(util_loc(tokenizer, token_char), "zero characters in character literal");
     if(value.data_length - 1 > 1) diag_error(util_loc(tokenizer, token_char), "multiple characters in character literal");
     char value_char = value.data[0];
