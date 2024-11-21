@@ -54,6 +54,24 @@ static hlir_node_t *parse_declaration(tokenizer_t *tokenizer, hlir_attribute_lis
     return hlir_node_make_tlc_declaration(util_text_make_from_token(tokenizer, token_name), type, attributes, source_location);
 }
 
+static hlir_node_t *parse_enum(tokenizer_t *tokenizer, hlir_attribute_list_t attributes) {
+    source_location_t source_location = util_loc(tokenizer, util_consume(tokenizer, TOKEN_KIND_KEYWORD_ENUM));
+    token_t token_name = util_consume(tokenizer, TOKEN_KIND_IDENTIFIER);
+    util_consume(tokenizer, TOKEN_KIND_BRACE_LEFT);
+
+    size_t member_count = 0;
+    const char **members = NULL;
+    if(tokenizer_peek(tokenizer).kind == TOKEN_KIND_IDENTIFIER) {
+        do {
+            token_t token_member = util_consume(tokenizer, TOKEN_KIND_IDENTIFIER);
+            members = reallocarray(members, ++member_count, sizeof(const char *));
+            members[member_count - 1] = util_text_make_from_token(tokenizer, token_member);
+        } while(util_try_consume(tokenizer, TOKEN_KIND_COMMA));
+    }
+    util_consume(tokenizer, TOKEN_KIND_BRACE_RIGHT);
+    return hlir_node_make_tlc_enumeration(util_text_make_from_token(tokenizer, token_name), member_count, members, attributes, source_location);
+}
+
 hlir_node_t *parser_tlc(tokenizer_t *tokenizer) {
     hlir_attribute_list_t attributes = util_parse_hlir_attributes(tokenizer);
     token_t token = tokenizer_peek(tokenizer);
@@ -63,6 +81,7 @@ hlir_node_t *parser_tlc(tokenizer_t *tokenizer) {
         case TOKEN_KIND_KEYWORD_EXTERN: return parse_extern(tokenizer, attributes);
         case TOKEN_KIND_KEYWORD_TYPE: return parse_type(tokenizer, attributes);
         case TOKEN_KIND_KEYWORD_LET: return parse_declaration(tokenizer, attributes);
+        case TOKEN_KIND_KEYWORD_ENUM: return parse_enum(tokenizer, attributes);
         default: diag_error(util_loc(tokenizer, token), "expected top level construct, got %s", token_kind_stringify(token.kind));
     }
     __builtin_unreachable();
