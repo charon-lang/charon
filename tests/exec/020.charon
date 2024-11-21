@@ -1,10 +1,12 @@
-extern fn printf(fmt: *char, ...): i32;
+
+@link("printf")
+extern fn print_format(fmt: *char, ...): i32;
 
 type X @packed struct {}
 
 fn main(): uint {
 
-    printf("Hello world\n");
+    print_format("Hello world\n");
 
     return 0;
 }
