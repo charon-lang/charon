@@ -26,7 +26,7 @@ llir_symbol_t *llir_namespace_find_symbol(llir_namespace_t *namespace, const cha
 llir_symbol_t *llir_namespace_find_symbol_with_kind(llir_namespace_t *namespace, const char *name, llir_symbol_kind_t kind);
 bool llir_namespace_exists_symbol(llir_namespace_t *namespace, const char *name);
 llir_symbol_t *llir_namespace_add_symbol_module(llir_namespace_t *namespace, const char *name);
-llir_symbol_t *llir_namespace_add_symbol_function(llir_namespace_t *namespace, const char *name, llir_type_function_t *function_type);
+llir_symbol_t *llir_namespace_add_symbol_function(llir_namespace_t *namespace, const char *name, const char *link_name, llir_type_function_t *function_type);
 llir_symbol_t *llir_namespace_add_symbol_variable(llir_namespace_t *namespace, const char *name, llir_type_t *type);
 
 llir_type_t *llir_namespace_find_type(llir_namespace_t *namespace, const char *name);

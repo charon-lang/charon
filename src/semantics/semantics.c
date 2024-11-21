@@ -50,8 +50,6 @@ static llir_type_t *lower_type(context_t *context, llir_namespace_t *current_nam
             break;
         case HLIR_TYPE_KIND_STRUCTURE: {
             hlir_attribute_t *attr_packed = hlir_attribute_find(&type->attributes, HLIR_ATTRIBUTE_KIND_PACKED);
-            if(attr_packed != NULL) attr_packed->consumed = true;
-
             llir_type_structure_member_t *members = malloc(type->structure.member_count * sizeof(llir_type_structure_member_t));
             for(size_t i = 0; i < type->structure.member_count; i++) {
                 for(size_t j = i + 1; j < type->structure.member_count; j++) if(strcmp(type->structure.members[i].name, type->structure.members[j].name) == 0) diag_error(source_location, "duplicate member `%s`", type->structure.members[i].name);
@@ -305,15 +303,19 @@ static void pass_two(context_t *context, llir_namespace_t *current_namespace, hl
             assert(symbol != NULL);
             HLIR_NODE_LIST_FOREACH(&node->tlc_module.tlcs, pass_two(context, symbol->module.namespace, node));
             break;
-        case HLIR_NODE_TYPE_TLC_FUNCTION:
+        case HLIR_NODE_TYPE_TLC_FUNCTION: {
             if(llir_namespace_exists_symbol(current_namespace, node->tlc_function.name)) diag_error(node->source_location, "symbol `%s` already exists", node->tlc_function.name);
-            llir_namespace_add_symbol_function(current_namespace, node->tlc_function.name, lower_function_type(context, current_namespace, node->tlc_function.function_type, node->source_location));
+            hlir_attribute_t *attr_link = hlir_attribute_find(&node->attributes, HLIR_ATTRIBUTE_KIND_LINK);
+            llir_namespace_add_symbol_function(current_namespace, node->tlc_function.name, attr_link == NULL ? NULL : attr_link->link.name, lower_function_type(context, current_namespace, node->tlc_function.function_type, node->source_location));
             break;
-        case HLIR_NODE_TYPE_TLC_EXTERN:
+        }
+        case HLIR_NODE_TYPE_TLC_EXTERN: {
             if(current_namespace != context->root_namespace) diag_error(node->source_location, "extern can only be declared in the root");
             if(llir_namespace_exists_symbol(current_namespace, node->tlc_extern.name)) diag_error(node->source_location, "symbol `%s` already exists", node->tlc_extern.name);
-            llir_namespace_add_symbol_function(current_namespace, node->tlc_extern.name, lower_function_type(context, current_namespace, node->tlc_extern.function_type, node->source_location));
+            hlir_attribute_t *attr_link = hlir_attribute_find(&node->attributes, HLIR_ATTRIBUTE_KIND_LINK);
+            llir_namespace_add_symbol_function(current_namespace, node->tlc_extern.name, attr_link == NULL ? NULL : attr_link->link.name, lower_function_type(context, current_namespace, node->tlc_extern.function_type, node->source_location));
             break;
+        }
         case HLIR_NODE_TYPE_TLC_TYPE_DEFINITION:
             llir_type_t *lowered_type = lower_type(context, current_namespace, node->tlc_type_definition.type, node->source_location);
             llir_namespace_update_type(current_namespace, node->tlc_type_definition.name, *lowered_type);

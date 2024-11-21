@@ -20,6 +20,7 @@ struct llir_symbol {
             struct llir_namespace *namespace;
         } module;
         struct {
+            const char *link_name;
             llir_type_function_t *function_type;
             void *codegen_data;
         } function;

@@ -863,7 +863,9 @@ static void populate_namespace(context_t *context, llir_namespace_t *namespace) 
         switch(symbol->kind) {
             case LLIR_SYMBOL_KIND_MODULE: populate_namespace(context, symbol->module.namespace); break;
             case LLIR_SYMBOL_KIND_FUNCTION:
-                symbol->function.codegen_data = LLVMAddFunction(context->llvm_module, mangle_name(symbol->name, symbol->namespace->parent), llir_type_function_to_llvm(context, symbol->function.function_type));
+                const char *link_name = symbol->function.link_name;
+                if(link_name == NULL) link_name = mangle_name(symbol->name, symbol->namespace->parent);
+                symbol->function.codegen_data = LLVMAddFunction(context->llvm_module, link_name, llir_type_function_to_llvm(context, symbol->function.function_type));
                 break;
             case LLIR_SYMBOL_KIND_VARIABLE:
                 LLVMTypeRef type = llir_type_to_llvm(context, symbol->variable.type);
