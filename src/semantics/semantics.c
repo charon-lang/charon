@@ -176,6 +176,14 @@ static llir_node_t *lower_node(context_t *context, llir_namespace_t *current_nam
             new_node->stmt_while.body = node->stmt_while.body == NULL ? NULL : lower_node(context, current_namespace, node->stmt_while.body);
             break;
         }
+        case HLIR_NODE_TYPE_STMT_CONTINUE: {
+            new_node->type = LLIR_NODE_TYPE_STMT_CONTINUE;
+            break;
+        }
+        case HLIR_NODE_TYPE_STMT_BREAK: {
+            new_node->type = LLIR_NODE_TYPE_STMT_BREAK;
+            break;
+        }
 
         case HLIR_NODE_TYPE_EXPR_LITERAL_NUMERIC: {
             new_node->type = LLIR_NODE_TYPE_EXPR_LITERAL_NUMERIC;

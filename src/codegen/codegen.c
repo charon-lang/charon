@@ -22,6 +22,11 @@ typedef struct {
         llir_type_t *type;
         bool has_returned;
     } return_state;
+
+    struct {
+        bool in_loop, has_terminated, can_break;
+        LLVMBasicBlockRef bb_beginning, bb_end;
+    } loop_state;
 } context_t;
 
 typedef struct scope scope_t;
@@ -200,6 +205,7 @@ static void cg_tlc_function(CG_TLC_PARAMS) {
 
     context->return_state.has_returned = false;
     context->return_state.type = symbol->function.function_type->return_type;
+    context->loop_state.in_loop = false;
 
     scope_t *scope = scope_enter(NULL);
 
@@ -231,7 +237,7 @@ static void cg_stmt_block(CG_STMT_PARAMS) {
     scope = scope_enter(scope);
     LLIR_NODE_LIST_FOREACH(&node->stmt_block.statements, {
         cg_stmt(context, current_namespace, scope, node);
-        if(context->return_state.has_returned) break;
+        if(context->return_state.has_returned || (context->loop_state.in_loop && context->loop_state.has_terminated)) break;
     });
     scope = scope_exit(scope);
 }
@@ -286,46 +292,49 @@ static void cg_stmt_return(CG_STMT_PARAMS) {
 
 static void cg_stmt_if(CG_STMT_PARAMS) {
     LLVMValueRef llvm_func = LLVMGetBasicBlockParent(LLVMGetInsertBlock(context->llvm_builder));
-    LLVMBasicBlockRef bb_then = LLVMAppendBasicBlockInContext(context->llvm_context, llvm_func, "if.then");
-    LLVMBasicBlockRef bb_else = LLVMCreateBasicBlockInContext(context->llvm_context, "if.else");
+    LLVMBasicBlockRef bb_body = LLVMAppendBasicBlockInContext(context->llvm_context, llvm_func, "if.body");
+    LLVMBasicBlockRef bb_else_body = LLVMCreateBasicBlockInContext(context->llvm_context, "if.else_body");
     LLVMBasicBlockRef bb_end = LLVMCreateBasicBlockInContext(context->llvm_context, "if.end");
 
     value_t condition = cg_expr(context, current_namespace, scope, node->stmt_if.condition);
     if(!llir_type_eq(condition.type, LLIR_TYPE_BOOL)) diag_error(node->stmt_if.condition->source_location, "condition is not a boolean");
-    LLVMBuildCondBr(context->llvm_builder, condition.llvm_value, bb_then, node->stmt_if.else_body != NULL ? bb_else : bb_end);
+    LLVMBuildCondBr(context->llvm_builder, condition.llvm_value, bb_body, node->stmt_if.else_body != NULL ? bb_else_body : bb_end);
 
-    bool then_returned = false;
-    bool else_returned = false;
+    bool then_returned = false, else_returned = false;
+    bool then_terminated = false, else_terminated = false;
 
     // Create then, aka body
-    LLVMPositionBuilderAtEnd(context->llvm_builder, bb_then);
+    LLVMPositionBuilderAtEnd(context->llvm_builder, bb_body);
     cg_stmt(context, current_namespace, scope, node->stmt_if.body);
     then_returned = context->return_state.has_returned;
-    context->return_state.has_returned = false;
-    if(!then_returned) LLVMBuildBr(context->llvm_builder, bb_end);
+    then_terminated = context->loop_state.has_terminated;
+    if(!then_returned && !then_terminated) LLVMBuildBr(context->llvm_builder, bb_end);
 
     // Create else body
     if(node->stmt_if.else_body != NULL) {
-        LLVMAppendExistingBasicBlock(llvm_func, bb_else);
-        LLVMPositionBuilderAtEnd(context->llvm_builder, bb_else);
+        context->return_state.has_returned = false;
+        context->loop_state.has_terminated = false;
+
+        LLVMAppendExistingBasicBlock(llvm_func, bb_else_body);
+        LLVMPositionBuilderAtEnd(context->llvm_builder, bb_else_body);
         cg_stmt(context, current_namespace, scope, node->stmt_if.else_body);
         else_returned = context->return_state.has_returned;
-        context->return_state.has_returned = false;
-        if(!else_returned) LLVMBuildBr(context->llvm_builder, bb_end);
+        else_terminated = context->loop_state.has_terminated;
+        if(!else_returned && !else_terminated) LLVMBuildBr(context->llvm_builder, bb_end);
     }
     context->return_state.has_returned = then_returned && else_returned;
+    context->loop_state.has_terminated = then_terminated && else_terminated;
 
     // Setup end block
-    if(then_returned && else_returned) return;
+    if(context->return_state.has_returned || context->loop_state.has_terminated) return;
     LLVMAppendExistingBasicBlock(llvm_func, bb_end);
     LLVMPositionBuilderAtEnd(context->llvm_builder, bb_end);
 }
 
 static void cg_stmt_while(CG_STMT_PARAMS) {
     LLVMValueRef llvm_func = LLVMGetBasicBlockParent(LLVMGetInsertBlock(context->llvm_builder));
-
     LLVMBasicBlockRef bb_top = LLVMAppendBasicBlockInContext(context->llvm_context, llvm_func, "while.cond");
-    LLVMBasicBlockRef bb_then = LLVMCreateBasicBlockInContext(context->llvm_context, "while.then");
+    LLVMBasicBlockRef bb_body = LLVMCreateBasicBlockInContext(context->llvm_context, "while.body");
     LLVMBasicBlockRef bb_end = LLVMCreateBasicBlockInContext(context->llvm_context, "while.end");
 
     bool create_end = node->stmt_while.condition != NULL;
@@ -337,21 +346,44 @@ static void cg_stmt_while(CG_STMT_PARAMS) {
     if(node->stmt_while.condition != NULL) {
         value_t condition = cg_expr(context, current_namespace, scope, node->stmt_while.condition);
         if(!llir_type_eq(condition.type, LLIR_TYPE_BOOL)) diag_error(node->stmt_while.condition->source_location, "condition is not a boolean");
-        LLVMBuildCondBr(context->llvm_builder, condition.llvm_value, bb_then, bb_end);
+        LLVMBuildCondBr(context->llvm_builder, condition.llvm_value, bb_body, bb_end);
     } else {
-        LLVMBuildBr(context->llvm_builder, bb_then);
+        LLVMBuildBr(context->llvm_builder, bb_body);
     }
 
     // Body
-    LLVMAppendExistingBasicBlock(llvm_func, bb_then);
-    LLVMPositionBuilderAtEnd(context->llvm_builder, bb_then);
+    LLVMAppendExistingBasicBlock(llvm_func, bb_body);
+    LLVMPositionBuilderAtEnd(context->llvm_builder, bb_body);
+
+    typeof(context->loop_state) prev = context->loop_state;
+    context->loop_state.in_loop = true;
+    context->loop_state.has_terminated = false;
+    context->loop_state.can_break = false;
+    context->loop_state.bb_beginning = bb_top;
+    context->loop_state.bb_end = bb_end;
+
     cg_stmt(context, current_namespace, scope, node->stmt_while.body);
-    LLVMBuildBr(context->llvm_builder, bb_top);
+    if(!context->loop_state.has_terminated) LLVMBuildBr(context->llvm_builder, bb_top);
+    if(context->loop_state.can_break) create_end = true;
+    context->loop_state = prev;
 
     // End
     if(!create_end) return;
     LLVMAppendExistingBasicBlock(llvm_func, bb_end);
     LLVMPositionBuilderAtEnd(context->llvm_builder, bb_end);
+}
+
+static void cg_stmt_continue(CG_STMT_PARAMS) {
+    if(!context->loop_state.in_loop) diag_error(node->source_location, "continue out of loop");
+    context->loop_state.has_terminated = true;
+    LLVMBuildBr(context->llvm_builder, context->loop_state.bb_beginning);
+}
+
+static void cg_stmt_break(CG_STMT_PARAMS) {
+    if(!context->loop_state.in_loop) diag_error(node->source_location, "break out of loop");
+    context->loop_state.has_terminated = true;
+    context->loop_state.can_break = true;
+    LLVMBuildBr(context->llvm_builder, context->loop_state.bb_end);
 }
 
 // Expressions
@@ -818,6 +850,8 @@ static void cg_stmt(CG_STMT_PARAMS) {
         case LLIR_NODE_TYPE_STMT_RETURN: cg_stmt_return(context, current_namespace, scope, node); break;
         case LLIR_NODE_TYPE_STMT_IF: cg_stmt_if(context, current_namespace, scope, node); break;
         case LLIR_NODE_TYPE_STMT_WHILE: cg_stmt_while(context, current_namespace, scope, node); break;
+        case LLIR_NODE_TYPE_STMT_CONTINUE: cg_stmt_continue(context, current_namespace, scope, node); break;
+        case LLIR_NODE_TYPE_STMT_BREAK: cg_stmt_break(context, current_namespace, scope, node); break;
 
         case LLIR_NODE_TYPE_ROOT: assert(false);
         LLIR_CASE_TLC(assert(false));
