@@ -96,6 +96,7 @@ static LLVMTypeRef llir_type_to_llvm(context_t *context, llir_type_t *type) {
             return LLVMStructTypeInContext(context->llvm_context, types, type->structure.member_count, type->structure.packed);
         }
         case LLIR_TYPE_KIND_FUNCTION_REFERENCE: return LLVMPointerTypeInContext(context->llvm_context, 0);
+        case LLIR_TYPE_KIND_ENUMERATION: return LLVMIntTypeInContext(context->llvm_context, type->enumeration.bit_size);
     }
     assert(false);
 }
@@ -819,9 +820,25 @@ static value_t cg_expr_selector(CG_EXPR_PARAMS) {
     llir_symbol_t *symbol = llir_namespace_find_symbol_with_kind(current_namespace, node->expr.selector.name, LLIR_SYMBOL_KIND_MODULE);
     if(symbol == NULL) {
         symbol = llir_namespace_find_symbol_with_kind(context->root_namespace, node->expr.selector.name, LLIR_SYMBOL_KIND_MODULE);
-        if(symbol == NULL) diag_error(node->source_location, "unknown module `%s`", node->expr.selector.name);
+        if(symbol == NULL) goto enumeration;
     }
     return cg_expr_ext(context, symbol->module.namespace, scope, node->expr.selector.value, false);
+
+    enumeration:
+    symbol = llir_namespace_find_symbol_with_kind(current_namespace, node->expr.selector.name, LLIR_SYMBOL_KIND_ENUMERATION);
+    if(symbol == NULL) {
+        symbol = llir_namespace_find_symbol_with_kind(context->root_namespace, node->expr.selector.name, LLIR_SYMBOL_KIND_ENUMERATION);
+        if(symbol == NULL) diag_error(node->source_location, "unknown selector `%s`", node->expr.selector.name);
+    }
+    if(node->expr.selector.value->type != LLIR_NODE_TYPE_EXPR_VARIABLE) diag_error(node->source_location, "invalid operation on enum");
+    for(size_t i = 0; i < symbol->enumeration.type->enumeration.member_count; i++) {
+        if(strcmp(node->expr.selector.value->expr.variable.name, symbol->enumeration.members[i]) != 0) continue;
+        return (value_t) {
+            .type = symbol->enumeration.type,
+            .llvm_value = LLVMConstInt(llir_type_to_llvm(context, symbol->enumeration.type), i, false)
+        };
+    }
+    diag_error(node->source_location, "unknown enum member");
 }
 
 // Common
@@ -906,6 +923,7 @@ static void populate_namespace(context_t *context, llir_namespace_t *namespace) 
                 symbol->variable.codegen_data = LLVMAddGlobal(context->llvm_module, type, mangle_name(symbol->name, symbol->namespace->parent));
                 LLVMSetInitializer(symbol->variable.codegen_data, LLVMConstNull(type));
                 break;
+            case LLIR_SYMBOL_KIND_ENUMERATION: break;
         }
     }
 }
