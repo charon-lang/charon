@@ -114,7 +114,7 @@ hlir_type_t *util_parse_type(tokenizer_t *tokenizer) {
     return hlir_type_reference_make(util_text_make_from_token(tokenizer, token_identifier), attributes);
 }
 
-hlir_type_t *util_parse_prototype(tokenizer_t *tokenizer, const char ***argument_names) {
+hlir_type_function_t *util_parse_prototype(tokenizer_t *tokenizer, const char ***argument_names) {
     bool varargs = false;
     hlir_type_t **arguments = NULL;
     size_t argument_count = 0;
@@ -143,7 +143,7 @@ hlir_type_t *util_parse_prototype(tokenizer_t *tokenizer, const char ***argument
 
     if(util_try_consume(tokenizer, TOKEN_KIND_COLON)) return_type = util_parse_type(tokenizer);
 
-    return hlir_type_function_make(argument_count, arguments, varargs, return_type, HLIR_ATTRIBUTE_LIST_INIT);
+    return hlir_type_function_make(argument_count, arguments, varargs, return_type);
 }
 
 hlir_attribute_list_t util_parse_hlir_attributes(tokenizer_t *tokenizer) {

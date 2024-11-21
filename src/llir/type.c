@@ -41,8 +41,14 @@ bool llir_type_eq(llir_type_t *a, llir_type_t *b) {
     return a == b;
 }
 
+static llir_type_function_eq(llir_type_function_t *a, llir_type_function_t *b) {
+    return a == b;
+}
+
 llir_type_cache_t *llir_type_cache_make() {
     llir_type_cache_t *cache = malloc(sizeof(llir_type_cache_t));
+    cache->function_type_count = 0;
+    cache->function_types = NULL;
     cache->type_count = PRIMITIVE_COUNT;
     cache->types = reallocarray(NULL, cache->type_count, sizeof(llir_type_t *));
 
@@ -61,6 +67,7 @@ llir_type_cache_t *llir_type_cache_make() {
 }
 
 void llir_type_cache_free(llir_type_cache_t *cache) {
+    if(cache->function_types != NULL) free(cache->function_types);
     if(cache->types != NULL) free(cache->types);
     free(cache);
 }
@@ -141,33 +148,33 @@ llir_type_t *llir_type_cache_get_structure(llir_type_cache_t *cache, size_t memb
     return type;
 }
 
-llir_type_t *llir_type_cache_get_function(llir_type_cache_t *cache, size_t argument_count, llir_type_t **arguments, bool varargs, llir_type_t *return_type) {
-    for(size_t i = 0; i < cache->type_count; i++) {
-        if(cache->types[i]->kind != LLIR_TYPE_KIND_FUNCTION) continue;
-        if(cache->types[i]->function.varargs != varargs) continue;
-        if(cache->types[i]->function.argument_count != argument_count) continue;
-        if(!llir_type_eq(cache->types[i]->function.return_type, return_type)) continue;
-        for(size_t j = 0; j < cache->types[i]->function.argument_count; j++) if(!llir_type_eq(cache->types[i]->function.arguments[j], arguments[j])) goto cont;
-        return cache->types[i];
-        cont:
-    }
-    llir_type_t *type = make_type(LLIR_TYPE_KIND_FUNCTION);
-    type->function.varargs = varargs;
-    type->function.argument_count = argument_count;
-    type->function.return_type = return_type;
-    type->function.arguments = arguments;
-    cache_add(cache, type);
-    return type;
-}
-
-llir_type_t *llir_type_cache_get_function_reference(llir_type_cache_t *cache, llir_type_t *function_type) {
+llir_type_t *llir_type_cache_get_function_reference(llir_type_cache_t *cache, llir_type_function_t *function_type) {
     for(size_t i = 0; i < cache->type_count; i++) {
         if(cache->types[i]->kind != LLIR_TYPE_KIND_FUNCTION_REFERENCE) continue;
-        if(!llir_type_eq(cache->types[i]->function_reference.function_type, function_type)) continue;
+        if(!llir_type_function_eq(cache->types[i]->function_reference.function_type, function_type)) continue;
         return cache->types[i];
     }
     llir_type_t *type = make_type(LLIR_TYPE_KIND_FUNCTION_REFERENCE);
     type->function_reference.function_type = function_type;
     cache_add(cache, type);
     return type;
+}
+
+llir_type_function_t *llir_type_cache_get_function_type(llir_type_cache_t *cache, size_t argument_count, llir_type_t **arguments, bool varargs, llir_type_t *return_type) {
+    for(size_t i = 0; i < cache->function_type_count; i++) {
+        if(cache->function_types[i]->varargs != varargs) continue;
+        if(cache->function_types[i]->argument_count != argument_count) continue;
+        if(!llir_type_eq(cache->function_types[i]->return_type, return_type)) continue;
+        for(size_t j = 0; j < cache->function_types[i]->argument_count; j++) if(!llir_type_eq(cache->function_types[i]->arguments[j], arguments[j])) goto cont;
+        return cache->types[i];
+        cont:
+    }
+    llir_type_function_t *function_type = malloc(sizeof(llir_type_function_t));
+    function_type->varargs = varargs;
+    function_type->argument_count = argument_count;
+    function_type->return_type = return_type;
+    function_type->arguments = arguments;
+    cache->function_types = reallocarray(cache->function_types, ++cache->function_type_count, sizeof(llir_type_function_t *));
+    cache->function_types[cache->function_type_count - 1] = function_type;
+    return function_type;
 }

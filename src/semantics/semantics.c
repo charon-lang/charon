@@ -13,6 +13,14 @@ typedef struct {
     llir_type_cache_t *anon_type_cache;
 } context_t;
 
+static llir_type_t *lower_type(context_t *context, llir_namespace_t *current_namespace, hlir_type_t *type, source_location_t source_location);
+
+static llir_type_function_t *lower_function_type(context_t *context, llir_namespace_t *current_namespace, hlir_type_function_t *function_type, source_location_t source_location) {
+    llir_type_t **arguments = malloc(function_type->argument_count * sizeof(llir_type_t *));
+    for(size_t i = 0; i < function_type->argument_count; i++) arguments[i] = lower_type(context, current_namespace, function_type->arguments[i], source_location);
+    return llir_type_cache_get_function_type(context->anon_type_cache, function_type->argument_count, arguments, function_type->varargs, lower_type(context, current_namespace, function_type->return_type, source_location));
+}
+
 static llir_type_t *lower_type(context_t *context, llir_namespace_t *current_namespace, hlir_type_t *type, source_location_t source_location) {
     if(type->is_reference) {
         llir_type_t *referred_type = llir_namespace_find_type(current_namespace, type->reference.type_name);
@@ -56,14 +64,8 @@ static llir_type_t *lower_type(context_t *context, llir_namespace_t *current_nam
             new_type = llir_type_cache_get_structure(context->anon_type_cache, type->structure.member_count, members, attr_packed != NULL);
             break;
         }
-        case HLIR_TYPE_KIND_FUNCTION: {
-            llir_type_t **arguments = malloc(type->function.argument_count * sizeof(llir_type_t *));
-            for(size_t i = 0; i < type->function.argument_count; i++) arguments[i] = lower_type(context, current_namespace, type->function.arguments[i], source_location);
-            new_type = llir_type_cache_get_function(context->anon_type_cache, type->function.argument_count, arguments, type->function.varargs, lower_type(context, current_namespace, type->function.return_type, source_location));
-            break;
-        }
         case HLIR_TYPE_KIND_FUNCTION_REFERENCE: {
-            new_type = llir_type_cache_get_function_reference(context->anon_type_cache, lower_type(context, current_namespace, type->function_reference.function_type, source_location));
+            new_type = llir_type_cache_get_function_reference(context->anon_type_cache, lower_function_type(context, current_namespace, type->function_reference.function_type, source_location));
             break;
         }
     }
@@ -120,7 +122,7 @@ static llir_node_t *lower_node(context_t *context, llir_namespace_t *current_nam
             new_node->tlc_function.name = node->tlc_function.name;
             new_node->tlc_function.argument_names = node->tlc_function.argument_names;
             new_node->tlc_function.statement = node->tlc_function.statement == NULL ? NULL : lower_node(context, current_namespace, node->tlc_function.statement);
-            new_node->tlc_function.type = symbol->function.type;
+            new_node->tlc_function.function_type = symbol->function.function_type;
             break;
         }
         case HLIR_NODE_TYPE_TLC_EXTERN:
@@ -305,12 +307,12 @@ static void pass_two(context_t *context, llir_namespace_t *current_namespace, hl
             break;
         case HLIR_NODE_TYPE_TLC_FUNCTION:
             if(llir_namespace_exists_symbol(current_namespace, node->tlc_function.name)) diag_error(node->source_location, "symbol `%s` already exists", node->tlc_function.name);
-            llir_namespace_add_symbol_function(current_namespace, node->tlc_function.name, lower_type(context, current_namespace, node->tlc_function.type, node->source_location));
+            llir_namespace_add_symbol_function(current_namespace, node->tlc_function.name, lower_function_type(context, current_namespace, node->tlc_function.function_type, node->source_location));
             break;
         case HLIR_NODE_TYPE_TLC_EXTERN:
             if(current_namespace != context->root_namespace) diag_error(node->source_location, "extern can only be declared in the root");
             if(llir_namespace_exists_symbol(current_namespace, node->tlc_extern.name)) diag_error(node->source_location, "symbol `%s` already exists", node->tlc_extern.name);
-            llir_namespace_add_symbol_function(current_namespace, node->tlc_extern.name, lower_type(context, current_namespace, node->tlc_extern.type, node->source_location));
+            llir_namespace_add_symbol_function(current_namespace, node->tlc_extern.name, lower_function_type(context, current_namespace, node->tlc_extern.function_type, node->source_location));
             break;
         case HLIR_NODE_TYPE_TLC_TYPE_DEFINITION:
             llir_type_t *lowered_type = lower_type(context, current_namespace, node->tlc_type_definition.type, node->source_location);

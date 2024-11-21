@@ -35,19 +35,19 @@ hlir_node_t *hlir_node_make_tlc_module(const char *name, hlir_node_list_t tlcs, 
     return node;
 }
 
-hlir_node_t *hlir_node_make_tlc_function(const char *name, hlir_type_t *type, const char **argument_names, hlir_node_t *statement, hlir_attribute_list_t attributes, source_location_t source_location) {
+hlir_node_t *hlir_node_make_tlc_function(const char *name, hlir_type_function_t *function_type, const char **argument_names, hlir_node_t *statement, hlir_attribute_list_t attributes, source_location_t source_location) {
     hlir_node_t *node = node_make(HLIR_NODE_TYPE_TLC_FUNCTION, attributes, source_location);
     node->tlc_function.name = name;
-    node->tlc_function.type = type;
+    node->tlc_function.function_type = function_type;
     node->tlc_function.argument_names = argument_names;
     node->tlc_function.statement = statement;
     return node;
 }
 
-hlir_node_t *hlir_node_make_tlc_extern(const char *name, hlir_type_t *type, hlir_attribute_list_t attributes, source_location_t source_location) {
+hlir_node_t *hlir_node_make_tlc_extern(const char *name, hlir_type_function_t *function_type, hlir_attribute_list_t attributes, source_location_t source_location) {
     hlir_node_t *node = node_make(HLIR_NODE_TYPE_TLC_EXTERN, attributes, source_location);
     node->tlc_extern.name = name;
-    node->tlc_extern.type = type;
+    node->tlc_extern.function_type = function_type;
     return node;
 }
 

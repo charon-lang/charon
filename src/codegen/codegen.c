@@ -85,15 +85,6 @@ static LLVMTypeRef llir_type_to_llvm(context_t *context, llir_type_t *type) {
             for(size_t i = 0; i < type->tuple.type_count; i++) types[i] = llir_type_to_llvm(context, type->tuple.types[i]);
             return LLVMStructTypeInContext(context->llvm_context, types, type->tuple.type_count, false);
         }
-        case LLIR_TYPE_KIND_FUNCTION: {
-            LLVMTypeRef fn_return_type = llir_type_to_llvm(context, type->function.return_type);
-            if(type->function.argument_count > 0) {
-                LLVMTypeRef fn_arguments[type->function.argument_count];
-                for(size_t i = 0; i < type->function.argument_count; i++) fn_arguments[i] = llir_type_to_llvm(context, type->function.arguments[i]);
-                return LLVMFunctionType(fn_return_type, fn_arguments, type->function.argument_count, type->function.varargs);
-            }
-            return LLVMFunctionType(fn_return_type, NULL, 0, type->function.varargs);
-        }
         case LLIR_TYPE_KIND_STRUCTURE: {
             LLVMTypeRef types[type->structure.member_count];
             for(size_t i = 0; i < type->structure.member_count; i++) types[i] = llir_type_to_llvm(context, type->structure.members[i].type);
@@ -102,6 +93,16 @@ static LLVMTypeRef llir_type_to_llvm(context_t *context, llir_type_t *type) {
         case LLIR_TYPE_KIND_FUNCTION_REFERENCE: return LLVMPointerTypeInContext(context->llvm_context, 0);
     }
     assert(false);
+}
+
+static LLVMTypeRef llir_type_function_to_llvm(context_t *context, llir_type_function_t *function_type) {
+    LLVMTypeRef fn_return_type = llir_type_to_llvm(context, function_type->return_type);
+    if(function_type->argument_count > 0) {
+        LLVMTypeRef fn_arguments[function_type->argument_count];
+        for(size_t i = 0; i < function_type->argument_count; i++) fn_arguments[i] = llir_type_to_llvm(context, function_type->arguments[i]);
+        return LLVMFunctionType(fn_return_type, fn_arguments, function_type->argument_count, function_type->varargs);
+    }
+    return LLVMFunctionType(fn_return_type, NULL, 0, function_type->varargs);
 }
 
 static bool try_coerce(context_t *context, llir_type_t *to_type, value_t *value) {
@@ -198,15 +199,15 @@ static void cg_tlc_function(CG_TLC_PARAMS) {
     assert(symbol != NULL);
 
     context->return_state.has_returned = false;
-    context->return_state.type = symbol->function.type->function.return_type;
+    context->return_state.type = symbol->function.function_type->return_type;
 
     scope_t *scope = scope_enter(NULL);
 
     LLVMBasicBlockRef bb_entry = LLVMAppendBasicBlockInContext(context->llvm_context, symbol->function.codegen_data, "tlc.function");
     LLVMPositionBuilderAtEnd(context->llvm_builder, bb_entry);
 
-    for(size_t i = 0; i < symbol->function.type->function.argument_count; i++) {
-        llir_type_t *param_type = symbol->function.type->function.arguments[i];
+    for(size_t i = 0; i < symbol->function.function_type->argument_count; i++) {
+        llir_type_t *param_type = symbol->function.function_type->arguments[i];
         const char *param_name = node->tlc_function.argument_names[i];
 
         LLVMValueRef param = LLVMBuildAlloca(context->llvm_builder, llir_type_to_llvm(context, param_type), param_name);
@@ -584,7 +585,7 @@ static value_t cg_expr_variable(CG_EXPR_PARAMS) {
                 break;
             case LLIR_SYMBOL_KIND_FUNCTION:
                 llvm_value = symbol->function.codegen_data;
-                type = llir_type_cache_get_function_reference(context->anon_type_cache, symbol->function.type);
+                type = llir_type_cache_get_function_reference(context->anon_type_cache, symbol->function.function_type);
                 is_ref = false;
                 break;
             default: goto not_found;
@@ -607,10 +608,10 @@ static value_t cg_expr_call(CG_EXPR_PARAMS) {
     value_t value = cg_expr(context, current_namespace, scope, node->expr.call.function_reference);
     if(value.type->kind != LLIR_TYPE_KIND_FUNCTION_REFERENCE) diag_error(node->source_location, "not a function");
 
-    llir_type_t *fn_type = value.type->function_reference.function_type;
+    llir_type_function_t *fn_type = value.type->function_reference.function_type;
 
-    if(node->expr.call.arguments.count < fn_type->function.argument_count) diag_error(node->source_location, "missing arguments");
-    if(!fn_type->function.varargs && node->expr.call.arguments.count > fn_type->function.argument_count) diag_error(node->source_location, "invalid number of arguments");
+    if(node->expr.call.arguments.count < fn_type->argument_count) diag_error(node->source_location, "missing arguments");
+    if(!fn_type->varargs && node->expr.call.arguments.count > fn_type->argument_count) diag_error(node->source_location, "invalid number of arguments");
 
     LLVMValueRef llvm_value;
     size_t argument_count = llir_node_list_count(&node->expr.call.arguments);
@@ -618,7 +619,7 @@ static value_t cg_expr_call(CG_EXPR_PARAMS) {
         LLVMValueRef arguments[node->expr.call.arguments.count];
         LLIR_NODE_LIST_FOREACH(&node->expr.call.arguments, {
             value_t argument = cg_expr_ext(context, current_namespace, scope, node, false);
-            if(fn_type->function.argument_count > i && !try_coerce(context, fn_type->function.arguments[i], &argument)) diag_error(node->source_location, "argument has invalid type");
+            if(fn_type->argument_count > i && !try_coerce(context, fn_type->arguments[i], &argument)) diag_error(node->source_location, "argument has invalid type");
             argument = resolve_ref(context, argument);
             arguments[i] = argument.llvm_value;
         });
@@ -628,7 +629,7 @@ static value_t cg_expr_call(CG_EXPR_PARAMS) {
     }
 
     return (value_t) {
-        .type = fn_type->function.return_type,
+        .type = fn_type->return_type,
         .llvm_value = llvm_value
     };
 }
@@ -862,7 +863,7 @@ static void populate_namespace(context_t *context, llir_namespace_t *namespace) 
         switch(symbol->kind) {
             case LLIR_SYMBOL_KIND_MODULE: populate_namespace(context, symbol->module.namespace); break;
             case LLIR_SYMBOL_KIND_FUNCTION:
-                symbol->function.codegen_data = LLVMAddFunction(context->llvm_module, mangle_name(symbol->name, symbol->namespace->parent), llir_type_to_llvm(context, symbol->function.type));
+                symbol->function.codegen_data = LLVMAddFunction(context->llvm_module, mangle_name(symbol->name, symbol->namespace->parent), llir_type_function_to_llvm(context, symbol->function.function_type));
                 break;
             case LLIR_SYMBOL_KIND_VARIABLE:
                 LLVMTypeRef type = llir_type_to_llvm(context, symbol->variable.type);

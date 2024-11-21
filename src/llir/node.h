@@ -124,7 +124,7 @@ struct llir_node {
         struct {
             const char *name;
             const char **argument_names;
-            llir_type_t *type;
+            llir_type_function_t *function_type;
             llir_node_t *statement; /* nullable */
         } tlc_function;
 
