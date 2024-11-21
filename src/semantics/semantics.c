@@ -23,6 +23,14 @@ static llir_type_function_t *lower_function_type(context_t *context, llir_namesp
 
 static llir_type_t *lower_type(context_t *context, llir_namespace_t *current_namespace, hlir_type_t *type, source_location_t source_location) {
     if(type->is_reference) {
+        for(size_t i = 0; i < type->reference.module_count; i++) {
+            llir_symbol_t *symbol = llir_namespace_find_symbol_with_kind(current_namespace, type->reference.modules[i], LLIR_SYMBOL_KIND_MODULE);
+            if(symbol == NULL) {
+                symbol = llir_namespace_find_symbol_with_kind(context->root_namespace, type->reference.modules[i], LLIR_SYMBOL_KIND_MODULE);
+                if(symbol == NULL) diag_error(source_location, "unknown module `%s`", type->reference.modules[i]);
+            }
+            current_namespace = symbol->module.namespace;
+        }
         llir_type_t *referred_type = llir_namespace_find_type(current_namespace, type->reference.type_name);
         if(referred_type == NULL) diag_error(source_location, "unknown type `%s`", type->reference.type_name);
         return referred_type;
