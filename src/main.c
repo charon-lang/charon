@@ -21,6 +21,10 @@
 #define SEMVER_MINOR 0
 #define SEMVER_PATCH 0
 
+#define VALID_MEMORY_MODELS "default, kernel, tiny, small, medium, large"
+
+#define BASH_COLOR(COLOR, TEXT) "\e[" COLOR "m" TEXT "\e[0m"
+
 static char *find_extension(char *path, char extension_separator, char path_separator) {
     if(path == NULL) return NULL;
 
@@ -66,7 +70,7 @@ static char *strdup_basename(char *path) {
 }
 
 int main(int argc, char *argv[]) {
-    enum { DEFAULT, COMPILE, VERSION } mode = DEFAULT;
+    enum { DEFAULT, COMPILE, HELP } mode = DEFAULT;
     enum { OBJECT, IR } format = OBJECT;
     enum { NONE, O1, O2, O3 } optimization = O1;
 
@@ -75,10 +79,10 @@ int main(int argc, char *argv[]) {
     while(true) {
         int option_index = 0;
         int option = getopt_long(argc, argv, "ci", (struct option[]) {
+            { .name = "help", .has_arg = no_argument, .val = 'h' },
             { .name = "compile", .has_arg = no_argument, .val = 'c' },
-            { .name = "version", .has_arg = no_argument, .val = 'v' },
-            { .name = "llvm-ir", .has_arg = no_argument, .val = IR, .flag = (int *) &format },
 
+            { .name = "llvm-ir", .has_arg = no_argument, .val = IR, .flag = (int *) &format },
             { .name = "memory-model", .has_arg = required_argument, .val = 'm' },
 
             { .name = "O0", .has_arg = no_argument, .val = NONE, .flag = (int *) &optimization },
@@ -90,8 +94,8 @@ int main(int argc, char *argv[]) {
         if(option == -1) break;
 
         switch(option) {
+            case 'h': mode = HELP; break;
             case 'c': mode = COMPILE; break;
-            case 'v': mode = VERSION; break;
             case 'm':
                 if(strcmp(optarg, "default") == 0) code_model = LLVMCodeModelDefault;
                 else if(strcmp(optarg, "kernel") == 0) code_model = LLVMCodeModelKernel;
@@ -99,7 +103,7 @@ int main(int argc, char *argv[]) {
                 else if(strcmp(optarg, "small") == 0) code_model = LLVMCodeModelSmall;
                 else if(strcmp(optarg, "medium") == 0) code_model = LLVMCodeModelMedium;
                 else if(strcmp(optarg, "large") == 0) code_model = LLVMCodeModelLarge;
-                else log_fatal("unknown memory model `%s` (Use one of: default, kernel, tiny, small, medium, large)", optarg);
+                else log_fatal("unknown memory model `%s` (Use one of: " VALID_MEMORY_MODELS ")", optarg);
                 break;
         }
     }
@@ -113,12 +117,31 @@ int main(int argc, char *argv[]) {
     }
 
     switch(mode) {
-        case VERSION:
-            printf("Charon %u.%u.%u%s%s\n", SEMVER_MAJOR, SEMVER_MINOR, SEMVER_PATCH, SEMVER_PRE_RELEASE == NULL ? "" : "-", SEMVER_PRE_RELEASE);
+        case HELP:
+            printf("Charon %u.%u.%u%s%s%s\n", SEMVER_MAJOR, SEMVER_MINOR, SEMVER_PATCH, SEMVER_PRE_RELEASE == NULL ? "" : "-", SEMVER_PRE_RELEASE, LLVMIsMultithreaded() ? " (multithreaded)" : "");
             printf("Built at " __DATE__ " " __TIME__ "\n");
-            if(LLVMIsMultithreaded()) printf("Multithreaded\n");
+            printf(
+                "Usage: charon "
+                "[" BASH_COLOR("1", "--help") "|" BASH_COLOR("1", "--compile") "] "
+                "[" BASH_COLOR("1", "-O") BASH_COLOR("4", "level") "] "
+                "[" BASH_COLOR("1", "--llvm-ir") "] "
+                "[" BASH_COLOR("1", "--memory-model") "=" BASH_COLOR("4", "model") "] "
+                BASH_COLOR("4", "files") "...\n"
+            );
+            printf("\n");
+            printf(
+                "Options:\n"
+                "  " BASH_COLOR("1", "--help") ", " BASH_COLOR("1", "--compile") "\n"
+                "      Select operation, " BASH_COLOR("4", "compile") " is the default mode.\n"
+                "  " BASH_COLOR("1", "--llvm-ir") "\n"
+                "      Compile to LLVM IR.\n"
+                "  " BASH_COLOR("1", "--memory-model") "=" BASH_COLOR("4", "model") "\n"
+                "      Code model to use. Choose one of: " VALID_MEMORY_MODELS ".\n"
+                "  " BASH_COLOR("1", "-O") BASH_COLOR("4", "level") "\n"
+                "      Optimization level. Valid levels are: 0, 1, 2, 3.\n"
+            );
             break;
-        case DEFAULT:
+        case DEFAULT: 
         case COMPILE:
             for(int i = optind; i < argc; i++) {
                 char *name = strdup_basename(argv[i]);
