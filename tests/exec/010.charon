@@ -21,3 +21,5 @@ fn main() {
     brr();
     printf("> the end\n");
 }
+
+fn b() { while; }
