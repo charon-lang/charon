@@ -21,6 +21,9 @@
                     gdb
                     bear
                     gcc14
+                    tree-sitter
+                    python3
+                    emscripten
                 ];
             };
         }
