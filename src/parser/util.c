@@ -79,7 +79,6 @@ hlir_type_t *util_parse_type(tokenizer_t *tokenizer) {
         }
         return hlir_type_structure_make(member_count, members, attributes);
     }
-
     if(util_try_consume(tokenizer, TOKEN_KIND_PARENTHESES_LEFT)) {
         size_t count = 0;
         hlir_type_t **types = NULL;

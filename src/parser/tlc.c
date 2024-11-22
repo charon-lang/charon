@@ -24,9 +24,8 @@ static hlir_node_t *parse_module(tokenizer_t *tokenizer, hlir_attribute_list_t a
 }
 
 static hlir_node_t *parse_function(tokenizer_t *tokenizer, hlir_attribute_list_t attributes) {
-    source_location_t source_location = util_loc(tokenizer, tokenizer_peek(tokenizer));
+    source_location_t source_location = util_loc(tokenizer, util_consume(tokenizer, TOKEN_KIND_KEYWORD_FUNCTION));
 
-    util_consume(tokenizer, TOKEN_KIND_KEYWORD_FUNCTION);
     const char *name = util_text_make_from_token(tokenizer, util_consume(tokenizer, TOKEN_KIND_IDENTIFIER));
     const char **argument_names = NULL;
     hlir_type_function_t *function_type = util_parse_function_type(tokenizer, &argument_names);

@@ -100,7 +100,7 @@ static hlir_node_t *parse_simple(tokenizer_t *tokenizer, hlir_attribute_list_t a
 hlir_node_t *parser_stmt(tokenizer_t *tokenizer) {
     hlir_attribute_list_t attributes = util_parse_hlir_attributes(tokenizer);
     switch(tokenizer_peek(tokenizer).kind) {
-        case TOKEN_KIND_SEMI_COLON: return NULL;
+        case TOKEN_KIND_SEMI_COLON: util_consume(tokenizer, TOKEN_KIND_SEMI_COLON); return NULL;
         case TOKEN_KIND_KEYWORD_IF: return parse_if(tokenizer, attributes);
         case TOKEN_KIND_KEYWORD_WHILE: return parse_while(tokenizer, attributes);
         case TOKEN_KIND_KEYWORD_FOR: return parse_for(tokenizer, attributes);
