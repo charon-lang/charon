@@ -1,12 +1,13 @@
 #include "parser.h"
 
 #include "lib/diag.h"
+#include "lib/alloc.h"
 #include "parser/util.h"
 
+#include <stdlib.h>
 #include <stdarg.h>
 #include <string.h>
 #include <errno.h>
-#include <stdlib.h>
 #include <ctype.h>
 
 typedef struct {
@@ -15,7 +16,7 @@ typedef struct {
 } string_t;
 
 static void string_append_char(string_t *str, char ch) {
-    str->data = realloc(str->data, ++str->data_length);
+    str->data = alloc_resize(str->data, ++str->data_length);
     str->data[str->data_length - 1] = ch;
 }
 
@@ -135,7 +136,7 @@ static hlir_node_t *parse_literal_string(tokenizer_t *tokenizer) {
     token_t token_string = util_consume(tokenizer, TOKEN_KIND_CONST_STRING);
     char *text = util_text_make_from_token_inset(tokenizer, token_string, 1);
     string_t value = helper_string_escape(util_loc(tokenizer, token_string), text, strlen(text));
-    free(text);
+    alloc_free(text);
     return hlir_node_make_expr_literal_string(value.data, util_loc(tokenizer, token_string));
 }
 
@@ -152,8 +153,8 @@ static hlir_node_t *parse_literal_char(tokenizer_t *tokenizer) {
     if(value.data_length == 0) diag_error(util_loc(tokenizer, token_char), "zero characters in character literal");
     if(value.data_length - 1 > 1) diag_error(util_loc(tokenizer, token_char), "multiple characters in character literal");
     char value_char = value.data[0];
-    free(value.data);
-    free(text);
+    alloc_free(value.data);
+    alloc_free(text);
     return hlir_node_make_expr_literal_char(value_char, util_loc(tokenizer, token_char));
 }
 
@@ -238,10 +239,7 @@ static hlir_node_t *parse_unary_post(tokenizer_t *tokenizer) {
         if(util_try_consume(tokenizer, TOKEN_KIND_PERIOD)) {
             if(tokenizer_peek(tokenizer).kind == TOKEN_KIND_CONST_NUMBER_DEC) {
                 token_t token_index = util_consume(tokenizer, TOKEN_KIND_CONST_NUMBER_DEC);
-                char *text = util_text_make_from_token(tokenizer, token_index);
-                uintmax_t index = strtoull(text, NULL, 10);
-                if(errno == ERANGE) diag_error(util_loc(tokenizer, token_index), "index too large");
-                free(text);
+                uintmax_t index = util_number_make_from_token(tokenizer, token_index);
                 value = hlir_node_make_expr_subscript_index_const(value, index, source_location);
             } else {
                 token_t token_member = util_consume(tokenizer, TOKEN_KIND_IDENTIFIER);

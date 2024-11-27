@@ -1,22 +1,23 @@
 #include "namespace.h"
 
+#include "lib/alloc.h"
+
 #include <assert.h>
 #include <string.h>
-#include <stdlib.h>
 
 static llir_symbol_t *add_symbol(llir_namespace_t *namespace, const char *name, llir_symbol_kind_t kind) {
     assert(!llir_namespace_exists_symbol(namespace, name));
-    llir_symbol_t *symbol = malloc(sizeof(llir_symbol_t));
+    llir_symbol_t *symbol = alloc(sizeof(llir_symbol_t));
     symbol->name = name;
     symbol->kind = kind;
     symbol->namespace = namespace;
-    namespace->symbols = reallocarray(namespace->symbols, ++namespace->symbol_count, sizeof(llir_symbol_t *));
+    namespace->symbols = alloc_array(namespace->symbols, ++namespace->symbol_count, sizeof(llir_symbol_t *));
     namespace->symbols[namespace->symbol_count - 1] = symbol;
     return symbol;
 }
 
 llir_namespace_t *llir_namespace_make(llir_symbol_t *parent) {
-    llir_namespace_t *namespace = malloc(sizeof(llir_namespace_t));
+    llir_namespace_t *namespace = alloc(sizeof(llir_namespace_t));
     namespace->parent = parent;
     namespace->symbol_count = 0;
     namespace->symbols = NULL;
@@ -86,10 +87,10 @@ bool llir_namespace_exists_type(llir_namespace_t *namespace, const char *name) {
 void llir_namespace_add_type(llir_namespace_t *namespace, const char *name) {
     assert(!llir_namespace_exists_type(namespace, name));
 
-    typeof(namespace->types[0]) entry = malloc(sizeof(namespace->types[0][0]));
+    typeof(namespace->types[0]) entry = alloc(sizeof(namespace->types[0][0]));
     entry->name = name;
 
-    namespace->types = reallocarray(namespace->types, ++namespace->type_count, sizeof(namespace->types[0]));
+    namespace->types = alloc_array(namespace->types, ++namespace->type_count, sizeof(namespace->types[0]));
     namespace->types[namespace->type_count - 1] = entry;
 }
 

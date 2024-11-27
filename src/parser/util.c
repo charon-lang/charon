@@ -3,6 +3,7 @@
 #include "constants.h"
 #include "lib/source.h"
 #include "lib/diag.h"
+#include "lib/alloc.h"
 
 #include <string.h>
 #include <errno.h>
@@ -27,7 +28,7 @@ token_t util_consume(tokenizer_t *tokenizer, token_kind_t kind) {
 }
 
 char *util_text_make_from_token_inset(tokenizer_t *tokenizer, token_t token, size_t inset) {
-    char *text = malloc(token.size + 1 - inset * 2);
+    char *text = alloc(token.size + 1 - inset * 2);
     memcpy(text, tokenizer->source->data_buffer + token.offset + inset, token.size - inset * 2);
     text[token.size - inset * 2] = '\0';
     return text;
@@ -56,7 +57,7 @@ uintmax_t util_number_make_from_token(tokenizer_t *tokenizer, token_t token) {
     if(base != 10) stripped += 2;
     uintmax_t value = strtoull(stripped, NULL, base);
     if(errno == ERANGE) diag_error(util_loc(tokenizer, token), "numeric constant too large");
-    free(text);
+    alloc_free(text);
     return value;
 }
 
@@ -74,7 +75,7 @@ hlir_type_t *util_parse_type(tokenizer_t *tokenizer) {
             hlir_type_t *type = util_parse_type(tokenizer);
             util_consume(tokenizer, TOKEN_KIND_SEMI_COLON);
 
-            members = reallocarray(members, ++member_count, sizeof(hlir_type_structure_member_t));
+            members = alloc_array(members, ++member_count, sizeof(hlir_type_structure_member_t));
             members[member_count - 1] = (hlir_type_structure_member_t) { .type = type, .name = util_text_make_from_token(tokenizer, token_identifier) };
         }
         return hlir_type_structure_make(member_count, members, attributes);
@@ -83,7 +84,7 @@ hlir_type_t *util_parse_type(tokenizer_t *tokenizer) {
         size_t count = 0;
         hlir_type_t **types = NULL;
         do {
-            types = reallocarray(types, ++count, sizeof(hlir_type_t *));
+            types = alloc_array(types, ++count, sizeof(hlir_type_t *));
             types[count - 1] = util_parse_type(tokenizer);
         } while(util_try_consume(tokenizer, TOKEN_KIND_COMMA));
         util_consume(tokenizer, TOKEN_KIND_PARENTHESES_RIGHT);
@@ -101,7 +102,7 @@ hlir_type_t *util_parse_type(tokenizer_t *tokenizer) {
     size_t module_count = 0;
     const char **modules = NULL;
     while(util_try_consume(tokenizer, TOKEN_KIND_DOUBLE_COLON)) {
-        modules = reallocarray(modules, ++module_count, sizeof(const char *));
+        modules = alloc_array(modules, ++module_count, sizeof(const char *));
         modules[module_count - 1] = util_text_make_from_token(tokenizer, token_identifier);
         token_identifier = util_consume(tokenizer, TOKEN_KIND_IDENTIFIER);
     }
@@ -142,10 +143,10 @@ hlir_type_function_t *util_parse_function_type(tokenizer_t *tokenizer, const cha
             token_t token_identifier = util_consume(tokenizer, TOKEN_KIND_IDENTIFIER);
             util_consume(tokenizer, TOKEN_KIND_COLON);
 
-            arguments = reallocarray(arguments, ++argument_count, sizeof(hlir_type_t *));
+            arguments = alloc_array(arguments, ++argument_count, sizeof(hlir_type_t *));
             arguments[argument_count - 1] = util_parse_type(tokenizer);
             if(argument_names != NULL) {
-                *argument_names = reallocarray(*argument_names, argument_count, sizeof(char *));
+                *argument_names = alloc_array(*argument_names, argument_count, sizeof(char *));
                 (*argument_names)[argument_count - 1] = util_text_make_from_token(tokenizer, token_identifier);
             }
         } while(util_try_consume(tokenizer, TOKEN_KIND_COMMA));

@@ -71,7 +71,6 @@ typedef struct {
 bool llir_type_eq(llir_type_t *a, llir_type_t *b);
 
 llir_type_cache_t *llir_type_cache_make();
-void llir_type_cache_free(llir_type_cache_t *cache);
 
 llir_type_t *llir_type_cache_get_void(llir_type_cache_t *cache);
 llir_type_t *llir_type_cache_get_integer(llir_type_cache_t *cache, size_t bit_size, bool is_signed);

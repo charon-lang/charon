@@ -1,9 +1,9 @@
 #include "attribute.h"
 
-#include <stdlib.h>
+#include "lib/alloc.h"
 
 static hlir_attribute_t *list_add(hlir_attribute_list_t *list, hlir_attribute_kind_t kind, source_location_t source_location) {
-    list->attributes = reallocarray(list->attributes, ++list->attribute_count, sizeof(hlir_attribute_t));
+    list->attributes = alloc_array(list->attributes, ++list->attribute_count, sizeof(hlir_attribute_t));
     list->attributes[list->attribute_count - 1] = (hlir_attribute_t) { .kind = kind, .source_location = source_location, .consumed = false };
     return &list->attributes[list->attribute_count - 1];
 }

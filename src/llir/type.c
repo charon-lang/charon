@@ -1,8 +1,9 @@
 #include "type.h"
 
+#include "lib/alloc.h"
+
 #include <assert.h>
 #include <string.h>
-#include <stdlib.h>
 
 enum {
     PRIMITIVE_U64,
@@ -20,7 +21,7 @@ enum {
 };
 
 static llir_type_t *make_type(llir_type_kind_t kind) {
-    llir_type_t *type = malloc(sizeof(llir_type_t));
+    llir_type_t *type = alloc(sizeof(llir_type_t));
     type->kind = kind;
     return type;
 }
@@ -33,7 +34,7 @@ static llir_type_t *make_type_integer(size_t bit_size, bool is_signed) {
 }
 
 static void cache_add(llir_type_cache_t *cache, llir_type_t *type) {
-    cache->types = reallocarray(cache->types, ++cache->type_count, sizeof(llir_type_t *));
+    cache->types = alloc_array(cache->types, ++cache->type_count, sizeof(llir_type_t *));
     cache->types[cache->type_count - 1] = type;
 }
 
@@ -46,11 +47,11 @@ static bool llir_type_function_eq(llir_type_function_t *a, llir_type_function_t 
 }
 
 llir_type_cache_t *llir_type_cache_make() {
-    llir_type_cache_t *cache = malloc(sizeof(llir_type_cache_t));
+    llir_type_cache_t *cache = alloc(sizeof(llir_type_cache_t));
     cache->function_type_count = 0;
     cache->function_types = NULL;
     cache->type_count = PRIMITIVE_COUNT;
-    cache->types = reallocarray(NULL, cache->type_count, sizeof(llir_type_t *));
+    cache->types = alloc_array(NULL, cache->type_count, sizeof(llir_type_t *));
 
     cache->types[PRIMITIVE_VOID] = make_type(LLIR_TYPE_KIND_VOID);
     cache->types[PRIMITIVE_U1] = make_type_integer(1, false);
@@ -64,12 +65,6 @@ llir_type_cache_t *llir_type_cache_make() {
     cache->types[PRIMITIVE_I64] = make_type_integer(64, true);
 
     return cache;
-}
-
-void llir_type_cache_free(llir_type_cache_t *cache) {
-    if(cache->function_types != NULL) free(cache->function_types);
-    if(cache->types != NULL) free(cache->types);
-    free(cache);
 }
 
 llir_type_t *llir_type_cache_get_void(llir_type_cache_t *cache) {
@@ -169,12 +164,12 @@ llir_type_function_t *llir_type_cache_get_function_type(llir_type_cache_t *cache
         return cache->function_types[i];
         cont:
     }
-    llir_type_function_t *function_type = malloc(sizeof(llir_type_function_t));
+    llir_type_function_t *function_type = alloc(sizeof(llir_type_function_t));
     function_type->varargs = varargs;
     function_type->argument_count = argument_count;
     function_type->return_type = return_type;
     function_type->arguments = arguments;
-    cache->function_types = reallocarray(cache->function_types, ++cache->function_type_count, sizeof(llir_type_function_t *));
+    cache->function_types = alloc_array(cache->function_types, ++cache->function_type_count, sizeof(llir_type_function_t *));
     cache->function_types[cache->function_type_count - 1] = function_type;
     return function_type;
 }

@@ -2,10 +2,10 @@
 
 #include "constants.h"
 #include "lib/diag.h"
+#include "lib/alloc.h"
 #include "lib/log.h"
 #include "llir/symbol.h"
 
-#include <stdlib.h>
 #include <string.h>
 
 #define LLIR_TYPE_BOOL llir_type_cache_get_integer(context->anon_type_cache, 1, false)
@@ -52,19 +52,19 @@ typedef struct {
 } value_t;
 
 static char *mangle_name(const char *name, llir_symbol_t *parent) {
-    char *mangled_name = strdup(name);
+    char *mangled_name = alloc_strdup(name);
     while(parent != NULL) {
         assert(parent->kind == LLIR_SYMBOL_KIND_MODULE);
 
         size_t name_length = strlen(mangled_name);
         size_t module_name_length= strlen(parent->name);
-        char *new = malloc(module_name_length + 2 + name_length + 1);
+        char *new = alloc(module_name_length + 2 + name_length + 1);
         memcpy(new, parent->name, module_name_length);
         memset(&new[module_name_length], ':', 2);
         memcpy(&new[module_name_length + 2], mangled_name, name_length);
         new[module_name_length + 2 + name_length] = '\0';
 
-        free(mangled_name);
+        alloc_free(mangled_name);
         mangled_name = new;
         parent = parent->namespace->parent;
     }
@@ -141,7 +141,7 @@ static bool try_coerce(context_t *context, llir_type_t *to_type, value_t *value)
 }
 
 static scope_t *scope_enter(scope_t *current) {
-    scope_t *scope = malloc(sizeof(scope_t));
+    scope_t *scope = alloc(sizeof(scope_t));
     scope->parent = current;
     scope->variable_count = 0;
     scope->variables = NULL;
@@ -150,13 +150,13 @@ static scope_t *scope_enter(scope_t *current) {
 
 static scope_t *scope_exit(scope_t *current) {
     scope_t *parent = current->parent;
-    free(current->variables);
-    free(current);
+    alloc_free(current->variables);
+    alloc_free(current);
     return parent;
 }
 
 static void scope_variable_add(scope_t *scope, const char *name, llir_type_t *type, LLVMValueRef llvm_value) {
-    scope->variables = reallocarray(scope->variables, ++scope->variable_count, sizeof(scope_variable_t));
+    scope->variables = alloc_array(scope->variables, ++scope->variable_count, sizeof(scope_variable_t));
     scope->variables[scope->variable_count - 1] = (scope_variable_t) { .scope = scope, .name = name, .type = type, .llvm_value = llvm_value };
 }
 
@@ -296,8 +296,8 @@ static void cg_stmt_return(CG_STMT_PARAMS) {
 static void cg_stmt_if(CG_STMT_PARAMS) {
     LLVMValueRef llvm_func = LLVMGetBasicBlockParent(LLVMGetInsertBlock(context->llvm_builder));
     LLVMBasicBlockRef bb_body = LLVMAppendBasicBlockInContext(context->llvm_context, llvm_func, "if.body");
-    LLVMBasicBlockRef bb_else_body = LLVMCreateBasicBlockInContext(context->llvm_context, "if.else_body");
-    LLVMBasicBlockRef bb_end = LLVMCreateBasicBlockInContext(context->llvm_context, "if.end");
+    LLVMBasicBlockRef bb_else_body = LLVMAppendBasicBlockInContext(context->llvm_context, llvm_func, "if.else_body");
+    LLVMBasicBlockRef bb_end = LLVMAppendBasicBlockInContext(context->llvm_context, llvm_func, "if.end");
 
     value_t condition = cg_expr(context, current_namespace, scope, node->stmt_if.condition);
     if(!llir_type_eq(condition.type, LLIR_TYPE_BOOL)) diag_error(node->stmt_if.condition->source_location, "condition is not a boolean");
@@ -308,7 +308,7 @@ static void cg_stmt_if(CG_STMT_PARAMS) {
     cg_stmt(context, current_namespace, scope, node->stmt_if.body);
     bool then_wont_return = context->return_state.wont_return;
     bool then_returned = context->return_state.has_returned;
-    bool then_terminated = context->loop_state.has_terminated;
+    bool then_terminated = context->loop_state.in_loop && context->loop_state.has_terminated;
     if(!then_wont_return && !then_returned && !then_terminated) LLVMBuildBr(context->llvm_builder, bb_end);
 
     // Create else body
@@ -317,22 +317,25 @@ static void cg_stmt_if(CG_STMT_PARAMS) {
         context->return_state.has_returned = false;
         context->loop_state.has_terminated = false;
 
-        LLVMAppendExistingBasicBlock(llvm_func, bb_else_body);
         LLVMPositionBuilderAtEnd(context->llvm_builder, bb_else_body);
         cg_stmt(context, current_namespace, scope, node->stmt_if.else_body);
         else_wont_return = context->return_state.wont_return;
         else_returned = context->return_state.has_returned;
-        else_terminated = context->loop_state.has_terminated;
+        else_terminated = context->loop_state.in_loop && context->loop_state.has_terminated;
         if(!else_wont_return && !else_returned && !else_terminated) LLVMBuildBr(context->llvm_builder, bb_end);
+    } else {
+        LLVMDeleteBasicBlock(bb_else_body);
     }
     context->return_state.wont_return = then_wont_return && else_wont_return;
     context->return_state.has_returned = then_returned && else_returned;
     context->loop_state.has_terminated = then_terminated && else_terminated;
 
     // Setup end block
-    if(context->return_state.wont_return || context->return_state.has_returned || context->loop_state.has_terminated) return;
-    LLVMAppendExistingBasicBlock(llvm_func, bb_end);
-    LLVMPositionBuilderAtEnd(context->llvm_builder, bb_end);
+    if(context->return_state.wont_return || context->return_state.has_returned || context->loop_state.has_terminated) {
+        LLVMDeleteBasicBlock(bb_end);
+    } else {
+        LLVMPositionBuilderAtEnd(context->llvm_builder, bb_end);
+    }
 }
 
 static void cg_stmt_while(CG_STMT_PARAMS) {
@@ -726,7 +729,7 @@ static value_t cg_expr_call(CG_EXPR_PARAMS) {
 
 static value_t cg_expr_tuple(CG_EXPR_PARAMS) {
     LLVMValueRef llvm_values[node->expr.tuple.values.count];
-    llir_type_t **types = malloc(node->expr.tuple.values.count * sizeof(llir_type_t *));
+    llir_type_t **types = alloc(node->expr.tuple.values.count * sizeof(llir_type_t *));
     LLIR_NODE_LIST_FOREACH(&node->expr.tuple.values, {
         value_t value = cg_expr(context, current_namespace, scope, node);
         types[i] = value.type;
@@ -1018,10 +1021,8 @@ void codegen(llir_node_t *root_node, llir_namespace_t *root_namespace, llir_type
 
     error_message = NULL;
     LLVMBool failure = LLVMVerifyModule(context.llvm_module, LLVMReturnStatusAction, &error_message);
-    if(failure) {
-        log_fatal("failed to verify module (%s)", error_message);
-        LLVMDisposeMessage(error_message);
-    }
+    if(failure) log_fatal("failed to verify module (%s)", error_message);
+    LLVMDisposeMessage(error_message);
 
     if(passes != NULL) {
         LLVMErrorRef error = LLVMRunPasses(context.llvm_module, passes, NULL, LLVMCreatePassBuilderOptions());
@@ -1055,10 +1056,8 @@ void codegen_ir(llir_node_t *root_node, llir_namespace_t *root_namespace, llir_t
     char *error_message;
 
     failure = LLVMVerifyModule(context.llvm_module, LLVMReturnStatusAction, &error_message);
-    if(failure) {
-        log_fatal("failed to verify module (%s)", error_message);
-        LLVMDisposeMessage(error_message);
-    }
+    if(failure) log_fatal("failed to verify module (%s)", error_message);
+    LLVMDisposeMessage(error_message);
 
     failure = LLVMPrintModuleToFile(context.llvm_module, path, &error_message);
     if(failure) {

@@ -1,9 +1,8 @@
 #include "parser.h"
 
 #include "lib/diag.h"
+#include "lib/alloc.h"
 #include "parser/util.h"
-
-#include <stdlib.h>
 
 static hlir_node_t *parse_type(tokenizer_t *tokenizer, hlir_attribute_list_t attributes) {
     source_location_t source_location = util_loc(tokenizer, util_consume(tokenizer, TOKEN_KIND_KEYWORD_TYPE));
@@ -63,7 +62,7 @@ static hlir_node_t *parse_enum(tokenizer_t *tokenizer, hlir_attribute_list_t att
     if(tokenizer_peek(tokenizer).kind == TOKEN_KIND_IDENTIFIER) {
         do {
             token_t token_member = util_consume(tokenizer, TOKEN_KIND_IDENTIFIER);
-            members = reallocarray(members, ++member_count, sizeof(const char *));
+            members = alloc_array(members, ++member_count, sizeof(const char *));
             members[member_count - 1] = util_text_make_from_token(tokenizer, token_member);
         } while(util_try_consume(tokenizer, TOKEN_KIND_COMMA));
     }

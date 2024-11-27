@@ -1,5 +1,6 @@
 #include "lib/source.h"
 #include "lib/log.h"
+#include "lib/alloc.h"
 #include "lexer/tokenizer.h"
 #include "parser/parser.h"
 #include "semantics/semantics.h"
@@ -69,6 +70,8 @@ static char *strdup_basename(char *path) {
     return new;
 }
 
+static void compile(source_t *source, const char *dest_path, bool ir, LLVMCodeModel code_model, const char *optstr);
+
 int main(int argc, char *argv[]) {
     enum { DEFAULT, COMPILE, HELP } mode = DEFAULT;
     enum { OBJECT, IR } format = OBJECT;
@@ -117,7 +120,7 @@ int main(int argc, char *argv[]) {
     }
 
     switch(mode) {
-        case HELP:
+        case HELP: {
             printf("Charon %u.%u.%u%s%s%s\n", SEMVER_MAJOR, SEMVER_MINOR, SEMVER_PATCH, SEMVER_PRE_RELEASE == NULL ? "" : "-", SEMVER_PRE_RELEASE, LLVMIsMultithreaded() ? " (multithreaded)" : "");
             printf("Built at " __DATE__ " " __TIME__ "\n");
             printf(
@@ -140,8 +143,8 @@ int main(int argc, char *argv[]) {
                 "  " BASH_COLOR("1", "-O") BASH_COLOR("4", "level") "\n"
                 "      Optimization level. Valid levels are: 0, 1, 2, 3.\n"
             );
-            break;
-        case DEFAULT: 
+        } break;
+        case DEFAULT:
         case COMPILE:
             for(int i = optind; i < argc; i++) {
                 char *name = strdup_basename(argv[i]);
@@ -156,34 +159,56 @@ int main(int argc, char *argv[]) {
                 if(fread(data, 1, st.st_size, file) != st.st_size) log_fatal("read source file '%s' (%s)", name, strerror(errno));
                 if(fclose(file) != 0) log_warning("close source file '%s' (%s)", name, strerror(errno));
 
-                source_t *source = source_make(name, data, st.st_size);
-
-                tokenizer_t *tokenizer = tokenizer_make(source);
-                hlir_node_t *root_node = parser_root(tokenizer);
-                tokenizer_free(tokenizer);
-
-                llir_namespace_t *root_namespace = llir_namespace_make(NULL);
-                llir_type_cache_t *anon_type_cache = llir_type_cache_make();
-                llir_node_t *llir_root_node = semantics(root_node, root_namespace, anon_type_cache);
-
                 char *extension = find_extension(argv[i], '.', '/');
                 if(extension == NULL || strcmp(extension, ".charon") != 0) {
                     log_warning("skipping source file `%s` due to an unknown extension `%s`", argv[i], extension);
                     continue;
                 }
                 char *extensionless_path = strip_extension(argv[i], '.', '/');
-
-                switch(format) {
-                    case OBJECT: codegen(llir_root_node, root_namespace, anon_type_cache, add_extension(extensionless_path, "o", '.'), optstr, code_model); break;
-                    case IR: codegen_ir(llir_root_node, root_namespace, anon_type_cache, add_extension(extensionless_path, "ll", '.')); break;
-                }
+                char *path = add_extension(extensionless_path, format == IR ? "ll" : "o", '.');
                 free(extensionless_path);
 
-                llir_type_cache_free(anon_type_cache);
-
+                source_t *source = source_make(name, data, st.st_size);
+                compile(source, path, format == IR, code_model, optstr);
                 source_free(source);
+
+                free(path);
             }
             break;
     }
     return EXIT_SUCCESS;
+}
+
+
+static void compile(source_t *source, const char *dest_path, bool ir, LLVMCodeModel code_model, const char *optstr) {
+    /* Parse: source -> tokens -> LLIR */
+    allocator_t *hlir_allocator = allocator_make();
+
+    tokenizer_t *tokenizer = tokenizer_make(source);
+
+    allocator_set_active(hlir_allocator);
+    hlir_node_t *root_node = parser_root(tokenizer);
+    allocator_set_active(NULL);
+
+    tokenizer_free(tokenizer);
+
+    /* Lower: LLIR -> HLIR */
+    allocator_t *llir_allocator = allocator_make();
+
+    allocator_set_active(llir_allocator);
+    llir_namespace_t *root_namespace = llir_namespace_make(NULL);
+    llir_type_cache_t *anon_type_cache = llir_type_cache_make();
+    llir_node_t *llir_root_node = semantics(root_node, root_namespace, anon_type_cache);
+
+    allocator_free(hlir_allocator);
+
+    /* Codegen: HLIR -> binary */
+    if(ir) {
+        codegen_ir(llir_root_node, root_namespace, anon_type_cache, dest_path);
+    } else {
+        codegen(llir_root_node, root_namespace, anon_type_cache, dest_path, optstr, code_model);
+    }
+
+    allocator_set_active(NULL);
+    allocator_free(llir_allocator);
 }

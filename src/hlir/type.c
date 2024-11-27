@@ -1,6 +1,6 @@
 #include "type.h"
 
-#include <stdlib.h>
+#include "lib/alloc.h"
 
 #define DEFINE_GET(NAME, TYPE) \
     hlir_type_t *hlir_type_get_##NAME(hlir_attribute_list_t attributes) { \
@@ -15,7 +15,7 @@
     }
 
 static hlir_type_t *make_type(hlir_type_kind_t kind, hlir_attribute_list_t attributes) {
-    hlir_type_t *type = malloc(sizeof(hlir_type_t));
+    hlir_type_t *type = alloc(sizeof(hlir_type_t));
     type->attributes = attributes;
     type->is_reference = false;
     type->kind = kind;
@@ -30,7 +30,7 @@ hlir_type_t *hlir_type_integer_make(size_t bit_size, bool is_signed, hlir_attrib
 }
 
 hlir_type_t *hlir_type_reference_make(const char *type_name, size_t module_count, const char **modules, hlir_attribute_list_t attributes) {
-    hlir_type_t *type = malloc(sizeof(hlir_type_t));
+    hlir_type_t *type = alloc(sizeof(hlir_type_t));
     type->is_reference = true;
     type->reference.module_count = module_count;
     type->reference.modules = modules;
@@ -76,7 +76,7 @@ hlir_type_t *hlir_type_function_reference_make(hlir_type_function_t *function_ty
 }
 
 hlir_type_function_t *hlir_type_function_make(size_t argument_count, hlir_type_t **arguments, bool varargs, hlir_type_t *return_type) {
-    hlir_type_function_t *function_type = malloc(sizeof(hlir_type_function_t));
+    hlir_type_function_t *function_type = alloc(sizeof(hlir_type_function_t));
     function_type->return_type = return_type;
     function_type->argument_count = argument_count;
     function_type->arguments = arguments;

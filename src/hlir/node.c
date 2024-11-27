@@ -1,9 +1,9 @@
 #include "node.h"
 
-#include <stdlib.h>
+#include "lib/alloc.h"
 
 static hlir_node_t *node_make(hlir_node_type_t type, hlir_attribute_list_t attributes, source_location_t source_location) {
-    hlir_node_t *node = malloc(sizeof(hlir_node_t));
+    hlir_node_t *node = alloc(sizeof(hlir_node_t));
     node->type = type;
     node->source_location = source_location;
     node->attributes = attributes;
