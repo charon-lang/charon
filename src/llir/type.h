@@ -64,6 +64,7 @@ struct llir_type_function {
 typedef struct {
     llir_type_t **types;
     size_t type_count;
+
     llir_type_function_t **function_types;
     size_t function_type_count;
 } llir_type_cache_t;

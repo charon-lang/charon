@@ -38,11 +38,11 @@ static void cache_add(llir_type_cache_t *cache, llir_type_t *type) {
     cache->types[cache->type_count - 1] = type;
 }
 
-bool llir_type_eq(llir_type_t *a, llir_type_t *b) {
+static bool llir_type_function_eq(llir_type_function_t *a, llir_type_function_t *b) {
     return a == b;
 }
 
-static bool llir_type_function_eq(llir_type_function_t *a, llir_type_function_t *b) {
+bool llir_type_eq(llir_type_t *a, llir_type_t *b) {
     return a == b;
 }
 
@@ -155,6 +155,20 @@ llir_type_t *llir_type_cache_get_function_reference(llir_type_cache_t *cache, ll
     return type;
 }
 
+llir_type_t *llir_type_cache_get_enumeration(llir_type_cache_t *cache, size_t bit_size, size_t member_count) {
+    for(size_t i = 0; i < cache->type_count; i++) {
+        if(cache->types[i]->kind != LLIR_TYPE_KIND_ENUMERATION) continue;
+        if(cache->types[i]->enumeration.bit_size != bit_size) continue;
+        if(cache->types[i]->enumeration.member_count != member_count) continue;
+        return cache->types[i];
+    }
+    llir_type_t *type = make_type(LLIR_TYPE_KIND_ENUMERATION);
+    type->enumeration.bit_size = bit_size;
+    type->enumeration.member_count = member_count;
+    cache_add(cache, type);
+    return type;
+}
+
 llir_type_function_t *llir_type_cache_get_function_type(llir_type_cache_t *cache, size_t argument_count, llir_type_t **arguments, bool varargs, llir_type_t *return_type) {
     for(size_t i = 0; i < cache->function_type_count; i++) {
         if(cache->function_types[i]->varargs != varargs) continue;
@@ -172,18 +186,4 @@ llir_type_function_t *llir_type_cache_get_function_type(llir_type_cache_t *cache
     cache->function_types = alloc_array(cache->function_types, ++cache->function_type_count, sizeof(llir_type_function_t *));
     cache->function_types[cache->function_type_count - 1] = function_type;
     return function_type;
-}
-
-llir_type_t *llir_type_cache_get_enumeration(llir_type_cache_t *cache, size_t bit_size, size_t member_count) {
-    for(size_t i = 0; i < cache->type_count; i++) {
-        if(cache->types[i]->kind != LLIR_TYPE_KIND_ENUMERATION) continue;
-        if(cache->types[i]->enumeration.bit_size != bit_size) continue;
-        if(cache->types[i]->enumeration.member_count != member_count) continue;
-        return cache->types[i];
-    }
-    llir_type_t *type = make_type(LLIR_TYPE_KIND_ENUMERATION);
-    type->enumeration.bit_size = bit_size;
-    type->enumeration.member_count = member_count;
-    cache_add(cache, type);
-    return type;
 }
