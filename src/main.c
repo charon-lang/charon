@@ -3,7 +3,7 @@
 #include "lib/alloc.h"
 #include "lexer/tokenizer.h"
 #include "parser/parser.h"
-#include "semantics/semantics.h"
+#include "lower/lower.h"
 #include "codegen/codegen.h"
 
 #include <stdint.h>
@@ -70,7 +70,7 @@ static char *strdup_basename(char *path) {
     return new;
 }
 
-static void compile(source_t *source, const char *dest_path, bool ir, LLVMCodeModel code_model, const char *optstr);
+static void compile(source_t **sources, size_t source_count, const char **dest_path, bool ir, LLVMCodeModel code_model, const char *optstr);
 
 int main(int argc, char *argv[]) {
     enum { DEFAULT, COMPILE, HELP } mode = DEFAULT;
@@ -146,7 +146,10 @@ int main(int argc, char *argv[]) {
         } break;
         case DEFAULT:
         case COMPILE:
-            for(int i = optind; i < argc; i++) {
+            size_t count = argc - optind;
+            source_t **sources = reallocarray(NULL, count, sizeof(source_t *));
+            char **dest_paths = reallocarray(NULL, count, sizeof(char *));
+            for(int i = optind, j = 0; i < argc; i++, j++) {
                 char *name = strdup_basename(argv[i]);
 
                 FILE *file = fopen(argv[i], "r");
@@ -165,48 +168,67 @@ int main(int argc, char *argv[]) {
                     continue;
                 }
                 char *extensionless_path = strip_extension(argv[i], '.', '/');
-                char *path = add_extension(extensionless_path, format == IR ? "ll" : "o", '.');
+                char *dest_path = add_extension(extensionless_path, format == IR ? "ll" : "o", '.');
                 free(extensionless_path);
 
-                source_t *source = source_make(name, data, st.st_size);
-                compile(source, path, format == IR, code_model, optstr);
-                source_free(source);
-
-                free(path);
+                sources[j] = source_make(name, data, st.st_size);
+                dest_paths[j] = dest_path;
             }
+
+            compile(sources, count, (const char **) dest_paths, format == IR, code_model, optstr);
+
+            for(size_t i = 0; i < count; i++) {
+                source_free(sources[i]);
+                free(dest_paths[i]);
+            }
+            free(dest_paths);
+            free(sources);
             break;
     }
     return EXIT_SUCCESS;
 }
 
+static void compile(source_t **sources, size_t source_count, const char **dest_paths, bool ir, LLVMCodeModel code_model, const char *optstr) {
+    struct {
+        allocator_t *allocator;
+        hlir_node_t *root_node;
+    } hlir_data[source_count];
 
-static void compile(source_t *source, const char *dest_path, bool ir, LLVMCodeModel code_model, const char *optstr) {
-    /* Parse: source -> tokens -> LLIR */
-    allocator_t *hlir_allocator = allocator_make();
+    /* Parse: Source -> Tokens -> LLIR */
+    for(size_t i = 0; i < source_count; i++) {
+        allocator_t *hlir_allocator = allocator_make();
 
-    tokenizer_t *tokenizer = tokenizer_make(source);
+        tokenizer_t *tokenizer = tokenizer_make(sources[i]);
+        allocator_set_active(hlir_allocator);
+        hlir_node_t *root_node = parser_root(tokenizer);
+        allocator_set_active(NULL);
+        tokenizer_free(tokenizer);
 
-    allocator_set_active(hlir_allocator);
-    hlir_node_t *root_node = parser_root(tokenizer);
-    allocator_set_active(NULL);
-
-    tokenizer_free(tokenizer);
+        hlir_data[i].allocator = hlir_allocator;
+        hlir_data[i].root_node = root_node;
+    }
 
     /* Lower: LLIR -> HLIR */
     allocator_t *llir_allocator = allocator_make();
-
     allocator_set_active(llir_allocator);
+
     llir_namespace_t *root_namespace = llir_namespace_make(NULL);
     llir_type_cache_t *anon_type_cache = llir_type_cache_make();
-    llir_node_t *llir_root_node = semantics(root_node, root_namespace, anon_type_cache);
 
-    allocator_free(hlir_allocator);
+    for(size_t i = 0; i < source_count; i++) lower_populate_namespace(hlir_data[i].root_node, root_namespace, anon_type_cache);
 
-    /* Codegen: HLIR -> binary */
-    if(ir) {
-        codegen_ir(llir_root_node, root_namespace, anon_type_cache, dest_path);
-    } else {
-        codegen(llir_root_node, root_namespace, anon_type_cache, dest_path, optstr, code_model);
+    llir_node_t *llir_root_node[source_count];
+    for(size_t i = 0; i < source_count; i++) llir_root_node[i] = lower_nodes(hlir_data[i].root_node, root_namespace, anon_type_cache);
+
+    for(size_t i = 0; i < source_count; i++) allocator_free(hlir_data[i].allocator);
+
+    /* Codegen: LLIR -> Binary */
+    for(size_t i = 0; i < source_count; i++) {
+        if(ir) {
+            codegen_ir(llir_root_node[i], root_namespace, anon_type_cache, dest_paths[i]);
+        } else {
+            codegen(llir_root_node[i], root_namespace, anon_type_cache, dest_paths[i], optstr, code_model);
+        }
     }
 
     allocator_set_active(NULL);

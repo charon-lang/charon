@@ -1,4 +1,4 @@
-#include "semantics.h"
+#include "lower.h"
 
 #include "constants.h"
 #include "lib/diag.h"
@@ -323,14 +323,14 @@ static llir_node_t *lower_node(context_t *context, llir_namespace_t *current_nam
     return new_node;
 }
 
-static void pass_two(context_t *context, llir_namespace_t *current_namespace, hlir_node_t *node) {
+static void populate_namespace_pass_two(context_t *context, llir_namespace_t *current_namespace, hlir_node_t *node) {
     switch(node->type) {
-        case HLIR_NODE_TYPE_ROOT: HLIR_NODE_LIST_FOREACH(&node->root.tlcs, pass_two(context, current_namespace, node)); break;
+        case HLIR_NODE_TYPE_ROOT: HLIR_NODE_LIST_FOREACH(&node->root.tlcs, populate_namespace_pass_two(context, current_namespace, node)); break;
 
         case HLIR_NODE_TYPE_TLC_MODULE:
             llir_symbol_t *symbol = llir_namespace_find_symbol_with_kind(current_namespace, node->tlc_module.name, LLIR_SYMBOL_KIND_MODULE);
             assert(symbol != NULL);
-            HLIR_NODE_LIST_FOREACH(&node->tlc_module.tlcs, pass_two(context, symbol->module.namespace, node));
+            HLIR_NODE_LIST_FOREACH(&node->tlc_module.tlcs, populate_namespace_pass_two(context, symbol->module.namespace, node));
             break;
         case HLIR_NODE_TYPE_TLC_FUNCTION: {
             if(llir_namespace_exists_symbol(current_namespace, node->tlc_function.name)) diag_error(node->source_location, "symbol `%s` already exists", node->tlc_function.name);
@@ -360,14 +360,14 @@ static void pass_two(context_t *context, llir_namespace_t *current_namespace, hl
     }
 }
 
-static void pass_one(context_t *context, llir_namespace_t *current_namespace, hlir_node_t *node) {
+static void populate_namespace_pass_one(context_t *context, llir_namespace_t *current_namespace, hlir_node_t *node) {
     switch(node->type) {
-        case HLIR_NODE_TYPE_ROOT: HLIR_NODE_LIST_FOREACH(&node->root.tlcs, pass_one(context, current_namespace, node)); break;
+        case HLIR_NODE_TYPE_ROOT: HLIR_NODE_LIST_FOREACH(&node->root.tlcs, populate_namespace_pass_one(context, current_namespace, node)); break;
 
         case HLIR_NODE_TYPE_TLC_MODULE:
             if(llir_namespace_exists_symbol(current_namespace, node->tlc_module.name)) diag_error(node->source_location, "symbol `%s` already exists", node->tlc_module.name);
             llir_symbol_t *symbol = llir_namespace_add_symbol_module(current_namespace, alloc_strdup(node->tlc_module.name));
-            HLIR_NODE_LIST_FOREACH(&node->tlc_module.tlcs, pass_one(context, symbol->module.namespace, node));
+            HLIR_NODE_LIST_FOREACH(&node->tlc_module.tlcs, populate_namespace_pass_one(context, symbol->module.namespace, node));
             break;
         case HLIR_NODE_TYPE_TLC_FUNCTION: break;
         case HLIR_NODE_TYPE_TLC_EXTERN: break;
@@ -391,7 +391,16 @@ static void pass_one(context_t *context, llir_namespace_t *current_namespace, hl
     }
 }
 
-llir_node_t *semantics(hlir_node_t *root_node, llir_namespace_t *root_namespace, llir_type_cache_t *anon_type_cache) {
+void lower_populate_namespace(hlir_node_t *root_node, llir_namespace_t *root_namespace, llir_type_cache_t *anon_type_cache) {
+    context_t context = {
+        .root_namespace = root_namespace,
+        .anon_type_cache = anon_type_cache
+    };
+    populate_namespace_pass_one(&context, context.root_namespace, root_node);
+    populate_namespace_pass_two(&context, context.root_namespace, root_node);
+}
+
+llir_node_t *lower_nodes(hlir_node_t *root_node, llir_namespace_t *root_namespace, llir_type_cache_t *anon_type_cache) {
     assert(root_node->type == HLIR_NODE_TYPE_ROOT);
 
     context_t context = {
@@ -399,9 +408,5 @@ llir_node_t *semantics(hlir_node_t *root_node, llir_namespace_t *root_namespace,
         .anon_type_cache = anon_type_cache
     };
 
-    pass_one(&context, context.root_namespace, root_node);
-    pass_two(&context, context.root_namespace, root_node);
-    llir_node_t *llir_root_node = lower_node(&context, context.root_namespace, root_node);
-
-    return llir_root_node;
+    return lower_node(&context, context.root_namespace, root_node);
 }
