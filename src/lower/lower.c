@@ -58,7 +58,7 @@ static llir_type_t *lower_type(context_t *context, llir_namespace_t *current_nam
             new_type = llir_type_cache_get_array(context->anon_type_cache, lower_type(context, current_namespace, type->array.type, source_location), type->array.size);
             break;
         case HLIR_TYPE_KIND_STRUCTURE: {
-            hlir_attribute_t *attr_packed = hlir_attribute_find(&type->attributes, HLIR_ATTRIBUTE_KIND_PACKED);
+            hlir_attribute_t *attr_packed = hlir_attribute_find(&type->attributes, "packed", NULL, 0);
             llir_type_structure_member_t *members = alloc_array(NULL, type->structure.member_count, sizeof(llir_type_structure_member_t));
             for(size_t i = 0; i < type->structure.member_count; i++) {
                 for(size_t j = i + 1; j < type->structure.member_count; j++) if(strcmp(type->structure.members[i].name, type->structure.members[j].name) == 0) diag_error(source_location, "duplicate member `%s`", type->structure.members[i].name);
@@ -334,14 +334,14 @@ static void populate_namespace_pass_two(context_t *context, llir_namespace_t *cu
             break;
         case HLIR_NODE_TYPE_TLC_FUNCTION: {
             if(llir_namespace_exists_symbol(current_namespace, node->tlc_function.name)) diag_error(node->source_location, "symbol `%s` already exists", node->tlc_function.name);
-            hlir_attribute_t *attr_link = hlir_attribute_find(&node->attributes, HLIR_ATTRIBUTE_KIND_LINK);
-            llir_namespace_add_symbol_function(current_namespace, alloc_strdup(node->tlc_function.name), attr_link == NULL ? NULL : alloc_strdup(attr_link->link.name), lower_function_type(context, current_namespace, node->tlc_function.function_type, node->source_location));
+            hlir_attribute_t *attr_link = hlir_attribute_find(&node->attributes, "link", (hlir_attribute_argument_type_t[]) { HLIR_ATTRIBUTE_ARGUMENT_TYPE_STRING }, 1);
+            llir_namespace_add_symbol_function(current_namespace, alloc_strdup(node->tlc_function.name), attr_link == NULL ? NULL : alloc_strdup(attr_link->arguments[0].value.string), lower_function_type(context, current_namespace, node->tlc_function.function_type, node->source_location));
             break;
         }
         case HLIR_NODE_TYPE_TLC_EXTERN: {
             if(llir_namespace_exists_symbol(current_namespace, node->tlc_extern.name)) diag_error(node->source_location, "symbol `%s` already exists", node->tlc_extern.name);
-            hlir_attribute_t *attr_link = hlir_attribute_find(&node->attributes, HLIR_ATTRIBUTE_KIND_LINK);
-            llir_namespace_add_symbol_function(current_namespace, alloc_strdup(node->tlc_extern.name), attr_link == NULL ? alloc_strdup(node->tlc_extern.name) : alloc_strdup(attr_link->link.name), lower_function_type(context, current_namespace, node->tlc_extern.function_type, node->source_location));
+            hlir_attribute_t *attr_link = hlir_attribute_find(&node->attributes, "link", (hlir_attribute_argument_type_t[]) { HLIR_ATTRIBUTE_ARGUMENT_TYPE_STRING }, 1);
+            llir_namespace_add_symbol_function(current_namespace, alloc_strdup(node->tlc_extern.name), attr_link == NULL ? alloc_strdup(node->tlc_extern.name) : alloc_strdup(attr_link->arguments[0].value.string), lower_function_type(context, current_namespace, node->tlc_extern.function_type, node->source_location));
             break;
         }
         case HLIR_NODE_TYPE_TLC_TYPE_DEFINITION:

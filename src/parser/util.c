@@ -164,21 +164,33 @@ hlir_attribute_list_t util_parse_hlir_attributes(tokenizer_t *tokenizer) {
     while(util_try_consume(tokenizer, TOKEN_KIND_AT)) {
         token_t token_identifier = util_consume(tokenizer, TOKEN_KIND_IDENTIFIER);
 
-        if(util_token_cmp(tokenizer, token_identifier, "packed") == 0) {
-            hlir_attribute_list_add_packed(&list, util_loc(tokenizer, token_identifier));
-            continue;
-        }
-
-        if(util_token_cmp(tokenizer, token_identifier, "link") == 0) {
-            util_consume(tokenizer, TOKEN_KIND_PARENTHESES_LEFT);
-            token_t string_token = util_consume(tokenizer, TOKEN_KIND_CONST_STRING);
-            char *str = util_text_make_from_token_inset(tokenizer, string_token, 1);
+        size_t argument_count = 0;
+        hlir_attribute_argument_t *arguments = NULL;
+        if(util_try_consume(tokenizer, TOKEN_KIND_PARENTHESES_LEFT)) {
+            do {
+                arguments = alloc_array(arguments, ++argument_count, sizeof(hlir_attribute_argument_type_t));
+                switch(tokenizer_peek(tokenizer).kind) {
+                    case TOKEN_KIND_CONST_STRING: {
+                        token_t string_token = util_consume(tokenizer, TOKEN_KIND_CONST_STRING);
+                        char *value = util_text_make_from_token_inset(tokenizer, string_token, 1);
+                        arguments[argument_count - 1] = (hlir_attribute_argument_t) { .type = HLIR_ATTRIBUTE_ARGUMENT_TYPE_STRING, .value.string = value };
+                        break;
+                    }
+                    case TOKEN_KIND_CONST_NUMBER_DEC:
+                    case TOKEN_KIND_CONST_NUMBER_BIN:
+                    case TOKEN_KIND_CONST_NUMBER_HEX:
+                    case TOKEN_KIND_CONST_NUMBER_OCT: {
+                        token_t number_token = tokenizer_advance(tokenizer);
+                        uintmax_t value = util_number_make_from_token(tokenizer, number_token);
+                        arguments[argument_count - 1] = (hlir_attribute_argument_t) { .type = HLIR_ATTRIBUTE_ARGUMENT_TYPE_NUMBER, .value.number = value };
+                        break;
+                    }
+                    default: diag_error(util_loc(tokenizer, tokenizer_peek(tokenizer)), "invalid attribute argument");
+                }
+            } while(util_try_consume(tokenizer, TOKEN_KIND_COMMA));
             util_consume(tokenizer, TOKEN_KIND_PARENTHESES_RIGHT);
-            hlir_attribute_list_add_link(&list, str, util_loc(tokenizer, token_identifier));
-            continue;
         }
-
-        diag_error(util_loc(tokenizer, token_identifier), "invalid attribute");
+        hlir_attribute_add(&list, util_text_make_from_token(tokenizer, token_identifier), arguments, argument_count, util_loc(tokenizer, token_identifier));
     }
 
     return list;
