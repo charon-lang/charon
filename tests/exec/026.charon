@@ -1,8 +1,15 @@
 extern fn printf(fmt: *char, ...): i32;
 
 fn main(): uint {
-
     for(let i = 0; i < 10; i += 1) printf("%u\n", i);
+
+    let x: uint = 5;
+    let x_ptr: *uint = &x;
+
+    let y: ptr = x_ptr as ptr;
+    let z: *uint = y;
+
+    printf("%u\n", *z);
 
     return 0;
 }
