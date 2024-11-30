@@ -24,6 +24,7 @@
                     tree-sitter
                     python3
                     emscripten
+                    valgrind
                 ];
             };
         }
