@@ -26,10 +26,11 @@ static llir_type_t *make_type(llir_type_kind_t kind) {
     return type;
 }
 
-static llir_type_t *make_type_integer(size_t bit_size, bool is_signed) {
+static llir_type_t *make_type_integer(size_t bit_size, bool is_signed, bool allow_coerce_pointer) {
     llir_type_t *type = make_type(LLIR_TYPE_KIND_INTEGER);
     type->integer.bit_size = bit_size;
     type->integer.is_signed = is_signed;
+    type->integer.allow_coerce_pointer = allow_coerce_pointer;
     return type;
 }
 
@@ -54,15 +55,15 @@ llir_type_cache_t *llir_type_cache_make() {
     cache->types = alloc_array(NULL, cache->type_count, sizeof(llir_type_t *));
 
     cache->types[PRIMITIVE_VOID] = make_type(LLIR_TYPE_KIND_VOID);
-    cache->types[PRIMITIVE_U1] = make_type_integer(1, false);
-    cache->types[PRIMITIVE_U8] = make_type_integer(8, false);
-    cache->types[PRIMITIVE_U16] = make_type_integer(16, false);
-    cache->types[PRIMITIVE_U32] = make_type_integer(32, false);
-    cache->types[PRIMITIVE_U64] = make_type_integer(64, false);
-    cache->types[PRIMITIVE_I8] = make_type_integer(8, true);
-    cache->types[PRIMITIVE_I16] = make_type_integer(16, true);
-    cache->types[PRIMITIVE_I32] = make_type_integer(32, true);
-    cache->types[PRIMITIVE_I64] = make_type_integer(64, true);
+    cache->types[PRIMITIVE_U1] = make_type_integer(1, false, false);
+    cache->types[PRIMITIVE_U8] = make_type_integer(8, false, false);
+    cache->types[PRIMITIVE_U16] = make_type_integer(16, false, false);
+    cache->types[PRIMITIVE_U32] = make_type_integer(32, false, false);
+    cache->types[PRIMITIVE_U64] = make_type_integer(64, false, false);
+    cache->types[PRIMITIVE_I8] = make_type_integer(8, true, false);
+    cache->types[PRIMITIVE_I16] = make_type_integer(16, true, false);
+    cache->types[PRIMITIVE_I32] = make_type_integer(32, true, false);
+    cache->types[PRIMITIVE_I64] = make_type_integer(64, true, false);
 
     return cache;
 }
@@ -71,13 +72,13 @@ llir_type_t *llir_type_cache_get_void(llir_type_cache_t *cache) {
     return cache->types[PRIMITIVE_VOID];
 }
 
-llir_type_t *llir_type_cache_get_integer(llir_type_cache_t *cache, size_t bit_size, bool is_signed) {
+llir_type_t *llir_type_cache_get_integer(llir_type_cache_t *cache, size_t bit_size, bool is_signed, bool allow_coerce_pointer) {
     for(size_t i = 0; i < cache->type_count; i++) {
         if(cache->types[i]->kind != LLIR_TYPE_KIND_INTEGER) continue;
-        if(cache->types[i]->integer.bit_size != bit_size || cache->types[i]->integer.is_signed != is_signed) continue;
+        if(cache->types[i]->integer.bit_size != bit_size || cache->types[i]->integer.is_signed != is_signed || cache->types[i]->integer.allow_coerce_pointer != allow_coerce_pointer) continue;
         return cache->types[i];
     }
-    llir_type_t *type = make_type_integer(bit_size, is_signed);
+    llir_type_t *type = make_type_integer(bit_size, is_signed, allow_coerce_pointer);
     cache_add(cache, type);
     return type;
 }

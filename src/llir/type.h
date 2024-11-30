@@ -25,6 +25,7 @@ struct llir_type {
     llir_type_kind_t kind;
     union {
         struct {
+            bool allow_coerce_pointer;
             bool is_signed;
             size_t bit_size;
         } integer;
@@ -74,7 +75,7 @@ bool llir_type_eq(llir_type_t *a, llir_type_t *b);
 llir_type_cache_t *llir_type_cache_make();
 
 llir_type_t *llir_type_cache_get_void(llir_type_cache_t *cache);
-llir_type_t *llir_type_cache_get_integer(llir_type_cache_t *cache, size_t bit_size, bool is_signed);
+llir_type_t *llir_type_cache_get_integer(llir_type_cache_t *cache, size_t bit_size, bool is_signed, bool allow_coerce_pointer);
 llir_type_t *llir_type_cache_get_pointer(llir_type_cache_t *cache, llir_type_t *pointee);
 llir_type_t *llir_type_cache_get_tuple(llir_type_cache_t *cache, size_t type_count, llir_type_t **types);
 llir_type_t *llir_type_cache_get_array(llir_type_cache_t *cache, llir_type_t *element_type, size_t size);

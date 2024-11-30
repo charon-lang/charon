@@ -109,7 +109,13 @@ hlir_type_t *util_parse_type(tokenizer_t *tokenizer) {
 
     if(util_token_cmp(tokenizer, token_identifier, "bool") == 0) return hlir_type_integer_make(1, false, attributes);
     if(util_token_cmp(tokenizer, token_identifier, "char") == 0) return hlir_type_integer_make(CONSTANTS_CHAR_SIZE, false, attributes);
-    if(util_token_cmp(tokenizer, token_identifier, "ptr") == 0) return hlir_type_integer_make(CONSTANTS_POINTER_SIZE, false, attributes);
+    if(util_token_cmp(tokenizer, token_identifier, "paddr") == 0) return hlir_type_integer_make(CONSTANTS_ADDRESS_SIZE, false, attributes);
+    if(util_token_cmp(tokenizer, token_identifier, "vaddr") == 0) {
+        type_vaddr:
+        hlir_attribute_add(&attributes, "allow_coerce_pointer", NULL, 0, util_loc(tokenizer, token_identifier));
+        return hlir_type_integer_make(CONSTANTS_ADDRESS_SIZE, false, attributes);
+    }
+    if(util_token_cmp(tokenizer, token_identifier, "ptr") == 0) goto type_vaddr;
 
     if(util_token_cmp(tokenizer, token_identifier, "uint") == 0) return hlir_type_integer_make(CONSTANTS_INT_SIZE, false, attributes);
     if(util_token_cmp(tokenizer, token_identifier, "u8") == 0) return hlir_type_integer_make(8, false, attributes);

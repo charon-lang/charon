@@ -43,7 +43,8 @@ static llir_type_t *lower_type(context_t *context, llir_namespace_t *current_nam
             new_type = llir_type_cache_get_void(context->anon_type_cache);
             break;
         case HLIR_TYPE_KIND_INTEGER:
-            new_type = llir_type_cache_get_integer(context->anon_type_cache, type->integer.bit_size, type->integer.is_signed);
+            hlir_attribute_t *attr_allow_coerce_pointer = hlir_attribute_find(&type->attributes, "allow_coerce_pointer", NULL, 0);
+            new_type = llir_type_cache_get_integer(context->anon_type_cache, type->integer.bit_size, type->integer.is_signed, attr_allow_coerce_pointer != NULL);
             break;
         case HLIR_TYPE_KIND_POINTER:
             new_type = llir_type_cache_get_pointer(context->anon_type_cache, lower_type(context, current_namespace, type->pointer.pointee, source_location));

@@ -8,7 +8,7 @@
 
 #include <string.h>
 
-#define LLIR_TYPE_BOOL llir_type_cache_get_integer(context->anon_type_cache, 1, false)
+#define LLIR_TYPE_BOOL llir_type_cache_get_integer(context->anon_type_cache, 1, false, false)
 
 typedef struct {
     LLVMContextRef llvm_context;
@@ -130,9 +130,16 @@ static bool try_coerce(context_t *context, llir_type_t *to_type, value_t *value)
     }
 
     if(to_type->kind == LLIR_TYPE_KIND_POINTER) {
-        if(value->type->kind != LLIR_TYPE_KIND_ARRAY) return false;
-        if(!llir_type_eq(to_type->pointer.pointee, value->type->array.type)) return false;
-
+        switch(value->type->kind) {
+            case LLIR_TYPE_KIND_ARRAY:
+                if(!llir_type_eq(to_type->pointer.pointee, value->type->array.type)) return false;
+                break;
+            case LLIR_TYPE_KIND_INTEGER:
+                if(!value->type->integer.allow_coerce_pointer) return false;
+                value->llvm_value = LLVMBuildIntToPtr(context->llvm_builder, value->llvm_value, llir_type_to_llvm(context, to_type), "coerce.inttoptr");
+                break;
+            default: return false;
+        }
         value->type = to_type;
         return true;
     }
@@ -450,7 +457,7 @@ static void cg_stmt_for(CG_STMT_PARAMS) {
 // Expressions
 
 static value_t cg_expr_literal_numeric(CG_EXPR_PARAMS) {
-    llir_type_t *type = llir_type_cache_get_integer(context->anon_type_cache, CONSTANTS_INT_SIZE, false);
+    llir_type_t *type = llir_type_cache_get_integer(context->anon_type_cache, CONSTANTS_INT_SIZE, false, false);
     return (value_t) {
         .type = type, // TODO: signed?
         .llvm_value = LLVMConstInt(llir_type_to_llvm(context, type), node->expr.literal.numeric_value, type->integer.is_signed)
@@ -458,7 +465,7 @@ static value_t cg_expr_literal_numeric(CG_EXPR_PARAMS) {
 }
 
 static value_t cg_expr_literal_char(CG_EXPR_PARAMS) {
-    llir_type_t *type = llir_type_cache_get_integer(context->anon_type_cache, CONSTANTS_CHAR_SIZE, false);
+    llir_type_t *type = llir_type_cache_get_integer(context->anon_type_cache, CONSTANTS_CHAR_SIZE, false, false);
     return (value_t) {
         .type = type,
         .llvm_value = LLVMConstInt(llir_type_to_llvm(context, type), node->expr.literal.char_value, false)
@@ -467,7 +474,7 @@ static value_t cg_expr_literal_char(CG_EXPR_PARAMS) {
 
 static value_t cg_expr_literal_string(CG_EXPR_PARAMS) {
     size_t size = strlen(node->expr.literal.string_value) + 1;
-    llir_type_t *type = llir_type_cache_get_array(context->anon_type_cache, llir_type_cache_get_integer(context->anon_type_cache, CONSTANTS_CHAR_SIZE, false), size);
+    llir_type_t *type = llir_type_cache_get_array(context->anon_type_cache, llir_type_cache_get_integer(context->anon_type_cache, CONSTANTS_CHAR_SIZE, false, false), size);
 
     LLVMValueRef value = LLVMAddGlobal(context->llvm_module, llir_type_to_llvm(context, type), "expr.literal_string");
     LLVMSetLinkage(value, LLVMInternalLinkage);
