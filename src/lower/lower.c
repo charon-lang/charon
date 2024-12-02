@@ -348,7 +348,6 @@ static void populate_namespace_pass_two(context_t *context, llir_namespace_t *cu
         case HLIR_NODE_TYPE_TLC_TYPE_DEFINITION:
             llir_type_t *lowered_type = lower_type(context, current_namespace, node->tlc_type_definition.type, node->source_location);
             llir_namespace_update_type(current_namespace, node->tlc_type_definition.name, *lowered_type);
-            alloc_free(lowered_type);
             break;
         case HLIR_NODE_TYPE_TLC_DECLARATION:
             if(llir_namespace_exists_symbol(current_namespace, node->tlc_declaration.name)) diag_error(node->source_location, "symbol `%s` already exists", node->tlc_declaration.name);
