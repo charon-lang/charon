@@ -353,7 +353,7 @@ static void cg_stmt_if(CG_STMT_PARAMS) {
 static void cg_stmt_while(CG_STMT_PARAMS) {
     LLVMValueRef llvm_func = LLVMGetBasicBlockParent(LLVMGetInsertBlock(context->llvm_builder));
     LLVMBasicBlockRef bb_top = LLVMAppendBasicBlockInContext(context->llvm_context, llvm_func, "while.cond");
-    LLVMBasicBlockRef bb_body = LLVMCreateBasicBlockInContext(context->llvm_context, "while.body");
+    LLVMBasicBlockRef bb_body = LLVMAppendBasicBlockInContext(context->llvm_context, llvm_func, "while.body");
     LLVMBasicBlockRef bb_end = LLVMCreateBasicBlockInContext(context->llvm_context, "while.end");
 
     bool create_end = node->stmt_while.condition != NULL;
@@ -371,7 +371,6 @@ static void cg_stmt_while(CG_STMT_PARAMS) {
     }
 
     // Body
-    LLVMAppendExistingBasicBlock(llvm_func, bb_body);
     LLVMPositionBuilderAtEnd(context->llvm_builder, bb_body);
 
     typeof(context->loop_state) prev = context->loop_state;
@@ -410,15 +409,16 @@ static void cg_stmt_break(CG_STMT_PARAMS) {
 
 static void cg_stmt_for(CG_STMT_PARAMS) {
     LLVMValueRef llvm_func = LLVMGetBasicBlockParent(LLVMGetInsertBlock(context->llvm_builder));
-    LLVMBasicBlockRef bb_top = LLVMAppendBasicBlockInContext(context->llvm_context, llvm_func, "while.cond");
-    LLVMBasicBlockRef bb_body = LLVMCreateBasicBlockInContext(context->llvm_context, "while.body");
-    LLVMBasicBlockRef bb_end = LLVMCreateBasicBlockInContext(context->llvm_context, "while.end");
+    LLVMBasicBlockRef bb_top = LLVMAppendBasicBlockInContext(context->llvm_context, llvm_func, "for.cond");
+    LLVMBasicBlockRef bb_body = LLVMAppendBasicBlockInContext(context->llvm_context, llvm_func, "for.body");
+    LLVMBasicBlockRef bb_after = LLVMCreateBasicBlockInContext(context->llvm_context, "for.after");
+    LLVMBasicBlockRef bb_end = LLVMCreateBasicBlockInContext(context->llvm_context, "for.end");
 
     bool create_end = node->stmt_for.condition != NULL;
 
     scope = scope_enter(scope);
 
-    if(node->stmt_for.declaration != NULL) cg_stmt(context, current_namespace, scope, node->stmt_for.declaration);
+    if(node->stmt_for.declaration != NULL) cg_stmt_declaration(context, current_namespace, scope, node->stmt_for.declaration);
 
     LLVMBuildBr(context->llvm_builder, bb_top);
 
@@ -433,18 +433,26 @@ static void cg_stmt_for(CG_STMT_PARAMS) {
     }
 
     // Body
-    LLVMAppendExistingBasicBlock(llvm_func, bb_body);
     LLVMPositionBuilderAtEnd(context->llvm_builder, bb_body);
 
     typeof(context->loop_state) prev = context->loop_state;
     context->loop_state.in_loop = true;
     context->loop_state.has_terminated = false;
     context->loop_state.can_break = false;
-    context->loop_state.bb_beginning = bb_top;
+    context->loop_state.bb_beginning = node->stmt_for.expr_after != NULL ? bb_after : bb_top;
     context->loop_state.bb_end = bb_end;
 
     if(node->stmt_for.body != NULL) cg_stmt(context, current_namespace, scope, node->stmt_for.body);
-    if(node->stmt_for.expr_after != NULL) cg_expr(context, current_namespace, scope, node->stmt_for.expr_after);
+
+    if(node->stmt_for.expr_after != NULL) {
+        LLVMBuildBr(context->llvm_builder, bb_after);
+
+        LLVMAppendExistingBasicBlock(llvm_func, bb_after);
+        LLVMPositionBuilderAtEnd(context->llvm_builder, bb_after);
+
+        cg_expr(context, current_namespace, scope, node->stmt_for.expr_after);
+    }
+
     if(!context->loop_state.has_terminated) LLVMBuildBr(context->llvm_builder, bb_top);
     if(context->loop_state.can_break) create_end = true;
     context->loop_state = prev;
