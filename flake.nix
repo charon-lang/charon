@@ -7,7 +7,7 @@
     outputs = { self, nixpkgs, flake-utils, ... } @ inputs: flake-utils.lib.eachDefaultSystem (system:
         let
             pkgs = import nixpkgs { inherit system; };
-            inherit (pkgs) lib stdenv mkShell fetchFromGitLab buildGoModule;
+            inherit (pkgs) lib stdenv mkShell;
         in {
             devShells.default = mkShell {
                 shellHook = "export DEVSHELL_PS1_PREFIX='charon'";
@@ -31,7 +31,7 @@
             defaultPackage = stdenv.mkDerivation rec {
                 name = "charon";
                 src = self;
-                
+
                 nativeBuildInputs = with pkgs; [ clang_18 clang-tools_18 ];
                 buildInputs = with pkgs; [ pcre2 llvmPackages_18.libllvm ];
 
@@ -39,7 +39,7 @@
                     mkdir -p $out/bin
                     cp charon $out/bin/
                 '';
-                
+
                 meta = {
                     description = "Based programming language.";
                     homepage = https://git.thenest.dev/wux/charon;
