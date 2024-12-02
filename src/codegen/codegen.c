@@ -71,6 +71,7 @@ static char *mangle_name(const char *name, llir_symbol_t *parent) {
     return mangled_name;
 }
 
+
 static LLVMTypeRef llir_type_to_llvm(context_t *context, llir_type_t *type) {
     assert(type != NULL);
     switch(type->kind) {
@@ -106,10 +107,21 @@ static LLVMTypeRef llir_type_function_to_llvm(context_t *context, llir_type_func
     LLVMTypeRef fn_return_type = llir_type_to_llvm(context, function_type->return_type);
     if(function_type->argument_count > 0) {
         LLVMTypeRef fn_arguments[function_type->argument_count];
-        for(size_t i = 0; i < function_type->argument_count; i++) fn_arguments[i] = llir_type_to_llvm(context, function_type->arguments[i]);
+        for(size_t i = 0; i < function_type->argument_count; i++) {
+            fn_arguments[i] = llir_type_to_llvm(context, function_type->arguments[i]);
+        }
         return LLVMFunctionType(fn_return_type, fn_arguments, function_type->argument_count, function_type->varargs);
     }
     return LLVMFunctionType(fn_return_type, NULL, 0, function_type->varargs);
+}
+
+static value_t resolve_ref(context_t *context, value_t value) {
+    if(!value.is_ref) return value;
+    LLVMValueRef temp = LLVMBuildLoad2(context->llvm_builder, llir_type_to_llvm(context, value.type), value.llvm_value, "resolve_ref");
+    return (value_t) {
+        .type = value.type,
+        .llvm_value = temp
+    };
 }
 
 static bool try_coerce(context_t *context, llir_type_t *to_type, value_t *value) {
@@ -119,6 +131,8 @@ static bool try_coerce(context_t *context, llir_type_t *to_type, value_t *value)
         if(value->type->kind != LLIR_TYPE_KIND_INTEGER) return false;
         if(value->type->integer.is_signed != to_type->integer.is_signed) return false;
         if(value->type->integer.bit_size > to_type->integer.bit_size) return false;
+
+        *value = resolve_ref(context, *value);
 
         value->type = to_type;
         if(to_type->integer.is_signed) {
@@ -175,15 +189,6 @@ static scope_variable_t *scope_variable_find(scope_t *scope, const char *name) {
     }
     if(scope->parent == NULL) return NULL;
     return scope_variable_find(scope->parent, name);
-}
-
-static value_t resolve_ref(context_t *context, value_t value) {
-    if(!value.is_ref) return value;
-    LLVMValueRef temp = LLVMBuildLoad2(context->llvm_builder, llir_type_to_llvm(context, value.type), value.llvm_value, "resolve_ref");
-    return (value_t) {
-        .type = value.type,
-        .llvm_value = temp
-    };
 }
 
 // //
@@ -453,6 +458,11 @@ static void cg_stmt_for(CG_STMT_PARAMS) {
     }
     scope = scope_exit(scope);
 }
+
+// static void cg_stmt_assembly(CG_STMT_PARAMS) {
+//     LLVMValueRef asm_string = LLVMGetInlineAsm(llir_type_to_llvm(context, llir_type_cache_get_void(context->anon_type_cache)), "", 0, "", 0, true, false, LLVMInlineAsmDialectATT, false);
+
+// }
 
 // Expressions
 
