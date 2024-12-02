@@ -147,6 +147,7 @@ static bool try_coerce(context_t *context, llir_type_t *to_type, value_t *value)
         switch(value->type->kind) {
             case LLIR_TYPE_KIND_ARRAY:
                 if(!llir_type_eq(to_type->pointer.pointee, value->type->array.type)) return false;
+                value->llvm_value = LLVMBuildBitCast(context->llvm_builder, value->llvm_value, llir_type_to_llvm(context, to_type), "coerce.bitcast");
                 break;
             case LLIR_TYPE_KIND_INTEGER:
                 if(!value->type->integer.allow_coerce_pointer) return false;
@@ -820,7 +821,7 @@ static value_t cg_expr_cast(CG_EXPR_PARAMS) {
     if(type_from->kind == LLIR_TYPE_KIND_ARRAY && type_to->kind == LLIR_TYPE_KIND_POINTER) {
         if(llir_type_eq(type_from->array.type, type_to->pointer.pointee)) return (value_t) {
             .type = type_to,
-            .llvm_value = value_from.llvm_value
+            .llvm_value = LLVMBuildBitCast(context->llvm_builder, value_from.llvm_value, llir_type_to_llvm(context, type_to), "cast.bitcast")
         };
     }
 
