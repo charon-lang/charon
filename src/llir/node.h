@@ -42,6 +42,7 @@
         case LLIR_NODE_TYPE_EXPR_CAST: \
         case LLIR_NODE_TYPE_EXPR_SUBSCRIPT: \
         case LLIR_NODE_TYPE_EXPR_SELECTOR: \
+        case LLIR_NODE_TYPE_EXPR_SIZEOF: \
             BODY; break;
 
 typedef enum {
@@ -72,7 +73,8 @@ typedef enum {
     LLIR_NODE_TYPE_EXPR_TUPLE,
     LLIR_NODE_TYPE_EXPR_CAST,
     LLIR_NODE_TYPE_EXPR_SUBSCRIPT,
-    LLIR_NODE_TYPE_EXPR_SELECTOR
+    LLIR_NODE_TYPE_EXPR_SELECTOR,
+    LLIR_NODE_TYPE_EXPR_SIZEOF
 } llir_node_type_t;
 
 typedef enum {
@@ -211,6 +213,9 @@ struct llir_node {
                     const char *name;
                     llir_node_t *value;
                 } selector;
+                struct {
+                    llir_type_t *type;
+                } _sizeof;
             };
         } expr;
     };
