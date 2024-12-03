@@ -112,11 +112,13 @@ module.exports = grammar({
         _expr_primary: $ => choice(
             $.expr_tuple,
             $.expr_identifier,
+            $.expr_sizeof,
             $.literal
         ),
 
         expr_tuple: $ => prec.left(seq("(", $._expr, repeat(seq(",", $._expr)), ")")),
         expr_identifier: $ => seq(repeat(seq(field("selector", $.identifier), "::")), field("name", $.identifier)),
+        expr_sizeof: $ => seq("sizeof", "(", $.type , ")"),
 
         // util
         type: $ => seq(

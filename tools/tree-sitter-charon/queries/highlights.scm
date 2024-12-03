@@ -14,6 +14,7 @@
     "break"
     "enum"
     "for"
+    "sizeof"
 ] @keyword
 
 (bool) @languageDefinedValue
