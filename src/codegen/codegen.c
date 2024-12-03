@@ -255,7 +255,7 @@ static void cg_tlc_declaration(CG_TLC_PARAMS) {
     llir_type_t *type = symbol->variable.type;
     if(node->tlc_declaration.initial != NULL) {
         if(!node->tlc_declaration.initial->expr.is_const) diag_error(node->source_location, "global variables can only be initialized to constants");
-        value_t value = cg_expr(context, current_namespace, NULL, node->stmt_declaration.initial);
+        value_t value = cg_expr(context, current_namespace, NULL, node->tlc_declaration.initial);
         if(!try_coerce(context, type, &value)) diag_error(node->source_location, "declarations initial value does not match its explicit type");
         llvm_value = value.llvm_value;
     } else {
