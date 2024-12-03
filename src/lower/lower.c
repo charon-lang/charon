@@ -118,7 +118,7 @@ static llir_node_t *lower_node(context_t *context, llir_namespace_t *current_nam
             });
 
             new_node->type = LLIR_NODE_TYPE_TLC_MODULE;
-            new_node->tlc_module.name = alloc_strdup(node->tlc_module.name);
+            new_node->tlc_module.symbol = symbol;
             new_node->tlc_module.tlcs = tlcs;
             break;
         }
@@ -130,15 +130,18 @@ static llir_node_t *lower_node(context_t *context, llir_namespace_t *current_nam
             for(size_t i = 0; i < node->tlc_function.function_type->argument_count; i++) arguments[i] = alloc_strdup(node->tlc_function.argument_names[i]);
 
             new_node->type = LLIR_NODE_TYPE_TLC_FUNCTION;
-            new_node->tlc_function.name = alloc_strdup(node->tlc_function.name);
+            new_node->tlc_function.symbol = symbol;
             new_node->tlc_function.argument_names = arguments;
             new_node->tlc_function.statement = node->tlc_function.statement == NULL ? NULL : lower_node(context, current_namespace, node->tlc_function.statement);
             new_node->tlc_function.function_type = symbol->function.function_type;
             break;
         }
         case HLIR_NODE_TYPE_TLC_DECLARATION: {
+            llir_symbol_t *symbol = llir_namespace_find_symbol_with_kind(current_namespace, node->tlc_declaration.name, LLIR_SYMBOL_KIND_VARIABLE);
+            assert(symbol != NULL);
+
             new_node->type = LLIR_NODE_TYPE_TLC_DECLARATION;
-            new_node->tlc_declaration.name = alloc_strdup(node->tlc_declaration.name);
+            new_node->tlc_declaration.symbol = symbol;
             new_node->tlc_declaration.initial = node->tlc_declaration.initial == NULL ? NULL : lower_node(context, current_namespace, node->tlc_declaration.initial);
             break;
         }

@@ -2,6 +2,7 @@
 
 #include "lib/source.h"
 #include "llir/type.h"
+#include "llir/namespace.h"
 
 #include <stddef.h>
 #include <stdint.h>
@@ -128,17 +129,17 @@ struct llir_node {
         } root;
 
         struct {
-            const char *name;
+            llir_symbol_t *symbol;
             llir_node_list_t tlcs;
         } tlc_module;
         struct {
-            const char *name;
+            llir_symbol_t *symbol;
             const char **argument_names;
             llir_type_function_t *function_type;
             llir_node_t *statement; /* nullable */
         } tlc_function;
         struct {
-            const char *name;
+            llir_symbol_t *symbol;
             llir_node_t *initial; /* nullable */
         } tlc_declaration;
 

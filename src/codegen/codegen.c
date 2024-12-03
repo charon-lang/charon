@@ -208,15 +208,12 @@ static value_t cg_expr_ext(CG_EXPR_PARAMS, bool do_resolve_ref);
 // TLCs
 
 static void cg_tlc_module(CG_TLC_PARAMS) {
-    llir_symbol_t *symbol = llir_namespace_find_symbol_with_kind(current_namespace, node->tlc_function.name, LLIR_SYMBOL_KIND_MODULE);
-    assert(symbol != NULL);
-
+    llir_symbol_t *symbol = node->tlc_module.symbol;
     LLIR_NODE_LIST_FOREACH(&node->tlc_module.tlcs, cg_tlc(context, symbol->module.namespace, node));
 }
 
 static void cg_tlc_function(CG_TLC_PARAMS) {
-    llir_symbol_t *symbol = llir_namespace_find_symbol_with_kind(current_namespace, node->tlc_function.name, LLIR_SYMBOL_KIND_FUNCTION);
-    assert(symbol != NULL);
+    llir_symbol_t *symbol = node->tlc_function.symbol;
 
     context->return_state.has_returned = false;
     context->return_state.wont_return = false;
@@ -248,8 +245,7 @@ static void cg_tlc_function(CG_TLC_PARAMS) {
 }
 
 static void cg_tlc_declaration(CG_TLC_PARAMS) {
-    llir_symbol_t *symbol = llir_namespace_find_symbol_with_kind(current_namespace, node->tlc_declaration.name, LLIR_SYMBOL_KIND_VARIABLE);
-    assert(symbol != NULL);
+    llir_symbol_t *symbol = node->tlc_declaration.symbol;
 
     LLVMValueRef llvm_value = NULL;
     llir_type_t *type = symbol->variable.type;
