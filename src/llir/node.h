@@ -14,6 +14,7 @@
 #define LLIR_CASE_TLC(BODY) \
         case LLIR_NODE_TYPE_TLC_MODULE: \
         case LLIR_NODE_TYPE_TLC_FUNCTION: \
+        case LLIR_NODE_TYPE_TLC_DECLARATION: \
             BODY; break;
 
 #define LLIR_CASE_STMT(BODY) \
@@ -48,6 +49,7 @@ typedef enum {
 
     LLIR_NODE_TYPE_TLC_MODULE,
     LLIR_NODE_TYPE_TLC_FUNCTION,
+    LLIR_NODE_TYPE_TLC_DECLARATION,
 
     LLIR_NODE_TYPE_STMT_BLOCK,
     LLIR_NODE_TYPE_STMT_DECLARATION,
@@ -133,6 +135,10 @@ struct llir_node {
             llir_type_function_t *function_type;
             llir_node_t *statement; /* nullable */
         } tlc_function;
+        struct {
+            const char *name;
+            llir_node_t *initial; /* nullable */
+        } tlc_declaration;
 
         struct {
             llir_node_list_t statements;
@@ -162,6 +168,7 @@ struct llir_node {
         } stmt_for;
 
         struct {
+            bool is_const;
             union {
                 union {
                     uintmax_t numeric_value;

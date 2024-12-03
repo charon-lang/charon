@@ -48,8 +48,10 @@ static hlir_node_t *parse_declaration(tokenizer_t *tokenizer, hlir_attribute_lis
     token_t token_name = util_consume(tokenizer, TOKEN_KIND_IDENTIFIER);
     util_consume(tokenizer, TOKEN_KIND_COLON);
     hlir_type_t *type = util_parse_type(tokenizer);
+    hlir_node_t *initial = NULL;
+    if(util_try_consume(tokenizer, TOKEN_KIND_EQUAL)) initial = parser_expr(tokenizer);
     util_consume(tokenizer, TOKEN_KIND_SEMI_COLON);
-    return hlir_node_make_tlc_declaration(util_text_make_from_token(tokenizer, token_name), type, attributes, source_location);
+    return hlir_node_make_tlc_declaration(util_text_make_from_token(tokenizer, token_name), type, initial, attributes, source_location);
 }
 
 static hlir_node_t *parse_enum(tokenizer_t *tokenizer, hlir_attribute_list_t attributes) {

@@ -58,10 +58,11 @@ hlir_node_t *hlir_node_make_tlc_type_definition(const char *name, hlir_type_t *t
     return node;
 }
 
-hlir_node_t *hlir_node_make_tlc_declaration(const char *name, hlir_type_t *type, hlir_attribute_list_t attributes, source_location_t source_location) {
+hlir_node_t *hlir_node_make_tlc_declaration(const char *name, hlir_type_t *type, hlir_node_t *initial, hlir_attribute_list_t attributes, source_location_t source_location) {
     hlir_node_t *node = node_make(HLIR_NODE_TYPE_TLC_DECLARATION, attributes, source_location);
     node->tlc_declaration.name = name;
     node->tlc_declaration.type = type;
+    node->tlc_declaration.initial = initial;
     return node;
 }
 

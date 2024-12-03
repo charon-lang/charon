@@ -247,6 +247,23 @@ static void cg_tlc_function(CG_TLC_PARAMS) {
     scope_exit(scope);
 }
 
+static void cg_tlc_declaration(CG_TLC_PARAMS) {
+    llir_symbol_t *symbol = llir_namespace_find_symbol_with_kind(current_namespace, node->tlc_declaration.name, LLIR_SYMBOL_KIND_VARIABLE);
+    assert(symbol != NULL);
+
+    LLVMValueRef llvm_value = NULL;
+    llir_type_t *type = symbol->variable.type;
+    if(node->tlc_declaration.initial != NULL) {
+        if(!node->tlc_declaration.initial->expr.is_const) diag_error(node->source_location, "global variables can only be initialized to constants");
+        value_t value = cg_expr(context, current_namespace, NULL, node->stmt_declaration.initial);
+        if(!try_coerce(context, type, &value)) diag_error(node->source_location, "declarations initial value does not match its explicit type");
+        llvm_value = value.llvm_value;
+    } else {
+        llvm_value = LLVMConstNull(llir_type_to_llvm(context, type));
+    }
+    LLVMSetInitializer(symbol->variable.codegen_data, llvm_value);
+}
+
 // Statements
 
 static void cg_stmt_block(CG_STMT_PARAMS) {
@@ -933,6 +950,7 @@ static void cg_tlc(CG_TLC_PARAMS) {
     switch(node->type) {
         case LLIR_NODE_TYPE_TLC_MODULE: cg_tlc_module(context, current_namespace, node); break;
         case LLIR_NODE_TYPE_TLC_FUNCTION: cg_tlc_function(context, current_namespace, node); break;
+        case LLIR_NODE_TYPE_TLC_DECLARATION: cg_tlc_declaration(context, current_namespace, node); break;
 
         case LLIR_NODE_TYPE_ROOT: assert(false);
         LLIR_CASE_STMT(assert(false));
@@ -1003,7 +1021,6 @@ static void populate_namespace(context_t *context, llir_namespace_t *namespace) 
             case LLIR_SYMBOL_KIND_VARIABLE:
                 LLVMTypeRef type = llir_type_to_llvm(context, symbol->variable.type);
                 symbol->variable.codegen_data = LLVMAddGlobal(context->llvm_module, type, mangle_name(symbol->name, symbol->namespace->parent));
-                LLVMSetInitializer(symbol->variable.codegen_data, LLVMConstNull(type));
                 break;
             case LLIR_SYMBOL_KIND_ENUMERATION: break;
         }

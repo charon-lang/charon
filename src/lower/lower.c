@@ -136,9 +136,14 @@ static llir_node_t *lower_node(context_t *context, llir_namespace_t *current_nam
             new_node->tlc_function.function_type = symbol->function.function_type;
             break;
         }
+        case HLIR_NODE_TYPE_TLC_DECLARATION: {
+            new_node->type = LLIR_NODE_TYPE_TLC_DECLARATION;
+            new_node->tlc_declaration.name = alloc_strdup(node->tlc_declaration.name);
+            new_node->tlc_declaration.initial = node->tlc_declaration.initial == NULL ? NULL : lower_node(context, current_namespace, node->tlc_declaration.initial);
+            break;
+        }
         case HLIR_NODE_TYPE_TLC_EXTERN:
         case HLIR_NODE_TYPE_TLC_TYPE_DEFINITION:
-        case HLIR_NODE_TYPE_TLC_DECLARATION:
         case HLIR_NODE_TYPE_TLC_ENUMERATION:
             alloc_free(new_node);
             new_node = NULL;
@@ -201,21 +206,25 @@ static llir_node_t *lower_node(context_t *context, llir_namespace_t *current_nam
 
         case HLIR_NODE_TYPE_EXPR_LITERAL_NUMERIC: {
             new_node->type = LLIR_NODE_TYPE_EXPR_LITERAL_NUMERIC;
+            new_node->expr.is_const = true;
             new_node->expr.literal.numeric_value = node->expr_literal.numeric_value;
             break;
         }
         case HLIR_NODE_TYPE_EXPR_LITERAL_STRING: {
             new_node->type = LLIR_NODE_TYPE_EXPR_LITERAL_STRING;
+            new_node->expr.is_const = true;
             new_node->expr.literal.string_value = alloc_strdup(node->expr_literal.string_value);
             break;
         }
         case HLIR_NODE_TYPE_EXPR_LITERAL_CHAR: {
             new_node->type = LLIR_NODE_TYPE_EXPR_LITERAL_CHAR;
+            new_node->expr.is_const = true;
             new_node->expr.literal.char_value = node->expr_literal.char_value;
             break;
         }
         case HLIR_NODE_TYPE_EXPR_LITERAL_BOOL: {
             new_node->type = LLIR_NODE_TYPE_EXPR_LITERAL_BOOL;
+            new_node->expr.is_const = true;
             new_node->expr.literal.bool_value = node->expr_literal.bool_value;
             break;
         }
@@ -243,10 +252,14 @@ static llir_node_t *lower_node(context_t *context, llir_namespace_t *current_nam
                 case HLIR_NODE_BINARY_OPERATION_XOR: operation = LLIR_NODE_BINARY_OPERATION_XOR; break;
             }
 
+            llir_node_t *left = lower_node(context, current_namespace, node->expr_binary.left);
+            llir_node_t *right = lower_node(context, current_namespace, node->expr_binary.right);
+
             new_node->type = LLIR_NODE_TYPE_EXPR_BINARY;
+            new_node->expr.is_const = left->expr.is_const && right->expr.is_const;
             new_node->expr.binary.operation = operation;
-            new_node->expr.binary.left = lower_node(context, current_namespace, node->expr_binary.left);
-            new_node->expr.binary.right = lower_node(context, current_namespace, node->expr_binary.right);
+            new_node->expr.binary.left = left;
+            new_node->expr.binary.right = right;
             break;
         }
         case HLIR_NODE_TYPE_EXPR_UNARY: {
@@ -258,13 +271,17 @@ static llir_node_t *lower_node(context_t *context, llir_namespace_t *current_nam
                 case HLIR_NODE_UNARY_OPERATION_REF: operation = LLIR_NODE_UNARY_OPERATION_REF; break;
             }
 
+            llir_node_t *operand = lower_node(context, current_namespace, node->expr_unary.operand);
+
             new_node->type = LLIR_NODE_TYPE_EXPR_UNARY;
+            new_node->expr.is_const = operand->expr.is_const;
             new_node->expr.unary.operation = operation;
-            new_node->expr.unary.operand = lower_node(context, current_namespace, node->expr_unary.operand);
+            new_node->expr.unary.operand = operand;
             break;
         }
         case HLIR_NODE_TYPE_EXPR_VARIABLE: {
             new_node->type = LLIR_NODE_TYPE_EXPR_VARIABLE;
+            new_node->expr.is_const = false; // TODO: if we can resolve const variables here... could be
             new_node->expr.variable.name = alloc_strdup(node->expr_variable.name);
             break;
         }
@@ -273,6 +290,8 @@ static llir_node_t *lower_node(context_t *context, llir_namespace_t *current_nam
             HLIR_NODE_LIST_FOREACH(&node->expr_tuple.values, llir_node_list_append(&values, lower_node(context, current_namespace, node)));
 
             new_node->type = LLIR_NODE_TYPE_EXPR_TUPLE;
+            new_node->expr.is_const = true;
+            LLIR_NODE_LIST_FOREACH(&values, new_node->expr.is_const = new_node->expr.is_const && node->expr.is_const);
             new_node->expr.tuple.values = values;
             break;
         }
@@ -281,39 +300,51 @@ static llir_node_t *lower_node(context_t *context, llir_namespace_t *current_nam
             HLIR_NODE_LIST_FOREACH(&node->expr_call.arguments, llir_node_list_append(&arguments, lower_node(context, current_namespace, node)));
 
             new_node->type = LLIR_NODE_TYPE_EXPR_CALL;
+            new_node->expr.is_const = false;
             new_node->expr.call.function_reference = lower_node(context, current_namespace, node->expr_call.function_reference);
             new_node->expr.call.arguments = arguments;
             break;
         }
         case HLIR_NODE_TYPE_EXPR_CAST: {
+            llir_node_t *value = lower_node(context, current_namespace, node->expr_cast.value);
+
             new_node->type = LLIR_NODE_TYPE_EXPR_CAST;
+            new_node->expr.is_const = value->expr.is_const;
             new_node->expr.cast.type = lower_type(context, current_namespace, node->expr_cast.type, node->source_location);
-            new_node->expr.cast.value = lower_node(context, current_namespace, node->expr_cast.value);
+            new_node->expr.cast.value = value;
             break;
         }
         case HLIR_NODE_TYPE_EXPR_SUBSCRIPT: {
+            llir_node_t *value = lower_node(context, current_namespace, node->expr_subscript.value);
+
             new_node->type = LLIR_NODE_TYPE_EXPR_SUBSCRIPT;
-            new_node->expr.subscript.value = lower_node(context, current_namespace, node->expr_subscript.value);
             switch(node->expr_subscript.type) {
                 case HLIR_NODE_SUBSCRIPT_TYPE_INDEX:
+                    new_node->expr.is_const = false;
                     new_node->expr.subscript.type = LLIR_NODE_SUBSCRIPT_TYPE_INDEX;
                     new_node->expr.subscript.index = lower_node(context, current_namespace, node->expr_subscript.index);
                     break;
                 case HLIR_NODE_SUBSCRIPT_TYPE_INDEX_CONST:
+                    new_node->expr.is_const = value->expr.is_const;
                     new_node->expr.subscript.type = LLIR_NODE_SUBSCRIPT_TYPE_INDEX_CONST;
                     new_node->expr.subscript.index_const = node->expr_subscript.index_const;
                     break;
                 case HLIR_NODE_SUBSCRIPT_TYPE_MEMBER:
+                    new_node->expr.is_const = value->expr.is_const;
                     new_node->expr.subscript.type = LLIR_NODE_SUBSCRIPT_TYPE_MEMBER;
                     new_node->expr.subscript.member = alloc_strdup(node->expr_subscript.member);
                     break;
             }
+            new_node->expr.subscript.value = value;
             break;
         }
         case HLIR_NODE_TYPE_EXPR_SELECTOR: {
+            llir_node_t *value = lower_node(context, current_namespace, node->expr_selector.value);
+
             new_node->type = LLIR_NODE_TYPE_EXPR_SELECTOR;
+            new_node->expr.is_const = value->expr.is_const;
             new_node->expr.selector.name = alloc_strdup(node->expr_selector.name);
-            new_node->expr.selector.value = lower_node(context, current_namespace, node->expr_selector.value);
+            new_node->expr.selector.value = value;
             break;
         }
     }
