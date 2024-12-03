@@ -468,11 +468,6 @@ static void cg_stmt_for(CG_STMT_PARAMS) {
     scope = scope_exit(scope);
 }
 
-// static void cg_stmt_assembly(CG_STMT_PARAMS) {
-//     LLVMValueRef asm_string = LLVMGetInlineAsm(llir_type_to_llvm(context, llir_type_cache_get_void(context->anon_type_cache)), "", 0, "", 0, true, false, LLVMInlineAsmDialectATT, false);
-
-// }
-
 // Expressions
 
 static value_t cg_expr_literal_numeric(CG_EXPR_PARAMS) {
