@@ -36,7 +36,7 @@ module.exports = grammar({
         tlc_module: $ => seq("module", field("name", $.identifier), "{", field("body", repeat($._tlc)), "}"),
         tlc_function: $ => seq("fn", field("name", $.identifier), field("type", $.function_type), field("body", $._stmt)),
         tlc_extern: $ => seq("extern", "fn", field("name", $.identifier), field("type", $.function_type), ";"),
-        tlc_declaration: $ => seq("let", field("name", $.identifier), ":", field("type", $.type), ";"),
+        tlc_declaration: $ => seq("let", field("name", $.identifier), ":", field("type", $.type), field("value", optional(seq("=", $._expr))), ";"),
         tlc_type: $ => seq("type", field("name", $.identifier), field("type", $.type)),
         tlc_enum: $ => seq("enum", field("name", $.identifier), "{", optional(seq(field("member", $.identifier), repeat(seq(",", field("member",$.identifier))))), "}"),
 
