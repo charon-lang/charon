@@ -939,6 +939,13 @@ static value_t cg_expr_selector(CG_EXPR_PARAMS) {
     diag_error(node->source_location, "unknown enum member");
 }
 
+static value_t cg_expr_sizeof(CG_EXPR_PARAMS) {
+    return (value_t) {
+        .llvm_value = LLVMSizeOf(llir_type_to_llvm(context, node->expr._sizeof.type)),
+        .type = llir_type_cache_get_integer(context->anon_type_cache, 64, false, false)
+    };
+}
+
 // Common
 
 static void cg_root(CG_TLC_PARAMS) {
@@ -995,6 +1002,7 @@ static value_t cg_expr_ext(CG_EXPR_PARAMS, bool do_resolve_ref) {
         case LLIR_NODE_TYPE_EXPR_CAST: value = cg_expr_cast(context, current_namespace, scope, node); break;
         case LLIR_NODE_TYPE_EXPR_SUBSCRIPT: value = cg_expr_subscript(context, current_namespace, scope, node); break;
         case LLIR_NODE_TYPE_EXPR_SELECTOR: value = cg_expr_selector(context, current_namespace, scope, node); break;
+        case LLIR_NODE_TYPE_EXPR_SIZEOF: value = cg_expr_sizeof(context, current_namespace, scope, node); break;
 
         case LLIR_NODE_TYPE_ROOT: assert(false);
         LLIR_CASE_TLC(assert(false));

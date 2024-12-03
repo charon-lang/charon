@@ -347,6 +347,12 @@ static llir_node_t *lower_node(context_t *context, llir_namespace_t *current_nam
             new_node->expr.selector.value = value;
             break;
         }
+        case HLIR_NODE_TYPE_EXPR_SIZEOF: {
+            new_node->type = LLIR_NODE_TYPE_EXPR_SIZEOF;
+            new_node->expr.is_const = true;
+            new_node->expr._sizeof.type = lower_type(context, current_namespace, node->expr_sizeof.type, node->source_location);
+            break;
+        }
     }
     for(size_t i = 0; i < node->attributes.attribute_count; i++) {
         if(node->attributes.attributes[i].consumed) continue;

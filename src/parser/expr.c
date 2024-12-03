@@ -181,7 +181,7 @@ static hlir_node_t *parse_identifier(tokenizer_t *tokenizer) {
 static hlir_node_t *parse_primary(tokenizer_t *tokenizer) {
     token_t token = tokenizer_peek(tokenizer);
     switch(token.kind) {
-        case TOKEN_KIND_PARENTHESES_LEFT:
+        case TOKEN_KIND_PARENTHESES_LEFT: {
             token_t token_left_paren = util_consume(tokenizer, TOKEN_KIND_PARENTHESES_LEFT);
             hlir_node_t *value = parser_expr(tokenizer);
             if(util_try_consume(tokenizer, TOKEN_KIND_COMMA)) {
@@ -195,6 +195,7 @@ static hlir_node_t *parse_primary(tokenizer_t *tokenizer) {
             }
             util_consume(tokenizer, TOKEN_KIND_PARENTHESES_RIGHT);
             return value;
+        }
         case TOKEN_KIND_IDENTIFIER: return parse_identifier(tokenizer);
         case TOKEN_KIND_CONST_STRING: return parse_literal_string(tokenizer);
         case TOKEN_KIND_CONST_STRING_RAW: return parse_literal_string_raw(tokenizer);
@@ -205,6 +206,13 @@ static hlir_node_t *parse_primary(tokenizer_t *tokenizer) {
         case TOKEN_KIND_CONST_NUMBER_BIN:
         case TOKEN_KIND_CONST_NUMBER_OCT:
             return parse_literal_numeric(tokenizer);
+        case TOKEN_KIND_KEYWORD_SIZEOF: {
+            source_location_t source_location = util_loc(tokenizer, util_consume(tokenizer, TOKEN_KIND_KEYWORD_SIZEOF));
+            util_consume(tokenizer, TOKEN_KIND_PARENTHESES_LEFT);
+            hlir_type_t *type = util_parse_type(tokenizer);
+            util_consume(tokenizer, TOKEN_KIND_PARENTHESES_RIGHT);
+            return hlir_node_make_expr_sizeof(type, source_location);
+        }
         default: diag_error(util_loc(tokenizer, token), "expected primary, got %s", token_kind_stringify(token.kind));
     }
     __builtin_unreachable();
