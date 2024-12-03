@@ -227,3 +227,9 @@ hlir_node_t *hlir_node_make_expr_selector(const char *name, hlir_node_t *value, 
     node->expr_selector.value = value;
     return node;
 }
+
+hlir_node_t *hlir_node_make_expr_sizeof(hlir_type_t *type, source_location_t source_location) {
+    hlir_node_t *node = node_make(HLIR_NODE_TYPE_EXPR_SIZEOF, HLIR_ATTRIBUTE_LIST_INIT, source_location);
+    node->expr_sizeof.type = type;
+    return node;
+}

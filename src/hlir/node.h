@@ -46,6 +46,7 @@
         case HLIR_NODE_TYPE_EXPR_CAST: \
         case HLIR_NODE_TYPE_EXPR_SUBSCRIPT: \
         case HLIR_NODE_TYPE_EXPR_SELECTOR: \
+        case HLIR_NODE_TYPE_EXPR_SIZEOF: \
             BODY; break;
 
 typedef enum {
@@ -79,7 +80,8 @@ typedef enum {
     HLIR_NODE_TYPE_EXPR_TUPLE,
     HLIR_NODE_TYPE_EXPR_CAST,
     HLIR_NODE_TYPE_EXPR_SUBSCRIPT,
-    HLIR_NODE_TYPE_EXPR_SELECTOR
+    HLIR_NODE_TYPE_EXPR_SELECTOR,
+    HLIR_NODE_TYPE_EXPR_SIZEOF
 } hlir_node_type_t;
 
 typedef enum {
@@ -230,6 +232,9 @@ struct hlir_node {
             const char *name;
             hlir_node_t *value;
         } expr_selector;
+        struct {
+            hlir_type_t *type;
+        } expr_sizeof;
     };
     hlir_node_t *next;
 };
@@ -270,3 +275,4 @@ hlir_node_t *hlir_node_make_expr_subscript_index(hlir_node_t *value, hlir_node_t
 hlir_node_t *hlir_node_make_expr_subscript_index_const(hlir_node_t *value, uintmax_t index, source_location_t source_location);
 hlir_node_t *hlir_node_make_expr_subscript_member(hlir_node_t *value, const char *name, source_location_t source_location);
 hlir_node_t *hlir_node_make_expr_selector(const char *name, hlir_node_t *value, source_location_t source_location);
+hlir_node_t *hlir_node_make_expr_sizeof(hlir_type_t *type, source_location_t source_location);
