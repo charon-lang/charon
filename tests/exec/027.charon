@@ -1,0 +1,8 @@
+extern fn printf(fmt: *char, ...): i32;
+
+let x: uint = 100;
+let y: uint = 55 + 8;
+
+fn main() {
+    printf("%llu, %llu\n", x, y);
+}
