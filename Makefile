@@ -10,7 +10,7 @@ CFLAGS += $(shell llvm-config --cflags --ldflags --system-libs --libs core)
 C_SOURCES := $(shell find src -type f -name "*.c")
 
 ifeq ($(ENVIRONMENT), production)
-CFLAGS += -s
+CFLAGS += -s -O3
 else
 CFLAGS += -g -fsanitize=undefined
 endif
