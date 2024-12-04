@@ -1,0 +1,16 @@
+extern fn printf(fmt: *char, ...): i32;
+
+type Optional<T> struct {
+    present: bool;
+    value: T;
+}
+
+fn main() {
+    let a: Optional<uint>;
+    a.present = true;
+    a.value = 5;
+
+    let b: Optional<*char>;
+    b.present = true;
+    b.value = "Hello!";
+}
