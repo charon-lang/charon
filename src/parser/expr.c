@@ -104,9 +104,9 @@ static hlir_node_t *helper_binary_operation(tokenizer_t *tokenizer, hlir_node_t 
             case TOKEN_KIND_STAR: operation = HLIR_NODE_BINARY_OPERATION_MULTIPLICATION; break;
             case TOKEN_KIND_SLASH: operation = HLIR_NODE_BINARY_OPERATION_DIVISION; break;
             case TOKEN_KIND_PERCENTAGE: operation = HLIR_NODE_BINARY_OPERATION_MODULO; break;
-            case TOKEN_KIND_GREATER: operation = HLIR_NODE_BINARY_OPERATION_GREATER; break;
+            case TOKEN_KIND_CARET_RIGHT: operation = HLIR_NODE_BINARY_OPERATION_GREATER; break;
             case TOKEN_KIND_GREATER_EQUAL: operation = HLIR_NODE_BINARY_OPERATION_GREATER_EQUAL; break;
-            case TOKEN_KIND_LESS: operation = HLIR_NODE_BINARY_OPERATION_LESS; break;
+            case TOKEN_KIND_CARET_LEFT: operation = HLIR_NODE_BINARY_OPERATION_LESS; break;
             case TOKEN_KIND_LESS_EQUAL: operation = HLIR_NODE_BINARY_OPERATION_LESS_EQUAL; break;
             case TOKEN_KIND_EQUAL_EQUAL: operation = HLIR_NODE_BINARY_OPERATION_EQUAL; break;
             case TOKEN_KIND_NOT_EQUAL: operation = HLIR_NODE_BINARY_OPERATION_NOT_EQUAL; break;
@@ -290,7 +290,7 @@ static hlir_node_t *parse_shift(tokenizer_t *tokenizer) {
 }
 
 static hlir_node_t *parse_comparison(tokenizer_t *tokenizer) {
-    return helper_binary_operation(tokenizer, parse_shift, 4, TOKEN_KIND_GREATER, TOKEN_KIND_GREATER_EQUAL, TOKEN_KIND_LESS, TOKEN_KIND_LESS_EQUAL);
+    return helper_binary_operation(tokenizer, parse_shift, 4, TOKEN_KIND_CARET_RIGHT, TOKEN_KIND_GREATER_EQUAL, TOKEN_KIND_CARET_LEFT, TOKEN_KIND_LESS_EQUAL);
 }
 
 static hlir_node_t *parse_equality(tokenizer_t *tokenizer) {
