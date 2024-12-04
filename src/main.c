@@ -190,18 +190,18 @@ int main(int argc, char *argv[]) {
 
 static void compile(source_t **sources, size_t source_count, const char **dest_paths, bool ir, LLVMCodeModel code_model, const char *optstr) {
     struct {
-        allocator_t *allocator;
+        memory_allocator_t *allocator;
         hlir_node_t *root_node;
     } hlir_data[source_count];
 
     /* Parse: Source -> Tokens -> LLIR */
     for(size_t i = 0; i < source_count; i++) {
-        allocator_t *hlir_allocator = allocator_make();
+        memory_allocator_t *hlir_allocator = memory_allocator_make();
 
         tokenizer_t *tokenizer = tokenizer_make(sources[i]);
-        allocator_set_active(hlir_allocator);
+        memory_active_allocator_set(hlir_allocator);
         hlir_node_t *root_node = parser_root(tokenizer);
-        allocator_set_active(NULL);
+        memory_active_allocator_set(NULL);
         tokenizer_free(tokenizer);
 
         hlir_data[i].allocator = hlir_allocator;
@@ -209,8 +209,9 @@ static void compile(source_t **sources, size_t source_count, const char **dest_p
     }
 
     /* Lower: LLIR -> HLIR */
-    allocator_t *llir_allocator = allocator_make();
-    allocator_set_active(llir_allocator);
+    memory_allocator_t *llir_allocator = memory_allocator_make();
+    memory_allocator_t *work_allocator = memory_allocator_make();
+    memory_active_allocator_set(llir_allocator);
 
     llir_namespace_t *root_namespace = llir_namespace_make(NULL);
     llir_type_cache_t *anon_type_cache = llir_type_cache_make();
@@ -220,7 +221,8 @@ static void compile(source_t **sources, size_t source_count, const char **dest_p
     llir_node_t *llir_root_node[source_count];
     for(size_t i = 0; i < source_count; i++) llir_root_node[i] = lower_nodes(hlir_data[i].root_node, root_namespace, anon_type_cache);
 
-    for(size_t i = 0; i < source_count; i++) allocator_free(hlir_data[i].allocator);
+    for(size_t i = 0; i < source_count; i++) memory_allocator_free(hlir_data[i].allocator);
+    memory_allocator_free(work_allocator);
 
     /* Codegen: LLIR -> Binary */
     for(size_t i = 0; i < source_count; i++) {
@@ -231,6 +233,6 @@ static void compile(source_t **sources, size_t source_count, const char **dest_p
         }
     }
 
-    allocator_set_active(NULL);
-    allocator_free(llir_allocator);
+    memory_active_allocator_set(NULL);
+    memory_allocator_free(llir_allocator);
 }

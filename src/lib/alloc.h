@@ -1,16 +1,27 @@
 #pragma once
 
-#include <stddef.h>
+#include "lib/memory.h"
 
-typedef struct allocator allocator_t;
+#include <string.h>
 
-allocator_t *allocator_make();
-void allocator_free(allocator_t *allocator);
+static inline void *alloc(size_t size) {
+    return memory_allocate(memory_active_allocator_get(), size);
+}
 
-void allocator_set_active(allocator_t *allocator);
+static inline void *alloc_resize(void *ptr, size_t size) {
+    return memory_allocate_resize(memory_active_allocator_get(), ptr, size);
+}
 
-void *alloc(size_t size);
-void *alloc_resize(void *ptr, size_t size);
-void *alloc_array(void *array, size_t element_count, size_t element_size);
-char *alloc_strdup(const char *str);
-void alloc_free(void *ptr);
+static inline void *alloc_array(void *array, size_t element_count, size_t element_size) {
+    return memory_allocate_array(memory_active_allocator_get(), array, element_count, element_size);
+}
+
+static inline char *alloc_strdup(const char *str) {
+    char *ptr = strdup(str);
+    memory_register_ptr(memory_active_allocator_get(), ptr);
+    return ptr;
+}
+
+static inline void alloc_free(void *ptr) {
+    memory_free(memory_active_allocator_get(), ptr);
+}
