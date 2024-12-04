@@ -8,7 +8,18 @@ static hlir_node_t *parse_type(tokenizer_t *tokenizer, hlir_attribute_list_t att
     source_location_t source_location = util_loc(tokenizer, util_consume(tokenizer, TOKEN_KIND_KEYWORD_TYPE));
     token_t token_identifier = util_consume(tokenizer, TOKEN_KIND_IDENTIFIER);
 
-    return hlir_node_make_tlc_type_definition(util_text_make_from_token(tokenizer, token_identifier), util_parse_type(tokenizer), attributes, source_location);
+    const char **parameters = NULL;
+    size_t parameter_count = 0;
+    if(util_try_consume(tokenizer, TOKEN_KIND_CARET_LEFT)) {
+        do {
+            parameters = alloc_array(parameters, ++parameter_count, sizeof(const char *));
+            parameters[parameter_count - 1] = util_text_make_from_token(tokenizer, util_consume(tokenizer, TOKEN_KIND_IDENTIFIER));
+        } while(util_try_consume(tokenizer, TOKEN_KIND_COMMA));
+        util_consume(tokenizer, TOKEN_KIND_CARET_RIGHT);
+    }
+    hlir_type_t *type = util_parse_type(tokenizer);
+
+    return hlir_node_make_tlc_type_definition(util_text_make_from_token(tokenizer, token_identifier), type, parameter_count, parameters, attributes, source_location);
 }
 
 static hlir_node_t *parse_module(tokenizer_t *tokenizer, hlir_attribute_list_t attributes) {

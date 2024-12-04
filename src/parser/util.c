@@ -107,6 +107,18 @@ hlir_type_t *util_parse_type(tokenizer_t *tokenizer) {
         token_identifier = util_consume(tokenizer, TOKEN_KIND_IDENTIFIER);
     }
 
+    if(util_try_consume(tokenizer, TOKEN_KIND_CARET_LEFT)) {
+        size_t type_count = 0;
+        hlir_type_t **types = NULL;
+        do {
+            types = alloc_array(types, ++type_count, sizeof(hlir_type_t *));
+            types[type_count - 1] = util_parse_type(tokenizer);
+        } while(util_try_consume(tokenizer, TOKEN_KIND_COMMA));
+
+        util_consume(tokenizer, TOKEN_KIND_CARET_RIGHT);
+        return hlir_type_reference_make(util_text_make_from_token(tokenizer, token_identifier), module_count, modules, type_count, types, attributes);
+    }
+
     if(util_token_cmp(tokenizer, token_identifier, "bool") == 0) return hlir_type_integer_make(1, false, attributes);
     if(util_token_cmp(tokenizer, token_identifier, "char") == 0) return hlir_type_integer_make(CONSTANTS_CHAR_SIZE, false, attributes);
     if(util_token_cmp(tokenizer, token_identifier, "paddr") == 0) return hlir_type_integer_make(CONSTANTS_ADDRESS_SIZE, false, attributes);
@@ -129,7 +141,7 @@ hlir_type_t *util_parse_type(tokenizer_t *tokenizer) {
     if(util_token_cmp(tokenizer, token_identifier, "i32") == 0) return hlir_type_integer_make(32, true, attributes);
     if(util_token_cmp(tokenizer, token_identifier, "i64") == 0) return hlir_type_integer_make(64, true, attributes);
 
-    return hlir_type_reference_make(util_text_make_from_token(tokenizer, token_identifier), module_count, modules, attributes);
+    return hlir_type_reference_make(util_text_make_from_token(tokenizer, token_identifier), module_count, modules, 0, NULL, attributes);
 }
 
 hlir_type_function_t *util_parse_function_type(tokenizer_t *tokenizer, const char ***argument_names) {

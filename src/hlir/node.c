@@ -51,10 +51,12 @@ hlir_node_t *hlir_node_make_tlc_extern(const char *name, hlir_type_function_t *f
     return node;
 }
 
-hlir_node_t *hlir_node_make_tlc_type_definition(const char *name, hlir_type_t *type, hlir_attribute_list_t attributes, source_location_t source_location) {
+hlir_node_t *hlir_node_make_tlc_type_definition(const char *name, hlir_type_t *type, size_t generic_parameter_count, const char **generic_parameters, hlir_attribute_list_t attributes, source_location_t source_location) {
     hlir_node_t *node = node_make(HLIR_NODE_TYPE_TLC_TYPE_DEFINITION, attributes, source_location);
     node->tlc_type_definition.name = name;
     node->tlc_type_definition.type = type;
+    node->tlc_type_definition.generic_parameter_count = generic_parameter_count;
+    node->tlc_type_definition.generic_parameters = generic_parameters;
     return node;
 }
 

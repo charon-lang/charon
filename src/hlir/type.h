@@ -57,6 +57,8 @@ struct hlir_type {
             const char **modules;
             size_t module_count;
             const char *type_name;
+            size_t generic_parameter_count;
+            hlir_type_t **generic_parameters;
         } reference;
     };
 };
@@ -68,7 +70,7 @@ struct hlir_type_function {
     bool varargs;
 };
 
-hlir_type_t *hlir_type_reference_make(const char *type_name, size_t module_count, const char **modules, hlir_attribute_list_t attributes);
+hlir_type_t *hlir_type_reference_make(const char *type_name, size_t module_count, const char **modules, size_t generic_parameter_count, hlir_type_t **generic_parameters, hlir_attribute_list_t attributes);
 
 hlir_type_t *hlir_type_void_make(hlir_attribute_list_t attributes);
 hlir_type_t *hlir_type_integer_make(size_t bit_size, bool is_signed, hlir_attribute_list_t attributes);

@@ -29,12 +29,14 @@ hlir_type_t *hlir_type_integer_make(size_t bit_size, bool is_signed, hlir_attrib
     return type;
 }
 
-hlir_type_t *hlir_type_reference_make(const char *type_name, size_t module_count, const char **modules, hlir_attribute_list_t attributes) {
+hlir_type_t *hlir_type_reference_make(const char *type_name, size_t module_count, const char **modules, size_t generic_parameter_count, hlir_type_t **generic_parameters, hlir_attribute_list_t attributes) {
     hlir_type_t *type = alloc(sizeof(hlir_type_t));
     type->is_reference = true;
     type->reference.module_count = module_count;
     type->reference.modules = modules;
     type->reference.type_name = type_name;
+    type->reference.generic_parameter_count = generic_parameter_count;
+    type->reference.generic_parameters = generic_parameters;
     return type;
 }
 

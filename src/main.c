@@ -215,11 +215,12 @@ static void compile(source_t **sources, size_t source_count, const char **dest_p
 
     llir_namespace_t *root_namespace = llir_namespace_make(NULL);
     llir_type_cache_t *anon_type_cache = llir_type_cache_make();
+    lower_context_t *lower_context = lower_context_make(work_allocator, root_namespace, anon_type_cache);
 
-    for(size_t i = 0; i < source_count; i++) lower_populate_namespace(hlir_data[i].root_node, root_namespace, anon_type_cache);
+    for(size_t i = 0; i < source_count; i++) lower_populate_namespace(lower_context, hlir_data[i].root_node);
 
     llir_node_t *llir_root_node[source_count];
-    for(size_t i = 0; i < source_count; i++) llir_root_node[i] = lower_nodes(hlir_data[i].root_node, root_namespace, anon_type_cache);
+    for(size_t i = 0; i < source_count; i++) llir_root_node[i] = lower_nodes(lower_context, hlir_data[i].root_node);
 
     for(size_t i = 0; i < source_count; i++) memory_allocator_free(hlir_data[i].allocator);
     memory_allocator_free(work_allocator);
