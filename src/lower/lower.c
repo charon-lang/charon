@@ -514,7 +514,10 @@ static void populate_namespace_pass_one(lower_context_t *context, llir_namespace
             if(llir_namespace_exists_type(current_namespace, node->tlc_type_definition.name) || namespace_generics_find_generic(current_namespace_generics, node->tlc_type_definition.name) != NULL) diag_error(node->source_location, "type `%s` already exists", node->tlc_type_definition.name);
             if(node->tlc_type_definition.generic_parameter_count > 0) {
                 const char **parameters = memory_allocate_array(context->work_allocator, NULL, node->tlc_type_definition.generic_parameter_count, sizeof(const char *));
-                for(size_t i = 0; i < node->tlc_type_definition.generic_parameter_count; i++) parameters[i] = memory_register_ptr(context->work_allocator, strdup(node->tlc_type_definition.generic_parameters[i]));
+                for(size_t i = 0; i < node->tlc_type_definition.generic_parameter_count; i++) {
+                    parameters[i] = memory_register_ptr(context->work_allocator, strdup(node->tlc_type_definition.generic_parameters[i]));
+                    if(llir_namespace_exists_type(current_namespace, parameters[i]) || namespace_generics_find_generic(current_namespace_generics, parameters[i]) != NULL) diag_error(node->source_location, "generic parameter `%s` conflicts with existing type", parameters[i]);
+                }
                 namespace_generics_add(context, current_namespace_generics, memory_register_ptr(context->work_allocator, strdup(node->tlc_type_definition.name)), (generic_t) {
                     .base = node->tlc_type_definition.type,
                     .parameter_count = node->tlc_type_definition.generic_parameter_count,
