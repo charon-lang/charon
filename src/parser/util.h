@@ -2,8 +2,8 @@
 
 #include "lexer/tokenizer.h"
 #include "lexer/token.h"
-#include "hlir/type.h"
-#include "hlir/attribute.h"
+#include "ast/type.h"
+#include "ast/attribute.h"
 
 #include <stdint.h>
 
@@ -19,8 +19,8 @@ int util_token_cmp(tokenizer_t *tokenizer, token_t token, const char *string);
 
 uintmax_t util_number_make_from_token(tokenizer_t *tokenizer, token_t token);
 
-hlir_type_t *util_parse_type(tokenizer_t *tokenizer);
+ast_type_t *util_parse_type(tokenizer_t *tokenizer);
 
-hlir_type_function_t *util_parse_function_type(tokenizer_t *tokenizer, const char ***argument_names);
+ast_type_function_t *util_parse_function_type(tokenizer_t *tokenizer, const char ***argument_names);
 
-hlir_attribute_list_t util_parse_hlir_attributes(tokenizer_t *tokenizer);
+ast_attribute_list_t util_parse_ast_attributes(tokenizer_t *tokenizer);

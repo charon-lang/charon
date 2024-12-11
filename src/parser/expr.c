@@ -91,35 +91,35 @@ static bool helper_tokens_match(token_t token, size_t count, va_list list) {
     return false;
 }
 
-static hlir_node_t *helper_binary_operation(tokenizer_t *tokenizer, hlir_node_t *(*func)(tokenizer_t *), size_t count, ...) {
-    hlir_node_t *left = func(tokenizer);
+static ast_node_t *helper_binary_operation(tokenizer_t *tokenizer, ast_node_t *(*func)(tokenizer_t *), size_t count, ...) {
+    ast_node_t *left = func(tokenizer);
     va_list list;
     va_start(list, count);
     while(helper_tokens_match(tokenizer_peek(tokenizer), count, list)) {
         token_t token_operation = tokenizer_advance(tokenizer);
-        hlir_node_binary_operation_t operation;
+        ast_node_binary_operation_t operation;
         switch(token_operation.kind) {
-            case TOKEN_KIND_PLUS: operation = HLIR_NODE_BINARY_OPERATION_ADDITION; break;
-            case TOKEN_KIND_MINUS: operation = HLIR_NODE_BINARY_OPERATION_SUBTRACTION; break;
-            case TOKEN_KIND_STAR: operation = HLIR_NODE_BINARY_OPERATION_MULTIPLICATION; break;
-            case TOKEN_KIND_SLASH: operation = HLIR_NODE_BINARY_OPERATION_DIVISION; break;
-            case TOKEN_KIND_PERCENTAGE: operation = HLIR_NODE_BINARY_OPERATION_MODULO; break;
-            case TOKEN_KIND_CARET_RIGHT: operation = HLIR_NODE_BINARY_OPERATION_GREATER; break;
-            case TOKEN_KIND_GREATER_EQUAL: operation = HLIR_NODE_BINARY_OPERATION_GREATER_EQUAL; break;
-            case TOKEN_KIND_CARET_LEFT: operation = HLIR_NODE_BINARY_OPERATION_LESS; break;
-            case TOKEN_KIND_LESS_EQUAL: operation = HLIR_NODE_BINARY_OPERATION_LESS_EQUAL; break;
-            case TOKEN_KIND_EQUAL_EQUAL: operation = HLIR_NODE_BINARY_OPERATION_EQUAL; break;
-            case TOKEN_KIND_NOT_EQUAL: operation = HLIR_NODE_BINARY_OPERATION_NOT_EQUAL; break;
-            case TOKEN_KIND_LOGICAL_AND: operation = HLIR_NODE_BINARY_OPERATION_LOGICAL_AND; break;
-            case TOKEN_KIND_LOGICAL_OR: operation = HLIR_NODE_BINARY_OPERATION_LOGICAL_OR; break;
-            case TOKEN_KIND_SHIFT_LEFT: operation = HLIR_NODE_BINARY_OPERATION_SHIFT_LEFT; break;
-            case TOKEN_KIND_SHIFT_RIGHT: operation = HLIR_NODE_BINARY_OPERATION_SHIFT_RIGHT; break;
-            case TOKEN_KIND_AMPERSAND: operation = HLIR_NODE_BINARY_OPERATION_AND; break;
-            case TOKEN_KIND_PIPE: operation = HLIR_NODE_BINARY_OPERATION_OR; break;
-            case TOKEN_KIND_CARET: operation = HLIR_NODE_BINARY_OPERATION_XOR; break;
+            case TOKEN_KIND_PLUS: operation = AST_NODE_BINARY_OPERATION_ADDITION; break;
+            case TOKEN_KIND_MINUS: operation = AST_NODE_BINARY_OPERATION_SUBTRACTION; break;
+            case TOKEN_KIND_STAR: operation = AST_NODE_BINARY_OPERATION_MULTIPLICATION; break;
+            case TOKEN_KIND_SLASH: operation = AST_NODE_BINARY_OPERATION_DIVISION; break;
+            case TOKEN_KIND_PERCENTAGE: operation = AST_NODE_BINARY_OPERATION_MODULO; break;
+            case TOKEN_KIND_CARET_RIGHT: operation = AST_NODE_BINARY_OPERATION_GREATER; break;
+            case TOKEN_KIND_GREATER_EQUAL: operation = AST_NODE_BINARY_OPERATION_GREATER_EQUAL; break;
+            case TOKEN_KIND_CARET_LEFT: operation = AST_NODE_BINARY_OPERATION_LESS; break;
+            case TOKEN_KIND_LESS_EQUAL: operation = AST_NODE_BINARY_OPERATION_LESS_EQUAL; break;
+            case TOKEN_KIND_EQUAL_EQUAL: operation = AST_NODE_BINARY_OPERATION_EQUAL; break;
+            case TOKEN_KIND_NOT_EQUAL: operation = AST_NODE_BINARY_OPERATION_NOT_EQUAL; break;
+            case TOKEN_KIND_LOGICAL_AND: operation = AST_NODE_BINARY_OPERATION_LOGICAL_AND; break;
+            case TOKEN_KIND_LOGICAL_OR: operation = AST_NODE_BINARY_OPERATION_LOGICAL_OR; break;
+            case TOKEN_KIND_SHIFT_LEFT: operation = AST_NODE_BINARY_OPERATION_SHIFT_LEFT; break;
+            case TOKEN_KIND_SHIFT_RIGHT: operation = AST_NODE_BINARY_OPERATION_SHIFT_RIGHT; break;
+            case TOKEN_KIND_AMPERSAND: operation = AST_NODE_BINARY_OPERATION_AND; break;
+            case TOKEN_KIND_PIPE: operation = AST_NODE_BINARY_OPERATION_OR; break;
+            case TOKEN_KIND_CARET: operation = AST_NODE_BINARY_OPERATION_XOR; break;
             default: diag_error(util_loc(tokenizer, token_operation), "expected a binary operator");
         }
-        left = hlir_node_make_expr_binary(operation, left, func(tokenizer), util_loc(tokenizer, token_operation));
+        left = ast_node_make_expr_binary(operation, left, func(tokenizer), util_loc(tokenizer, token_operation));
         va_end(list);
         va_start(list, count);
     }
@@ -127,26 +127,26 @@ static hlir_node_t *helper_binary_operation(tokenizer_t *tokenizer, hlir_node_t 
     return left;
 }
 
-static hlir_node_t *parse_literal_numeric(tokenizer_t *tokenizer) {
+static ast_node_t *parse_literal_numeric(tokenizer_t *tokenizer) {
     token_t token_numeric = tokenizer_advance(tokenizer);
-    return hlir_node_make_expr_literal_numeric(util_number_make_from_token(tokenizer, token_numeric), util_loc(tokenizer, token_numeric));
+    return ast_node_make_expr_literal_numeric(util_number_make_from_token(tokenizer, token_numeric), util_loc(tokenizer, token_numeric));
 }
 
-static hlir_node_t *parse_literal_string(tokenizer_t *tokenizer) {
+static ast_node_t *parse_literal_string(tokenizer_t *tokenizer) {
     token_t token_string = util_consume(tokenizer, TOKEN_KIND_CONST_STRING);
     char *text = util_text_make_from_token_inset(tokenizer, token_string, 1);
     string_t value = helper_string_escape(util_loc(tokenizer, token_string), text, strlen(text));
     alloc_free(text);
-    return hlir_node_make_expr_literal_string(value.data, util_loc(tokenizer, token_string));
+    return ast_node_make_expr_literal_string(value.data, util_loc(tokenizer, token_string));
 }
 
-static hlir_node_t *parse_literal_string_raw(tokenizer_t *tokenizer) {
+static ast_node_t *parse_literal_string_raw(tokenizer_t *tokenizer) {
     token_t token_string = util_consume(tokenizer, TOKEN_KIND_CONST_STRING_RAW);
     char *value = util_text_make_from_token_inset(tokenizer, token_string, 2);
-    return hlir_node_make_expr_literal_string(value, util_loc(tokenizer, token_string));
+    return ast_node_make_expr_literal_string(value, util_loc(tokenizer, token_string));
 }
 
-static hlir_node_t *parse_literal_char(tokenizer_t *tokenizer) {
+static ast_node_t *parse_literal_char(tokenizer_t *tokenizer) {
     token_t token_char = util_consume(tokenizer, TOKEN_KIND_CONST_CHAR);
     char *text = util_text_make_from_token_inset(tokenizer, token_char, 1);
     string_t value = helper_string_escape(util_loc(tokenizer, token_char), text, strlen(text));
@@ -155,15 +155,15 @@ static hlir_node_t *parse_literal_char(tokenizer_t *tokenizer) {
     char value_char = value.data[0];
     alloc_free(value.data);
     alloc_free(text);
-    return hlir_node_make_expr_literal_char(value_char, util_loc(tokenizer, token_char));
+    return ast_node_make_expr_literal_char(value_char, util_loc(tokenizer, token_char));
 }
 
-static hlir_node_t *parse_literal_bool(tokenizer_t *tokenizer) {
+static ast_node_t *parse_literal_bool(tokenizer_t *tokenizer) {
     token_t token_bool = util_consume(tokenizer, TOKEN_KIND_CONST_BOOL);
-    return hlir_node_make_expr_literal_bool(util_token_cmp(tokenizer, token_bool, "true") == 0, util_loc(tokenizer, token_bool));
+    return ast_node_make_expr_literal_bool(util_token_cmp(tokenizer, token_bool, "true") == 0, util_loc(tokenizer, token_bool));
 }
 
-static hlir_node_t *parse_identifier(tokenizer_t *tokenizer) {
+static ast_node_t *parse_identifier(tokenizer_t *tokenizer) {
     token_t token_name = util_consume(tokenizer, TOKEN_KIND_IDENTIFIER);
     const char *name = util_text_make_from_token(tokenizer, token_name);
 
@@ -171,27 +171,27 @@ static hlir_node_t *parse_identifier(tokenizer_t *tokenizer) {
         case TOKEN_KIND_DOUBLE_COLON:
             util_consume(tokenizer, TOKEN_KIND_DOUBLE_COLON);
 
-            hlir_node_t *value = parse_identifier(tokenizer);
-            return hlir_node_make_expr_selector(name, value, util_loc(tokenizer, token_name));
-        default: return hlir_node_make_expr_variable(name, util_loc(tokenizer, token_name));
+            ast_node_t *value = parse_identifier(tokenizer);
+            return ast_node_make_expr_selector(name, value, util_loc(tokenizer, token_name));
+        default: return ast_node_make_expr_variable(name, util_loc(tokenizer, token_name));
     }
     __builtin_unreachable();
 }
 
-static hlir_node_t *parse_primary(tokenizer_t *tokenizer) {
+static ast_node_t *parse_primary(tokenizer_t *tokenizer) {
     token_t token = tokenizer_peek(tokenizer);
     switch(token.kind) {
         case TOKEN_KIND_PARENTHESES_LEFT: {
             token_t token_left_paren = util_consume(tokenizer, TOKEN_KIND_PARENTHESES_LEFT);
-            hlir_node_t *value = parser_expr(tokenizer);
+            ast_node_t *value = parser_expr(tokenizer);
             if(util_try_consume(tokenizer, TOKEN_KIND_COMMA)) {
-                hlir_node_list_t values = HLIR_NODE_LIST_INIT;
-                hlir_node_list_append(&values, value);
+                ast_node_list_t values = AST_NODE_LIST_INIT;
+                ast_node_list_append(&values, value);
                 do {
-                    hlir_node_list_append(&values, parser_expr(tokenizer));
+                    ast_node_list_append(&values, parser_expr(tokenizer));
                 } while(util_try_consume(tokenizer, TOKEN_KIND_COMMA));
                 util_consume(tokenizer, TOKEN_KIND_PARENTHESES_RIGHT);
-                return hlir_node_make_expr_tuple(values, util_loc(tokenizer, token_left_paren));
+                return ast_node_make_expr_tuple(values, util_loc(tokenizer, token_left_paren));
             }
             util_consume(tokenizer, TOKEN_KIND_PARENTHESES_RIGHT);
             return value;
@@ -209,132 +209,132 @@ static hlir_node_t *parse_primary(tokenizer_t *tokenizer) {
         case TOKEN_KIND_KEYWORD_SIZEOF: {
             source_location_t source_location = util_loc(tokenizer, util_consume(tokenizer, TOKEN_KIND_KEYWORD_SIZEOF));
             util_consume(tokenizer, TOKEN_KIND_PARENTHESES_LEFT);
-            hlir_type_t *type = util_parse_type(tokenizer);
+            ast_type_t *type = util_parse_type(tokenizer);
             util_consume(tokenizer, TOKEN_KIND_PARENTHESES_RIGHT);
-            return hlir_node_make_expr_sizeof(type, source_location);
+            return ast_node_make_expr_sizeof(type, source_location);
         }
         default: diag_error(util_loc(tokenizer, token), "expected primary, got %s", token_kind_stringify(token.kind));
     }
     __builtin_unreachable();
 }
 
-static hlir_node_t *parse_unary_post(tokenizer_t *tokenizer) {
-    hlir_node_t *value = parse_primary(tokenizer);
+static ast_node_t *parse_unary_post(tokenizer_t *tokenizer) {
+    ast_node_t *value = parse_primary(tokenizer);
     source_location_t source_location = util_loc(tokenizer, tokenizer_peek(tokenizer));
     while(true) {
         if(util_try_consume(tokenizer, TOKEN_KIND_KEYWORD_AS)) {
-            hlir_type_t *type = util_parse_type(tokenizer);
-            value = hlir_node_make_expr_cast(value, type, source_location);
+            ast_type_t *type = util_parse_type(tokenizer);
+            value = ast_node_make_expr_cast(value, type, source_location);
             continue;
         }
         if(util_try_consume(tokenizer, TOKEN_KIND_BRACKET_LEFT)) {
-            hlir_node_t *index = parser_expr(tokenizer);
+            ast_node_t *index = parser_expr(tokenizer);
             util_consume(tokenizer, TOKEN_KIND_BRACKET_RIGHT);
-            value = hlir_node_make_expr_subscript_index(value, index, source_location);
+            value = ast_node_make_expr_subscript_index(value, index, source_location);
             continue;
         }
         if(util_try_consume(tokenizer, TOKEN_KIND_PARENTHESES_LEFT)) {
-            hlir_node_list_t arguments = HLIR_NODE_LIST_INIT;
+            ast_node_list_t arguments = AST_NODE_LIST_INIT;
             if(tokenizer_peek(tokenizer).kind != TOKEN_KIND_PARENTHESES_RIGHT) {
                 do {
-                    hlir_node_list_append(&arguments, parser_expr(tokenizer));
+                    ast_node_list_append(&arguments, parser_expr(tokenizer));
                 } while(util_try_consume(tokenizer, TOKEN_KIND_COMMA));
             }
             util_consume(tokenizer, TOKEN_KIND_PARENTHESES_RIGHT);
-            value = hlir_node_make_expr_call(value, arguments, source_location);
+            value = ast_node_make_expr_call(value, arguments, source_location);
             continue;
         }
         if(util_try_consume(tokenizer, TOKEN_KIND_PERIOD)) {
             if(tokenizer_peek(tokenizer).kind == TOKEN_KIND_CONST_NUMBER_DEC) {
                 token_t token_index = util_consume(tokenizer, TOKEN_KIND_CONST_NUMBER_DEC);
                 uintmax_t index = util_number_make_from_token(tokenizer, token_index);
-                value = hlir_node_make_expr_subscript_index_const(value, index, source_location);
+                value = ast_node_make_expr_subscript_index_const(value, index, source_location);
             } else {
                 token_t token_member = util_consume(tokenizer, TOKEN_KIND_IDENTIFIER);
-                value = hlir_node_make_expr_subscript_member(value, util_text_make_from_token(tokenizer, token_member), source_location);
+                value = ast_node_make_expr_subscript_member(value, util_text_make_from_token(tokenizer, token_member), source_location);
             }
             continue;
         }
         if(util_try_consume(tokenizer, TOKEN_KIND_ARROW)) {
             token_t token_member = util_consume(tokenizer, TOKEN_KIND_IDENTIFIER);
-            value = hlir_node_make_expr_subscript_member(hlir_node_make_expr_unary(HLIR_NODE_UNARY_OPERATION_DEREF, value, source_location), util_text_make_from_token(tokenizer, token_member), source_location);
+            value = ast_node_make_expr_subscript_member(ast_node_make_expr_unary(AST_NODE_UNARY_OPERATION_DEREF, value, source_location), util_text_make_from_token(tokenizer, token_member), source_location);
             continue;
         }
         return value;
     }
 }
 
-static hlir_node_t *parse_unary_pre(tokenizer_t *tokenizer) {
-    hlir_node_unary_operation_t operation;
+static ast_node_t *parse_unary_pre(tokenizer_t *tokenizer) {
+    ast_node_unary_operation_t operation;
     switch(tokenizer_peek(tokenizer).kind) {
-        case TOKEN_KIND_STAR: operation = HLIR_NODE_UNARY_OPERATION_DEREF; break;
-        case TOKEN_KIND_MINUS: operation = HLIR_NODE_UNARY_OPERATION_NEGATIVE; break;
-        case TOKEN_KIND_NOT: operation = HLIR_NODE_UNARY_OPERATION_NOT; break;
-        case TOKEN_KIND_AMPERSAND: operation = HLIR_NODE_UNARY_OPERATION_REF; break;
+        case TOKEN_KIND_STAR: operation = AST_NODE_UNARY_OPERATION_DEREF; break;
+        case TOKEN_KIND_MINUS: operation = AST_NODE_UNARY_OPERATION_NEGATIVE; break;
+        case TOKEN_KIND_NOT: operation = AST_NODE_UNARY_OPERATION_NOT; break;
+        case TOKEN_KIND_AMPERSAND: operation = AST_NODE_UNARY_OPERATION_REF; break;
         default: return parse_unary_post(tokenizer);
     }
     token_t token_operator = tokenizer_advance(tokenizer);
-    return hlir_node_make_expr_unary(operation, parse_unary_pre(tokenizer), util_loc(tokenizer, token_operator));
+    return ast_node_make_expr_unary(operation, parse_unary_pre(tokenizer), util_loc(tokenizer, token_operator));
 }
 
-static hlir_node_t *parse_factor(tokenizer_t *tokenizer) {
+static ast_node_t *parse_factor(tokenizer_t *tokenizer) {
     return helper_binary_operation(tokenizer, parse_unary_pre, 3, TOKEN_KIND_STAR, TOKEN_KIND_SLASH, TOKEN_KIND_PERCENTAGE);
 }
 
-static hlir_node_t *parse_term(tokenizer_t *tokenizer) {
+static ast_node_t *parse_term(tokenizer_t *tokenizer) {
     return helper_binary_operation(tokenizer, parse_factor, 2, TOKEN_KIND_PLUS, TOKEN_KIND_MINUS);
 }
 
-static hlir_node_t *parse_shift(tokenizer_t *tokenizer) {
+static ast_node_t *parse_shift(tokenizer_t *tokenizer) {
     return helper_binary_operation(tokenizer, parse_term, 2, TOKEN_KIND_SHIFT_LEFT, TOKEN_KIND_SHIFT_RIGHT);
 }
 
-static hlir_node_t *parse_comparison(tokenizer_t *tokenizer) {
+static ast_node_t *parse_comparison(tokenizer_t *tokenizer) {
     return helper_binary_operation(tokenizer, parse_shift, 4, TOKEN_KIND_CARET_RIGHT, TOKEN_KIND_GREATER_EQUAL, TOKEN_KIND_CARET_LEFT, TOKEN_KIND_LESS_EQUAL);
 }
 
-static hlir_node_t *parse_equality(tokenizer_t *tokenizer) {
+static ast_node_t *parse_equality(tokenizer_t *tokenizer) {
     return helper_binary_operation(tokenizer, parse_comparison, 2, TOKEN_KIND_EQUAL_EQUAL, TOKEN_KIND_NOT_EQUAL);
 }
 
-static hlir_node_t *parse_bitwise_and(tokenizer_t *tokenizer) {
+static ast_node_t *parse_bitwise_and(tokenizer_t *tokenizer) {
     return helper_binary_operation(tokenizer, parse_equality, 1, TOKEN_KIND_AMPERSAND);
 }
 
-static hlir_node_t *parse_bitwise_xor(tokenizer_t *tokenizer) {
+static ast_node_t *parse_bitwise_xor(tokenizer_t *tokenizer) {
     return helper_binary_operation(tokenizer, parse_bitwise_and, 1, TOKEN_KIND_CARET);
 }
 
-static hlir_node_t *parse_bitwise_or(tokenizer_t *tokenizer) {
+static ast_node_t *parse_bitwise_or(tokenizer_t *tokenizer) {
     return helper_binary_operation(tokenizer, parse_bitwise_xor, 1, TOKEN_KIND_PIPE);
 }
 
-static hlir_node_t *parse_logical_and(tokenizer_t *tokenizer) {
+static ast_node_t *parse_logical_and(tokenizer_t *tokenizer) {
     return helper_binary_operation(tokenizer, parse_bitwise_or, 1, TOKEN_KIND_LOGICAL_AND);
 }
 
-static hlir_node_t *parse_logical_or(tokenizer_t *tokenizer) {
+static ast_node_t *parse_logical_or(tokenizer_t *tokenizer) {
     return helper_binary_operation(tokenizer, parse_logical_and, 1, TOKEN_KIND_LOGICAL_OR);
 }
 
-static hlir_node_t *parse_assignment(tokenizer_t *tokenizer) {
-    hlir_node_t *left = parse_logical_or(tokenizer);
-    hlir_node_binary_operation_t operation;
+static ast_node_t *parse_assignment(tokenizer_t *tokenizer) {
+    ast_node_t *left = parse_logical_or(tokenizer);
+    ast_node_binary_operation_t operation;
     switch(tokenizer_peek(tokenizer).kind) {
-        case TOKEN_KIND_EQUAL: operation = HLIR_NODE_BINARY_OPERATION_ASSIGN; break;
-        case TOKEN_KIND_PLUS_EQUAL: operation = HLIR_NODE_BINARY_OPERATION_ADDITION; break;
-        case TOKEN_KIND_MINUS_EQUAL: operation = HLIR_NODE_BINARY_OPERATION_SUBTRACTION; break;
-        case TOKEN_KIND_STAR_EQUAL: operation = HLIR_NODE_BINARY_OPERATION_MULTIPLICATION; break;
-        case TOKEN_KIND_SLASH_EQUAL: operation = HLIR_NODE_BINARY_OPERATION_DIVISION; break;
-        case TOKEN_KIND_PERCENTAGE_EQUAL: operation = HLIR_NODE_BINARY_OPERATION_MODULO; break;
+        case TOKEN_KIND_EQUAL: operation = AST_NODE_BINARY_OPERATION_ASSIGN; break;
+        case TOKEN_KIND_PLUS_EQUAL: operation = AST_NODE_BINARY_OPERATION_ADDITION; break;
+        case TOKEN_KIND_MINUS_EQUAL: operation = AST_NODE_BINARY_OPERATION_SUBTRACTION; break;
+        case TOKEN_KIND_STAR_EQUAL: operation = AST_NODE_BINARY_OPERATION_MULTIPLICATION; break;
+        case TOKEN_KIND_SLASH_EQUAL: operation = AST_NODE_BINARY_OPERATION_DIVISION; break;
+        case TOKEN_KIND_PERCENTAGE_EQUAL: operation = AST_NODE_BINARY_OPERATION_MODULO; break;
         default: return left;
     }
     token_t token_operation = tokenizer_advance(tokenizer);
-    hlir_node_t *right = parse_assignment(tokenizer);
-    if(operation != HLIR_NODE_BINARY_OPERATION_ASSIGN) right = hlir_node_make_expr_binary(operation, left, right, util_loc(tokenizer, token_operation));
-    return hlir_node_make_expr_binary(HLIR_NODE_BINARY_OPERATION_ASSIGN, left, right, util_loc(tokenizer, token_operation));
+    ast_node_t *right = parse_assignment(tokenizer);
+    if(operation != AST_NODE_BINARY_OPERATION_ASSIGN) right = ast_node_make_expr_binary(operation, left, right, util_loc(tokenizer, token_operation));
+    return ast_node_make_expr_binary(AST_NODE_BINARY_OPERATION_ASSIGN, left, right, util_loc(tokenizer, token_operation));
 }
 
-hlir_node_t *parser_expr(tokenizer_t *tokenizer) {
+ast_node_t *parser_expr(tokenizer_t *tokenizer) {
     return parse_assignment(tokenizer);
 }

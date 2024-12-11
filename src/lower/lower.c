@@ -8,7 +8,7 @@
 #include <string.h>
 
 typedef struct {
-    hlir_type_t *base;
+    ast_type_t *base;
     const char **parameters;
     size_t parameter_count;
 } generic_t;
@@ -30,7 +30,7 @@ struct namespace_generics {
 
 typedef struct {
     const char *name;
-    hlir_type_t *type;
+    ast_type_t *type;
 } generic_mapping_t;
 
 struct lower_context {
@@ -40,9 +40,9 @@ struct lower_context {
     namespace_generics_t *namespace_generics;
 };
 
-static ir_type_t *lower_type(lower_context_t *context, ir_namespace_t *current_namespace, namespace_generics_t *current_namespace_generics, hlir_type_t *type, source_location_t source_location);
-static ir_expr_t *lower_expr(lower_context_t *context, ir_namespace_t *current_namespace, ir_scope_t *scope, namespace_generics_t *current_namespace_generics, hlir_node_t *node);
-static ir_stmt_t *lower_stmt(lower_context_t *context, ir_namespace_t *current_namespace, ir_scope_t *scope, namespace_generics_t *current_namespace_generics, hlir_node_t *node);
+static ir_type_t *lower_type(lower_context_t *context, ir_namespace_t *current_namespace, namespace_generics_t *current_namespace_generics, ast_type_t *type, source_location_t source_location);
+static ir_expr_t *lower_expr(lower_context_t *context, ir_namespace_t *current_namespace, ir_scope_t *scope, namespace_generics_t *current_namespace_generics, ast_node_t *node);
+static ir_stmt_t *lower_stmt(lower_context_t *context, ir_namespace_t *current_namespace, ir_scope_t *scope, namespace_generics_t *current_namespace_generics, ast_node_t *node);
 
 static namespace_generics_t *namespace_generics_find_child(namespace_generics_t *namespace_generics, const char *name) {
     for(size_t i = 0; i < namespace_generics->child_count; i++) {
@@ -80,7 +80,7 @@ static generic_t *namespace_generics_find_generic(namespace_generics_t *namespac
     return NULL;
 }
 
-static ir_function_prototype_t lower_function_type(lower_context_t *context, ir_namespace_t *current_namespace, namespace_generics_t *current_namespace_generics, hlir_type_function_t *function_type, source_location_t source_location) {
+static ir_function_prototype_t lower_function_type(lower_context_t *context, ir_namespace_t *current_namespace, namespace_generics_t *current_namespace_generics, ast_type_function_t *function_type, source_location_t source_location) {
     ir_type_t **arguments = alloc_array(NULL, function_type->argument_count, sizeof(ir_type_t *));
     for(size_t i = 0; i < function_type->argument_count; i++) arguments[i] = lower_type(context, current_namespace, current_namespace_generics, function_type->arguments[i], source_location);
     return (ir_function_prototype_t) {
@@ -91,7 +91,7 @@ static ir_function_prototype_t lower_function_type(lower_context_t *context, ir_
     };
 }
 
-static ir_type_t *lower_type_ext(lower_context_t *context, ir_namespace_t *current_namespace, namespace_generics_t *current_namespace_generics, generic_mapping_t *generic_mappings, size_t generic_mapping_count, hlir_type_t *type, source_location_t source_location) {
+static ir_type_t *lower_type_ext(lower_context_t *context, ir_namespace_t *current_namespace, namespace_generics_t *current_namespace_generics, generic_mapping_t *generic_mappings, size_t generic_mapping_count, ast_type_t *type, source_location_t source_location) {
     if(type->is_reference) {
         if(type->reference.module_count == 0) {
             for(size_t i = 0; i < generic_mapping_count; i++) {
@@ -130,27 +130,27 @@ static ir_type_t *lower_type_ext(lower_context_t *context, ir_namespace_t *curre
 
     ir_type_t *new_type = NULL;
     switch(type->kind) {
-        case HLIR_TYPE_KIND_VOID:
+        case AST_TYPE_KIND_VOID:
             new_type = ir_type_cache_get_void(context->type_cache);
             break;
-        case HLIR_TYPE_KIND_INTEGER:
-            hlir_attribute_t *attr_allow_coerce_pointer = hlir_attribute_find(&type->attributes, "allow_coerce_pointer", NULL, 0);
+        case AST_TYPE_KIND_INTEGER:
+            ast_attribute_t *attr_allow_coerce_pointer = ast_attribute_find(&type->attributes, "allow_coerce_pointer", NULL, 0);
             new_type = ir_type_cache_get_integer(context->type_cache, type->integer.bit_size, type->integer.is_signed, attr_allow_coerce_pointer != NULL);
             break;
-        case HLIR_TYPE_KIND_POINTER:
+        case AST_TYPE_KIND_POINTER:
             new_type = ir_type_cache_get_pointer(context->type_cache, lower_type_ext(context, current_namespace, current_namespace_generics, generic_mappings, generic_mapping_count, type->pointer.pointee, source_location));
             break;
-        case HLIR_TYPE_KIND_TUPLE: {
+        case AST_TYPE_KIND_TUPLE: {
             ir_type_t **types = alloc_array(NULL, type->tuple.type_count, sizeof(ir_type_t *));
             for(size_t i = 0; i < type->tuple.type_count; i++) types[i] = lower_type_ext(context, current_namespace, current_namespace_generics, generic_mappings, generic_mapping_count, type->tuple.types[i], source_location);
             new_type = ir_type_cache_get_tuple(context->type_cache, type->tuple.type_count, types);
             break;
         }
-        case HLIR_TYPE_KIND_ARRAY:
+        case AST_TYPE_KIND_ARRAY:
             new_type = ir_type_cache_get_array(context->type_cache, lower_type_ext(context, current_namespace, current_namespace_generics, generic_mappings, generic_mapping_count, type->array.type, source_location), type->array.size);
             break;
-        case HLIR_TYPE_KIND_STRUCTURE: {
-            hlir_attribute_t *attr_packed = hlir_attribute_find(&type->attributes, "packed", NULL, 0);
+        case AST_TYPE_KIND_STRUCTURE: {
+            ast_attribute_t *attr_packed = ast_attribute_find(&type->attributes, "packed", NULL, 0);
             ir_type_structure_member_t *members = alloc_array(NULL, type->structure.member_count, sizeof(ir_type_structure_member_t));
             for(size_t i = 0; i < type->structure.member_count; i++) {
                 for(size_t j = i + 1; j < type->structure.member_count; j++) if(strcmp(type->structure.members[i].name, type->structure.members[j].name) == 0) diag_error(source_location, "duplicate member `%s`", type->structure.members[i].name);
@@ -163,7 +163,7 @@ static ir_type_t *lower_type_ext(lower_context_t *context, ir_namespace_t *curre
             new_type = ir_type_cache_get_structure(context->type_cache, type->structure.member_count, members, attr_packed != NULL);
             break;
         }
-        case HLIR_TYPE_KIND_FUNCTION_REFERENCE: {
+        case AST_TYPE_KIND_FUNCTION_REFERENCE: {
             new_type = ir_type_cache_get_function_reference(context->type_cache, lower_function_type(context, current_namespace, current_namespace_generics, type->function_reference.function_type, source_location));
             break;
         }
@@ -176,27 +176,27 @@ static ir_type_t *lower_type_ext(lower_context_t *context, ir_namespace_t *curre
     return new_type;
 }
 
-static ir_type_t *lower_type(lower_context_t *context, ir_namespace_t *current_namespace, namespace_generics_t *current_namespace_generics, hlir_type_t *type, source_location_t source_location) {
+static ir_type_t *lower_type(lower_context_t *context, ir_namespace_t *current_namespace, namespace_generics_t *current_namespace_generics, ast_type_t *type, source_location_t source_location) {
     return lower_type_ext(context, current_namespace, current_namespace_generics, NULL, 0, type, source_location);
 }
 
-static void lower_tlc(lower_context_t *context, ir_namespace_t *current_namespace, ir_scope_t *scope, namespace_generics_t *current_namespace_generics, hlir_node_t *node) {
+static void lower_tlc(lower_context_t *context, ir_namespace_t *current_namespace, ir_scope_t *scope, namespace_generics_t *current_namespace_generics, ast_node_t *node) {
     assert(node != NULL);
 
     switch(node->type) {
-        case HLIR_NODE_TYPE_ROOT: HLIR_NODE_LIST_FOREACH(&node->root.tlcs, lower_tlc(context, current_namespace, scope, current_namespace_generics, node)); break;
+        case AST_NODE_TYPE_ROOT: AST_NODE_LIST_FOREACH(&node->root.tlcs, lower_tlc(context, current_namespace, scope, current_namespace_generics, node)); break;
 
-        case HLIR_NODE_TYPE_TLC_MODULE: {
+        case AST_NODE_TYPE_TLC_MODULE: {
             ir_symbol_t *symbol = ir_namespace_find_symbol_of_kind(current_namespace, node->tlc_module.name, IR_SYMBOL_KIND_MODULE);
             assert(symbol != NULL);
 
             namespace_generics_t *child_generics = namespace_generics_find_child(current_namespace_generics, node->tlc_module.name);
             assert(child_generics != NULL);
 
-            HLIR_NODE_LIST_FOREACH(&node->tlc_module.tlcs, lower_tlc(context, &symbol->module->namespace, scope, child_generics, node));
+            AST_NODE_LIST_FOREACH(&node->tlc_module.tlcs, lower_tlc(context, &symbol->module->namespace, scope, child_generics, node));
             break;
         }
-        case HLIR_NODE_TYPE_TLC_FUNCTION: {
+        case AST_NODE_TYPE_TLC_FUNCTION: {
             ir_symbol_t *symbol = ir_namespace_find_symbol_of_kind(current_namespace, node->tlc_function.name, IR_SYMBOL_KIND_FUNCTION);
             assert(symbol != NULL);
 
@@ -215,7 +215,7 @@ static void lower_tlc(lower_context_t *context, ir_namespace_t *current_namespac
             symbol->function->statement = node->tlc_function.statement == NULL ? NULL : lower_stmt(context, current_namespace, new_scope, current_namespace_generics, node->tlc_function.statement);
             break;
         }
-        case HLIR_NODE_TYPE_TLC_DECLARATION: {
+        case AST_NODE_TYPE_TLC_DECLARATION: {
             ir_symbol_t *symbol = ir_namespace_find_symbol_of_kind(current_namespace, node->tlc_declaration.name, IR_SYMBOL_KIND_VARIABLE);
             assert(symbol != NULL);
 
@@ -227,9 +227,9 @@ static void lower_tlc(lower_context_t *context, ir_namespace_t *current_namespac
             symbol->variable->initial_value = initial;
             break;
         }
-        case HLIR_NODE_TYPE_TLC_EXTERN: break;
-        case HLIR_NODE_TYPE_TLC_TYPE_DEFINITION: break;
-        case HLIR_NODE_TYPE_TLC_ENUMERATION: break;
+        case AST_NODE_TYPE_TLC_EXTERN: break;
+        case AST_NODE_TYPE_TLC_TYPE_DEFINITION: break;
+        case AST_NODE_TYPE_TLC_ENUMERATION: break;
         default: assert(false);
     }
     for(size_t i = 0; i < node->attributes.attribute_count; i++) {
@@ -238,28 +238,28 @@ static void lower_tlc(lower_context_t *context, ir_namespace_t *current_namespac
     }
 }
 
-static ir_stmt_t *lower_stmt(lower_context_t *context, ir_namespace_t *current_namespace, ir_scope_t *scope, namespace_generics_t *current_namespace_generics, hlir_node_t *node) {
+static ir_stmt_t *lower_stmt(lower_context_t *context, ir_namespace_t *current_namespace, ir_scope_t *scope, namespace_generics_t *current_namespace_generics, ast_node_t *node) {
     assert(node != NULL);
 
     ir_stmt_t *stmt = alloc(sizeof(ir_stmt_t));
     stmt->source_location = node->source_location;
 
     switch(node->type) {
-        case HLIR_NODE_TYPE_STMT_BLOCK: {
+        case AST_NODE_TYPE_STMT_BLOCK: {
             ir_scope_t *new_scope = alloc(sizeof(ir_scope_t));
             new_scope->parent = scope;
             new_scope->variable_count = 0;
             new_scope->variables = NULL;
 
             vector_stmt_t statements = vector_stmt_init();
-            HLIR_NODE_LIST_FOREACH(&node->stmt_block.statements, vector_stmt_append(&statements, lower_stmt(context, current_namespace, new_scope, current_namespace_generics, node)));
+            AST_NODE_LIST_FOREACH(&node->stmt_block.statements, vector_stmt_append(&statements, lower_stmt(context, current_namespace, new_scope, current_namespace_generics, node)));
 
             stmt->kind = IR_STMT_KIND_BLOCK;
             stmt->block.scope = new_scope;
             stmt->block.statements = statements;
             break;
         }
-        case HLIR_NODE_TYPE_STMT_DECLARATION: {
+        case AST_NODE_TYPE_STMT_DECLARATION: {
             ir_variable_t *variable = ir_scope_find_variable(scope, node->stmt_declaration.name);
             if(variable != NULL) {
                 if(variable->is_local && variable->scope == scope) diag_error(node->source_location, "redeclaration of `%s`", node->stmt_declaration.name);
@@ -274,32 +274,32 @@ static ir_stmt_t *lower_stmt(lower_context_t *context, ir_namespace_t *current_n
             stmt->declaration.variable = ir_scope_add(scope, alloc_strdup(node->stmt_declaration.name), type, initial);
             break;
         }
-        case HLIR_NODE_TYPE_STMT_EXPRESSION: {
+        case AST_NODE_TYPE_STMT_EXPRESSION: {
             stmt->kind = IR_STMT_KIND_EXPRESSION;
             stmt->expression.expression = lower_expr(context, current_namespace, scope, current_namespace_generics, node->stmt_expression.expression);
             break;
         }
-        case HLIR_NODE_TYPE_STMT_RETURN: {
+        case AST_NODE_TYPE_STMT_RETURN: {
             stmt->kind = IR_STMT_KIND_RETURN;
             stmt->_return.value = node->stmt_return.value == NULL ? NULL : lower_expr(context, current_namespace, scope, current_namespace_generics, node->stmt_return.value);
             break;
         }
-        case HLIR_NODE_TYPE_STMT_IF: {
+        case AST_NODE_TYPE_STMT_IF: {
             stmt->kind = IR_STMT_KIND_IF;
             stmt->_if.condition = lower_expr(context, current_namespace, scope, current_namespace_generics, node->stmt_if.condition);
             stmt->_if.body = node->stmt_if.body == NULL ? NULL : lower_stmt(context, current_namespace, scope, current_namespace_generics, node->stmt_if.body);
             stmt->_if.else_body = node->stmt_if.else_body == NULL ? NULL : lower_stmt(context, current_namespace, scope, current_namespace_generics, node->stmt_if.else_body);
             break;
         }
-        case HLIR_NODE_TYPE_STMT_WHILE: {
+        case AST_NODE_TYPE_STMT_WHILE: {
             stmt->kind = IR_STMT_KIND_WHILE;
             stmt->_while.condition = node->stmt_while.condition == NULL ? NULL : lower_expr(context, current_namespace, scope, current_namespace_generics, node->stmt_while.condition);
             stmt->_while.body = node->stmt_while.body == NULL ? NULL : lower_stmt(context, current_namespace, scope, current_namespace_generics, node->stmt_while.body);
             break;
         }
-        case HLIR_NODE_TYPE_STMT_CONTINUE: stmt->kind = IR_STMT_KIND_CONTINUE; break;
-        case HLIR_NODE_TYPE_STMT_BREAK: stmt->kind = IR_STMT_KIND_BREAK; break;
-        case HLIR_NODE_TYPE_STMT_FOR: {
+        case AST_NODE_TYPE_STMT_CONTINUE: stmt->kind = IR_STMT_KIND_CONTINUE; break;
+        case AST_NODE_TYPE_STMT_BREAK: stmt->kind = IR_STMT_KIND_BREAK; break;
+        case AST_NODE_TYPE_STMT_FOR: {
             ir_scope_t *new_scope = alloc(sizeof(ir_scope_t));
             new_scope->parent = scope;
             new_scope->variable_count = 0;
@@ -322,7 +322,7 @@ static ir_stmt_t *lower_stmt(lower_context_t *context, ir_namespace_t *current_n
     return stmt;
 }
 
-static ir_expr_t *lower_expr(lower_context_t *context, ir_namespace_t *current_namespace, ir_scope_t *scope, namespace_generics_t *current_namespace_generics, hlir_node_t *node) {
+static ir_expr_t *lower_expr(lower_context_t *context, ir_namespace_t *current_namespace, ir_scope_t *scope, namespace_generics_t *current_namespace_generics, ast_node_t *node) {
     assert(node != NULL);
 
     ir_expr_t *expr = alloc(sizeof(ir_expr_t));
@@ -331,53 +331,53 @@ static ir_expr_t *lower_expr(lower_context_t *context, ir_namespace_t *current_n
     expr->is_const = false;
 
     switch(node->type) {
-        case HLIR_NODE_TYPE_EXPR_LITERAL_NUMERIC: {
+        case AST_NODE_TYPE_EXPR_LITERAL_NUMERIC: {
             expr->kind = IR_EXPR_KIND_LITERAL_NUMERIC;
             expr->is_const = true;
             expr->literal.numeric_value = node->expr_literal.numeric_value;
             break;
         }
-        case HLIR_NODE_TYPE_EXPR_LITERAL_STRING: {
+        case AST_NODE_TYPE_EXPR_LITERAL_STRING: {
             expr->kind = IR_EXPR_KIND_LITERAL_STRING;
             expr->is_const = true;
             expr->literal.string_value = alloc_strdup(node->expr_literal.string_value);
             break;
         }
-        case HLIR_NODE_TYPE_EXPR_LITERAL_CHAR: {
+        case AST_NODE_TYPE_EXPR_LITERAL_CHAR: {
             expr->kind = IR_EXPR_KIND_LITERAL_CHAR;
             expr->is_const = true;
             expr->literal.char_value = node->expr_literal.char_value;
             break;
         }
-        case HLIR_NODE_TYPE_EXPR_LITERAL_BOOL: {
+        case AST_NODE_TYPE_EXPR_LITERAL_BOOL: {
             expr->kind = IR_EXPR_KIND_LITERAL_BOOL;
             expr->type = NULL;
             expr->is_const = true;
             expr->literal.bool_value = node->expr_literal.bool_value;
             break;
         }
-        case HLIR_NODE_TYPE_EXPR_BINARY: {
+        case AST_NODE_TYPE_EXPR_BINARY: {
             ir_binary_operation_t operation;
             switch(node->expr_binary.operation) {
-                case HLIR_NODE_BINARY_OPERATION_ASSIGN: operation = IR_BINARY_OPERATION_ASSIGN; break;
-                case HLIR_NODE_BINARY_OPERATION_ADDITION: operation = IR_BINARY_OPERATION_ADDITION; break;
-                case HLIR_NODE_BINARY_OPERATION_SUBTRACTION: operation = IR_BINARY_OPERATION_SUBTRACTION; break;
-                case HLIR_NODE_BINARY_OPERATION_MULTIPLICATION: operation = IR_BINARY_OPERATION_MULTIPLICATION; break;
-                case HLIR_NODE_BINARY_OPERATION_DIVISION: operation = IR_BINARY_OPERATION_DIVISION; break;
-                case HLIR_NODE_BINARY_OPERATION_MODULO: operation = IR_BINARY_OPERATION_MODULO; break;
-                case HLIR_NODE_BINARY_OPERATION_GREATER: operation = IR_BINARY_OPERATION_GREATER; break;
-                case HLIR_NODE_BINARY_OPERATION_GREATER_EQUAL: operation = IR_BINARY_OPERATION_GREATER_EQUAL; break;
-                case HLIR_NODE_BINARY_OPERATION_LESS: operation = IR_BINARY_OPERATION_LESS; break;
-                case HLIR_NODE_BINARY_OPERATION_LESS_EQUAL: operation = IR_BINARY_OPERATION_LESS_EQUAL; break;
-                case HLIR_NODE_BINARY_OPERATION_EQUAL: operation = IR_BINARY_OPERATION_EQUAL; break;
-                case HLIR_NODE_BINARY_OPERATION_NOT_EQUAL: operation = IR_BINARY_OPERATION_NOT_EQUAL; break;
-                case HLIR_NODE_BINARY_OPERATION_LOGICAL_AND: operation = IR_BINARY_OPERATION_LOGICAL_AND; break;
-                case HLIR_NODE_BINARY_OPERATION_LOGICAL_OR: operation = IR_BINARY_OPERATION_LOGICAL_OR; break;
-                case HLIR_NODE_BINARY_OPERATION_SHIFT_LEFT: operation = IR_BINARY_OPERATION_SHIFT_LEFT; break;
-                case HLIR_NODE_BINARY_OPERATION_SHIFT_RIGHT: operation = IR_BINARY_OPERATION_SHIFT_RIGHT; break;
-                case HLIR_NODE_BINARY_OPERATION_AND: operation = IR_BINARY_OPERATION_AND; break;
-                case HLIR_NODE_BINARY_OPERATION_OR: operation = IR_BINARY_OPERATION_OR; break;
-                case HLIR_NODE_BINARY_OPERATION_XOR: operation = IR_BINARY_OPERATION_XOR; break;
+                case AST_NODE_BINARY_OPERATION_ASSIGN: operation = IR_BINARY_OPERATION_ASSIGN; break;
+                case AST_NODE_BINARY_OPERATION_ADDITION: operation = IR_BINARY_OPERATION_ADDITION; break;
+                case AST_NODE_BINARY_OPERATION_SUBTRACTION: operation = IR_BINARY_OPERATION_SUBTRACTION; break;
+                case AST_NODE_BINARY_OPERATION_MULTIPLICATION: operation = IR_BINARY_OPERATION_MULTIPLICATION; break;
+                case AST_NODE_BINARY_OPERATION_DIVISION: operation = IR_BINARY_OPERATION_DIVISION; break;
+                case AST_NODE_BINARY_OPERATION_MODULO: operation = IR_BINARY_OPERATION_MODULO; break;
+                case AST_NODE_BINARY_OPERATION_GREATER: operation = IR_BINARY_OPERATION_GREATER; break;
+                case AST_NODE_BINARY_OPERATION_GREATER_EQUAL: operation = IR_BINARY_OPERATION_GREATER_EQUAL; break;
+                case AST_NODE_BINARY_OPERATION_LESS: operation = IR_BINARY_OPERATION_LESS; break;
+                case AST_NODE_BINARY_OPERATION_LESS_EQUAL: operation = IR_BINARY_OPERATION_LESS_EQUAL; break;
+                case AST_NODE_BINARY_OPERATION_EQUAL: operation = IR_BINARY_OPERATION_EQUAL; break;
+                case AST_NODE_BINARY_OPERATION_NOT_EQUAL: operation = IR_BINARY_OPERATION_NOT_EQUAL; break;
+                case AST_NODE_BINARY_OPERATION_LOGICAL_AND: operation = IR_BINARY_OPERATION_LOGICAL_AND; break;
+                case AST_NODE_BINARY_OPERATION_LOGICAL_OR: operation = IR_BINARY_OPERATION_LOGICAL_OR; break;
+                case AST_NODE_BINARY_OPERATION_SHIFT_LEFT: operation = IR_BINARY_OPERATION_SHIFT_LEFT; break;
+                case AST_NODE_BINARY_OPERATION_SHIFT_RIGHT: operation = IR_BINARY_OPERATION_SHIFT_RIGHT; break;
+                case AST_NODE_BINARY_OPERATION_AND: operation = IR_BINARY_OPERATION_AND; break;
+                case AST_NODE_BINARY_OPERATION_OR: operation = IR_BINARY_OPERATION_OR; break;
+                case AST_NODE_BINARY_OPERATION_XOR: operation = IR_BINARY_OPERATION_XOR; break;
             }
 
             ir_expr_t *left = lower_expr(context, current_namespace, scope, current_namespace_generics, node->expr_binary.left);
@@ -390,13 +390,13 @@ static ir_expr_t *lower_expr(lower_context_t *context, ir_namespace_t *current_n
             expr->binary.right = right;
             break;
         }
-        case HLIR_NODE_TYPE_EXPR_UNARY: {
+        case AST_NODE_TYPE_EXPR_UNARY: {
             ir_unary_operation_t operation;
             switch(node->expr_unary.operation) {
-                case HLIR_NODE_UNARY_OPERATION_NOT: operation = IR_UNARY_OPERATION_NOT; break;
-                case HLIR_NODE_UNARY_OPERATION_NEGATIVE: operation = IR_UNARY_OPERATION_NEGATIVE; break;
-                case HLIR_NODE_UNARY_OPERATION_DEREF: operation = IR_UNARY_OPERATION_DEREF; break;
-                case HLIR_NODE_UNARY_OPERATION_REF: operation = IR_UNARY_OPERATION_REF; break;
+                case AST_NODE_UNARY_OPERATION_NOT: operation = IR_UNARY_OPERATION_NOT; break;
+                case AST_NODE_UNARY_OPERATION_NEGATIVE: operation = IR_UNARY_OPERATION_NEGATIVE; break;
+                case AST_NODE_UNARY_OPERATION_DEREF: operation = IR_UNARY_OPERATION_DEREF; break;
+                case AST_NODE_UNARY_OPERATION_REF: operation = IR_UNARY_OPERATION_REF; break;
             }
 
             ir_expr_t *operand = lower_expr(context, current_namespace, scope, current_namespace_generics, node->expr_unary.operand);
@@ -407,7 +407,7 @@ static ir_expr_t *lower_expr(lower_context_t *context, ir_namespace_t *current_n
             expr->unary.operand = operand;
             break;
         }
-        case HLIR_NODE_TYPE_EXPR_VARIABLE: {
+        case AST_NODE_TYPE_EXPR_VARIABLE: {
             expr->kind = IR_EXPR_KIND_VARIABLE;
             expr->is_const = false; // TODO: if we can resolve const variables here... could be
 
@@ -434,9 +434,9 @@ static ir_expr_t *lower_expr(lower_context_t *context, ir_namespace_t *current_n
             }
             break;
         }
-        case HLIR_NODE_TYPE_EXPR_TUPLE: {
+        case AST_NODE_TYPE_EXPR_TUPLE: {
             vector_expr_t values = vector_expr_init();
-            HLIR_NODE_LIST_FOREACH(&node->expr_tuple.values, vector_expr_append(&values, lower_expr(context, current_namespace, scope, current_namespace_generics, node)));
+            AST_NODE_LIST_FOREACH(&node->expr_tuple.values, vector_expr_append(&values, lower_expr(context, current_namespace, scope, current_namespace_generics, node)));
 
             expr->kind = IR_EXPR_KIND_TUPLE;
             expr->is_const = true;
@@ -444,16 +444,16 @@ static ir_expr_t *lower_expr(lower_context_t *context, ir_namespace_t *current_n
             expr->tuple.values = values;
             break;
         }
-        case HLIR_NODE_TYPE_EXPR_CALL: {
+        case AST_NODE_TYPE_EXPR_CALL: {
             vector_expr_t arguments = vector_expr_init();
-            HLIR_NODE_LIST_FOREACH(&node->expr_call.arguments, vector_expr_append(&arguments, lower_expr(context, current_namespace, scope, current_namespace_generics, node)));
+            AST_NODE_LIST_FOREACH(&node->expr_call.arguments, vector_expr_append(&arguments, lower_expr(context, current_namespace, scope, current_namespace_generics, node)));
 
             expr->kind = IR_EXPR_KIND_CALL;
             expr->call.function_reference = lower_expr(context, current_namespace, scope, current_namespace_generics, node->expr_call.function_reference);
             expr->call.arguments = arguments;
             break;
         }
-        case HLIR_NODE_TYPE_EXPR_CAST: {
+        case AST_NODE_TYPE_EXPR_CAST: {
             ir_expr_t *value = lower_expr(context, current_namespace, scope, current_namespace_generics, node->expr_cast.value);
 
             expr->kind = IR_EXPR_KIND_CAST;
@@ -462,22 +462,22 @@ static ir_expr_t *lower_expr(lower_context_t *context, ir_namespace_t *current_n
             expr->cast.value = value;
             break;
         }
-        case HLIR_NODE_TYPE_EXPR_SUBSCRIPT: {
+        case AST_NODE_TYPE_EXPR_SUBSCRIPT: {
             ir_expr_t *value = lower_expr(context, current_namespace, scope, current_namespace_generics, node->expr_subscript.value);
 
             expr->kind = IR_EXPR_KIND_SUBSCRIPT;
             expr->subscript.value = value;
             switch(node->expr_subscript.type) {
-                case HLIR_NODE_SUBSCRIPT_TYPE_INDEX:
+                case AST_NODE_SUBSCRIPT_TYPE_INDEX:
                     expr->subscript.kind = IR_SUBSCRIPT_KIND_INDEX;
                     expr->subscript.index = lower_expr(context, current_namespace, scope, current_namespace_generics, node->expr_subscript.index);
                     break;
-                case HLIR_NODE_SUBSCRIPT_TYPE_INDEX_CONST:
+                case AST_NODE_SUBSCRIPT_TYPE_INDEX_CONST:
                     expr->is_const = value->is_const;
                     expr->subscript.kind = IR_SUBSCRIPT_KIND_INDEX_CONST;
                     expr->subscript.index_const = node->expr_subscript.index_const;
                     break;
-                case HLIR_NODE_SUBSCRIPT_TYPE_MEMBER:
+                case AST_NODE_SUBSCRIPT_TYPE_MEMBER:
                     expr->is_const = value->is_const;
                     expr->subscript.kind = IR_SUBSCRIPT_KIND_MEMBER;
                     expr->subscript.member = alloc_strdup(node->expr_subscript.member);
@@ -485,7 +485,7 @@ static ir_expr_t *lower_expr(lower_context_t *context, ir_namespace_t *current_n
             }
             break;
         }
-        case HLIR_NODE_TYPE_EXPR_SELECTOR: {
+        case AST_NODE_TYPE_EXPR_SELECTOR: {
             ir_symbol_t *symbol = ir_namespace_find_symbol_of_kind(current_namespace, node->expr_selector.name, IR_SYMBOL_KIND_MODULE);
             if(symbol == NULL) {
                 symbol = ir_namespace_find_symbol_of_kind(&context->unit->root_namespace, node->expr_selector.name, IR_SYMBOL_KIND_MODULE);
@@ -510,7 +510,7 @@ static ir_expr_t *lower_expr(lower_context_t *context, ir_namespace_t *current_n
                 if(symbol == NULL) diag_error(node->source_location, "unknown selector `%s`", node->expr_selector.name);
             }
 
-            if(node->expr_selector.value->type != HLIR_NODE_TYPE_EXPR_VARIABLE) diag_error(node->source_location, "invalid operation on enum");
+            if(node->expr_selector.value->type != AST_NODE_TYPE_EXPR_VARIABLE) diag_error(node->source_location, "invalid operation on enum");
 
             for(size_t i = 0; i < symbol->enumeration->type->enumeration.member_count; i++) {
                 if(strcmp(node->expr_selector.value->expr_variable.name, symbol->enumeration->members[i]) != 0) continue;
@@ -524,7 +524,7 @@ static ir_expr_t *lower_expr(lower_context_t *context, ir_namespace_t *current_n
             enumeration_success:
             break;
         }
-        case HLIR_NODE_TYPE_EXPR_SIZEOF: {
+        case AST_NODE_TYPE_EXPR_SIZEOF: {
             expr->kind = IR_EXPR_KIND_SIZEOF;
             expr->is_const = true;
             expr->_sizeof.type = lower_type(context, current_namespace, current_namespace_generics, node->expr_sizeof.type, node->source_location);
@@ -535,27 +535,27 @@ static ir_expr_t *lower_expr(lower_context_t *context, ir_namespace_t *current_n
     return expr;
 }
 
-static void populate_namespace_pass_two(lower_context_t *context, ir_module_t *current_module, namespace_generics_t *current_namespace_generics, hlir_node_t *node) {
+static void populate_namespace_pass_two(lower_context_t *context, ir_module_t *current_module, namespace_generics_t *current_namespace_generics, ast_node_t *node) {
     ir_namespace_t *current_namespace = &context->unit->root_namespace;
     if(current_module != NULL) current_namespace = &current_module->namespace;
 
     switch(node->type) {
-        case HLIR_NODE_TYPE_ROOT: HLIR_NODE_LIST_FOREACH(&node->root.tlcs, populate_namespace_pass_two(context, current_module, current_namespace_generics, node)); break;
+        case AST_NODE_TYPE_ROOT: AST_NODE_LIST_FOREACH(&node->root.tlcs, populate_namespace_pass_two(context, current_module, current_namespace_generics, node)); break;
 
-        case HLIR_NODE_TYPE_TLC_MODULE: {
+        case AST_NODE_TYPE_TLC_MODULE: {
             ir_symbol_t *symbol = ir_namespace_find_symbol_of_kind(current_namespace, node->tlc_module.name, IR_SYMBOL_KIND_MODULE);
             assert(symbol != NULL);
 
             namespace_generics_t *child_generics = namespace_generics_find_child(current_namespace_generics, node->tlc_module.name);
             assert(child_generics != NULL);
 
-            HLIR_NODE_LIST_FOREACH(&node->tlc_module.tlcs, populate_namespace_pass_two(context, symbol->module, child_generics, node));
+            AST_NODE_LIST_FOREACH(&node->tlc_module.tlcs, populate_namespace_pass_two(context, symbol->module, child_generics, node));
             break;
         }
-        case HLIR_NODE_TYPE_TLC_FUNCTION: {
+        case AST_NODE_TYPE_TLC_FUNCTION: {
             if(ir_namespace_exists_symbol(current_namespace, node->tlc_function.name)) diag_error(node->source_location, "symbol `%s` already exists", node->tlc_function.name);
 
-            hlir_attribute_t *attr_link = hlir_attribute_find(&node->attributes, "link", (hlir_attribute_argument_type_t[]) { HLIR_ATTRIBUTE_ARGUMENT_TYPE_STRING }, 1);
+            ast_attribute_t *attr_link = ast_attribute_find(&node->attributes, "link", (ast_attribute_argument_type_t[]) { AST_ATTRIBUTE_ARGUMENT_TYPE_STRING }, 1);
             ir_function_t *function = alloc(sizeof(ir_function_t));
             function->name = alloc_strdup(node->tlc_extern.name);
             function->link_name = attr_link == NULL ? NULL : alloc_strdup(attr_link->arguments[0].value.string);
@@ -567,10 +567,10 @@ static void populate_namespace_pass_two(lower_context_t *context, ir_module_t *c
             symbol->function = function;
             break;
         }
-        case HLIR_NODE_TYPE_TLC_EXTERN: {
+        case AST_NODE_TYPE_TLC_EXTERN: {
             if(ir_namespace_exists_symbol(current_namespace, node->tlc_extern.name)) diag_error(node->source_location, "symbol `%s` already exists", node->tlc_extern.name);
 
-            hlir_attribute_t *attr_link = hlir_attribute_find(&node->attributes, "link", (hlir_attribute_argument_type_t[]) { HLIR_ATTRIBUTE_ARGUMENT_TYPE_STRING }, 1);
+            ast_attribute_t *attr_link = ast_attribute_find(&node->attributes, "link", (ast_attribute_argument_type_t[]) { AST_ATTRIBUTE_ARGUMENT_TYPE_STRING }, 1);
             ir_function_t *function = alloc(sizeof(ir_function_t));
             function->name = alloc_strdup(node->tlc_extern.name);
             function->link_name = attr_link == NULL ? alloc_strdup(node->tlc_extern.name) : alloc_strdup(attr_link->arguments[0].value.string);
@@ -582,7 +582,7 @@ static void populate_namespace_pass_two(lower_context_t *context, ir_module_t *c
             symbol->function = function;
             break;
         }
-        case HLIR_NODE_TYPE_TLC_TYPE_DEFINITION: {
+        case AST_NODE_TYPE_TLC_TYPE_DEFINITION: {
             if(node->tlc_type_definition.generic_parameter_count > 0) break;
 
             ir_type_declaration_t *type_decl = ir_namespace_find_type(current_namespace, node->tlc_type_definition.name);
@@ -590,7 +590,7 @@ static void populate_namespace_pass_two(lower_context_t *context, ir_module_t *c
             *type_decl->type = *lower_type(context, current_namespace, current_namespace_generics, node->tlc_type_definition.type, node->source_location);
             break;
         }
-        case HLIR_NODE_TYPE_TLC_DECLARATION:
+        case AST_NODE_TYPE_TLC_DECLARATION:
             if(ir_namespace_exists_symbol(current_namespace, node->tlc_declaration.name)) diag_error(node->source_location, "symbol `%s` already exists", node->tlc_declaration.name);
 
             ir_variable_t *variable = alloc(sizeof(ir_variable_t));
@@ -603,21 +603,21 @@ static void populate_namespace_pass_two(lower_context_t *context, ir_module_t *c
             ir_symbol_t *symbol = ir_namespace_add_symbol(current_namespace, IR_SYMBOL_KIND_VARIABLE);
             symbol->variable = variable;
             break;
-        case HLIR_NODE_TYPE_TLC_ENUMERATION: break;
+        case AST_NODE_TYPE_TLC_ENUMERATION: break;
 
-        HLIR_CASE_STMT();
-        HLIR_CASE_EXPRESSION();
+        AST_CASE_STMT();
+        AST_CASE_EXPRESSION();
     }
 }
 
-static void populate_namespace_pass_one(lower_context_t *context, ir_module_t *current_module, namespace_generics_t *current_namespace_generics, hlir_node_t *node) {
+static void populate_namespace_pass_one(lower_context_t *context, ir_module_t *current_module, namespace_generics_t *current_namespace_generics, ast_node_t *node) {
     ir_namespace_t *current_namespace = &context->unit->root_namespace;
     if(current_module != NULL) current_namespace = &current_module->namespace;
 
     switch(node->type) {
-        case HLIR_NODE_TYPE_ROOT: HLIR_NODE_LIST_FOREACH(&node->root.tlcs, populate_namespace_pass_one(context, current_module, current_namespace_generics, node)); break;
+        case AST_NODE_TYPE_ROOT: AST_NODE_LIST_FOREACH(&node->root.tlcs, populate_namespace_pass_one(context, current_module, current_namespace_generics, node)); break;
 
-        case HLIR_NODE_TYPE_TLC_MODULE: {
+        case AST_NODE_TYPE_TLC_MODULE: {
             if(ir_namespace_exists_symbol(current_namespace, node->tlc_module.name)) diag_error(node->source_location, "symbol `%s` already exists", node->tlc_module.name);
 
             ir_module_t *module = alloc(sizeof(ir_module_t));
@@ -629,12 +629,12 @@ static void populate_namespace_pass_one(lower_context_t *context, ir_module_t *c
             symbol->module = module;
 
             namespace_generics_t *child_generics = namespace_generics_make(context, memory_register_ptr(context->work_allocator, strdup(node->tlc_module.name)), current_namespace_generics);
-            HLIR_NODE_LIST_FOREACH(&node->tlc_module.tlcs, populate_namespace_pass_one(context, symbol->module, child_generics, node));
+            AST_NODE_LIST_FOREACH(&node->tlc_module.tlcs, populate_namespace_pass_one(context, symbol->module, child_generics, node));
             break;
         }
-        case HLIR_NODE_TYPE_TLC_FUNCTION: break;
-        case HLIR_NODE_TYPE_TLC_EXTERN: break;
-        case HLIR_NODE_TYPE_TLC_TYPE_DEFINITION: {
+        case AST_NODE_TYPE_TLC_FUNCTION: break;
+        case AST_NODE_TYPE_TLC_EXTERN: break;
+        case AST_NODE_TYPE_TLC_TYPE_DEFINITION: {
             if(ir_namespace_exists_type(current_namespace, node->tlc_type_definition.name) || namespace_generics_find_generic(current_namespace_generics, node->tlc_type_definition.name) != NULL) diag_error(node->source_location, "type `%s` already exists", node->tlc_type_definition.name);
             if(node->tlc_type_definition.generic_parameter_count > 0) {
                 const char **parameters = memory_allocate_array(context->work_allocator, NULL, node->tlc_type_definition.generic_parameter_count, sizeof(const char *));
@@ -652,8 +652,8 @@ static void populate_namespace_pass_one(lower_context_t *context, ir_module_t *c
             ir_namespace_add_type(current_namespace, alloc_strdup(node->tlc_type_definition.name), ir_type_cache_define(context->type_cache));
             break;
         }
-        case HLIR_NODE_TYPE_TLC_DECLARATION: break;
-        case HLIR_NODE_TYPE_TLC_ENUMERATION: {
+        case AST_NODE_TYPE_TLC_DECLARATION: break;
+        case AST_NODE_TYPE_TLC_ENUMERATION: {
             if(ir_namespace_exists_symbol(current_namespace, node->tlc_enumeration.name)) diag_error(node->source_location, "symbol `%s` already exists", node->tlc_enumeration.name);
             if(ir_namespace_exists_type(current_namespace, node->tlc_enumeration.name) || namespace_generics_find_generic(current_namespace_generics, node->tlc_enumeration.name) != NULL) diag_error(node->source_location, "type `%s` already exists", node->tlc_enumeration.name);
 
@@ -672,8 +672,8 @@ static void populate_namespace_pass_one(lower_context_t *context, ir_module_t *c
             break;
         }
 
-        HLIR_CASE_STMT()
-        HLIR_CASE_EXPRESSION()
+        AST_CASE_STMT()
+        AST_CASE_EXPRESSION()
     }
 }
 
@@ -686,13 +686,13 @@ lower_context_t *lower_context_make(memory_allocator_t *work_allocator, ir_unit_
     return context;
 }
 
-void lower_populate_namespace(lower_context_t *context, hlir_node_t *root_node) {
-    assert(root_node->type == HLIR_NODE_TYPE_ROOT);
+void lower_populate_namespace(lower_context_t *context, ast_node_t *root_node) {
+    assert(root_node->type == AST_NODE_TYPE_ROOT);
     populate_namespace_pass_one(context, NULL, context->namespace_generics, root_node);
     populate_namespace_pass_two(context, NULL, context->namespace_generics, root_node);
 }
 
-void lower_nodes(lower_context_t *context, hlir_node_t *root_node) {
-    assert(root_node->type == HLIR_NODE_TYPE_ROOT);
+void lower_nodes(lower_context_t *context, ast_node_t *root_node) {
+    assert(root_node->type == AST_NODE_TYPE_ROOT);
     lower_tlc(context, &context->unit->root_namespace, NULL, context->namespace_generics, root_node);
 }

@@ -197,14 +197,14 @@ int main(int argc, char *argv[]) {
 }
 
 static void compile(source_t **sources, size_t source_count, const char *dest_path, bool ir, LLVMCodeModel code_model, const char *optstr) {
-    hlir_node_t *hlir_root_nodes[source_count];
+    ast_node_t *ast_root_nodes[source_count];
 
     /* Parse: Source -> Tokens -> AST */
-    memory_allocator_t *hlir_allocator = memory_allocator_make();
-    memory_active_allocator_set(hlir_allocator);
+    memory_allocator_t *ast_allocator = memory_allocator_make();
+    memory_active_allocator_set(ast_allocator);
     for(size_t i = 0; i < source_count; i++) {
         tokenizer_t *tokenizer = tokenizer_make(sources[i]);
-        hlir_root_nodes[i] = parser_root(tokenizer);
+        ast_root_nodes[i] = parser_root(tokenizer);
         tokenizer_free(tokenizer);
     }
     memory_active_allocator_set(NULL);
@@ -218,10 +218,10 @@ static void compile(source_t **sources, size_t source_count, const char *dest_pa
     ir_type_cache_t *type_cache = ir_type_cache_make();
     lower_context_t *lower_context = lower_context_make(work_allocator, &unit, type_cache);
 
-    for(size_t i = 0; i < source_count; i++) lower_populate_namespace(lower_context, hlir_root_nodes[i]);
-    for(size_t i = 0; i < source_count; i++) lower_nodes(lower_context, hlir_root_nodes[i]);
+    for(size_t i = 0; i < source_count; i++) lower_populate_namespace(lower_context, ast_root_nodes[i]);
+    for(size_t i = 0; i < source_count; i++) lower_nodes(lower_context, ast_root_nodes[i]);
     memory_allocator_free(work_allocator);
-    memory_allocator_free(hlir_allocator);
+    memory_allocator_free(ast_allocator);
 
     /* Passes: IR -> IR */
     pass_eval_types(&unit, type_cache);
