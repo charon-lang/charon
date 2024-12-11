@@ -1,4 +1,4 @@
-#include "codegen.h"
+#include "pass.h"
 
 #include "constants.h"
 #include "lib/diag.h"
@@ -728,7 +728,7 @@ static void populate_namespace(context_t *context, ir_module_t *current_module, 
     }
 }
 
-void codegen(ir_unit_t *unit, ir_type_cache_t *type_cache, const char *path, const char *passes, LLVMCodeModel code_model) {
+void pass_codegen(ir_unit_t *unit, ir_type_cache_t *type_cache, const char *path, const char *passes, LLVMCodeModel code_model) {
     char *error_message;
 
     // OPTIMIZE: this is kind of lazy
@@ -778,7 +778,7 @@ void codegen(ir_unit_t *unit, ir_type_cache_t *type_cache, const char *path, con
     LLVMContextDispose(context.llvm_context);
 }
 
-void codegen_ir(ir_unit_t *unit, ir_type_cache_t *type_cache, const char *path) {
+void pass_codegen_ir(ir_unit_t *unit, ir_type_cache_t *type_cache, const char *path) {
     context_t context;
     context.llvm_context = LLVMContextCreate();
     context.llvm_builder = LLVMCreateBuilderInContext(context.llvm_context);

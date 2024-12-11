@@ -3,9 +3,7 @@
 #include "lib/alloc.h"
 #include "lexer/tokenizer.h"
 #include "parser/parser.h"
-#include "lower/lower.h"
-#include "passes/pass.h"
-#include "codegen/codegen.h"
+#include "pass/pass.h"
 
 #include <stdint.h>
 #include <string.h>
@@ -216,10 +214,11 @@ static void compile(source_t **sources, size_t source_count, const char *dest_pa
 
     ir_unit_t unit = { .root_namespace = IR_NAMESPACE_INIT };
     ir_type_cache_t *type_cache = ir_type_cache_make();
-    lower_context_t *lower_context = lower_context_make(work_allocator, &unit, type_cache);
 
-    for(size_t i = 0; i < source_count; i++) lower_populate_namespace(lower_context, ast_root_nodes[i]);
-    for(size_t i = 0; i < source_count; i++) lower_nodes(lower_context, ast_root_nodes[i]);
+    pass_lower_context_t *lower_context = pass_lower_context_make(work_allocator, &unit, type_cache);
+    for(size_t i = 0; i < source_count; i++) pass_lower_populate_namespace(lower_context, ast_root_nodes[i]);
+    for(size_t i = 0; i < source_count; i++) pass_lower(lower_context, ast_root_nodes[i]);
+
     memory_allocator_free(work_allocator);
     memory_allocator_free(ast_allocator);
 
@@ -228,9 +227,9 @@ static void compile(source_t **sources, size_t source_count, const char *dest_pa
 
     /* Codegen: IR -> Binary */
     if(ir) {
-        codegen_ir(&unit, type_cache, dest_path);
+        pass_codegen_ir(&unit, type_cache, dest_path);
     } else {
-        codegen(&unit, type_cache, dest_path, optstr, code_model);
+        pass_codegen(&unit, type_cache, dest_path, optstr, code_model);
     }
 
     memory_active_allocator_set(NULL);
