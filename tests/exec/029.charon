@@ -1,0 +1,6 @@
+extern fn printf(fmt: *u8, ...): i32;
+
+fn main() {
+    let b = (1, "Hello world\n");
+    printf(b.1);
+}

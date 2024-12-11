@@ -12,5 +12,7 @@ fn main() {
 
     let b: Optional<*char>;
     b.present = true;
-    b.value = "Hello!";
+    b.value = "Hello! %lu\n";
+
+    printf(b.value, a.value);
 }
