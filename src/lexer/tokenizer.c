@@ -30,6 +30,7 @@ static uncompiled_entry_t g_uncompiled_spec[] = {
     { .kind = TOKEN_KIND_INTERNAL_NONE, .pattern = "^\\s+" }, // Whitespace
     { .kind = TOKEN_KIND_INTERNAL_NONE, .pattern = "^//.*" }, // Single line comment
     { .kind = TOKEN_KIND_INTERNAL_NONE, .pattern = "^/\\*[\\s\\S]*?\\*/" }, // Multi line comment
+    { .kind = TOKEN_KIND_INTERNAL_NONE, .pattern = "^#.*" }, // Hashtag comment
     #define TOKEN(ID, _, PATTERN) { .kind = TOKEN_KIND_##ID, .pattern = PATTERN },
     #include "tokens.def"
     #undef TOKEN
