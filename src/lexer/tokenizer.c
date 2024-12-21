@@ -84,7 +84,7 @@ static token_t next_token(tokenizer_t *tokenizer) {
     spec_match_t match = spec_match(sub, sub_length);
     tokenizer->cursor += match.size;
 
-    if(match.size == 0) diag_error((source_location_t) { .source = tokenizer->source, .offset = tokenizer->cursor, .length = 1 }, "unexpected symbol `%c`", *sub);
+    if(match.size == 0) diag_error((source_location_t) { .source = tokenizer->source, .offset = tokenizer->cursor, .length = 1 }, LANG_E_UNEXPECTED_SYMBOL, *sub);
     if(match.kind == TOKEN_KIND_INTERNAL_NONE) return next_token(tokenizer);
 
     return (token_t) { .kind = match.kind, .offset = offset, .size = match.size };

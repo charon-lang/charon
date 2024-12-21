@@ -106,7 +106,7 @@ static ir_type_t *lower_type_ext(pass_lower_context_t *context, ir_namespace_t *
             if(symbol == NULL) {
                 symbol = ir_namespace_find_symbol_of_kind(&context->unit->root_namespace, type->reference.modules[i], IR_SYMBOL_KIND_MODULE);
                 child_generics = namespace_generics_find_child(context->namespace_generics, type->reference.modules[i]);
-                if(symbol == NULL) diag_error(source_location, "unknown module `%s`", type->reference.modules[i]);
+                if(symbol == NULL) diag_error(source_location, LANG_E_UNKNOWN_MODULE, type->reference.modules[i]);
             }
             assert(child_generics != NULL);
 
@@ -118,15 +118,15 @@ static ir_type_t *lower_type_ext(pass_lower_context_t *context, ir_namespace_t *
         ir_type_declaration_t *referred_type_decl = ir_namespace_find_type(current_namespace, type->reference.type_name);
 
         if(type->reference.generic_parameter_count > 0) {
-            if(generic == NULL) diag_error(source_location, "unknown generic");
-            if(generic->parameter_count != type->reference.generic_parameter_count) diag_error(source_location, "invalid number of parameters to generic");
+            if(generic == NULL) diag_error(source_location, LANG_E_UNKNOWN_GENERIC, type->reference.type_name);
+            if(generic->parameter_count != type->reference.generic_parameter_count) diag_error(source_location, LANG_E_INVALID_NUMBER_PARAMS);
 
             generic_mapping_t mappings[generic->parameter_count];
             for(size_t i = 0; i < generic->parameter_count; i++) mappings[i] = (generic_mapping_t) { .name = generic->parameters[i], .type = type->reference.generic_parameters[i] };
             return lower_type_ext(context, current_namespace, current_namespace_generics, mappings, generic->parameter_count, generic->base, source_location);
         } else {
-            if(generic != NULL) diag_error(source_location, "type is a generic");
-            if(referred_type_decl == NULL) diag_error(source_location, "unknown type `%s`", type->reference.type_name);
+            if(generic != NULL) diag_error(source_location, LANG_E_TYPE_IS_GENERIC, type->reference.type_name);
+            if(referred_type_decl == NULL) diag_error(source_location, LANG_E_UNKNOWN_TYPE, type->reference.type_name);
             return referred_type_decl->type;
         }
     }
@@ -156,7 +156,7 @@ static ir_type_t *lower_type_ext(pass_lower_context_t *context, ir_namespace_t *
             ast_attribute_t *attr_packed = ast_attribute_find(&type->attributes, "packed", NULL, 0);
             ir_type_structure_member_t *members = alloc_array(NULL, type->structure.member_count, sizeof(ir_type_structure_member_t));
             for(size_t i = 0; i < type->structure.member_count; i++) {
-                for(size_t j = i + 1; j < type->structure.member_count; j++) if(strcmp(type->structure.members[i].name, type->structure.members[j].name) == 0) diag_error(source_location, "duplicate member `%s`", type->structure.members[i].name);
+                for(size_t j = i + 1; j < type->structure.member_count; j++) if(strcmp(type->structure.members[i].name, type->structure.members[j].name) == 0) diag_error(source_location, LANG_E_DUPLICATE_MEMBER, type->structure.members[i].name);
                 members[i] = (ir_type_structure_member_t) {
                     .name = alloc_strdup(type->structure.members[i].name),
                     .type = lower_type_ext(context, current_namespace, current_namespace_generics, generic_mappings, generic_mapping_count, type->structure.members[i].type, source_location)
@@ -174,7 +174,7 @@ static ir_type_t *lower_type_ext(pass_lower_context_t *context, ir_namespace_t *
     assert(new_type != NULL);
     for(size_t i = 0; i < type->attributes.attribute_count; i++) {
         if(type->attributes.attributes[i].consumed) continue;
-        diag_warn(type->attributes.attributes[i].source_location, "unhandled attribute");
+        diag_warn(type->attributes.attributes[i].source_location, LANG_E_UNHANDLED_ATTRIBUTE, type->attributes.attributes[i].kind);
     }
     return new_type;
 }
@@ -225,7 +225,7 @@ static void lower_tlc(pass_lower_context_t *context, ir_namespace_t *current_nam
             ir_expr_t *initial = NULL;
             if(node->tlc_declaration.initial != NULL) {
                 initial = lower_expr(context, current_namespace, scope, current_namespace_generics, node->tlc_declaration.initial);
-                if(!initial->is_const) diag_error(node->source_location, "cannot initialize global variable to a non-constant value");
+                if(!initial->is_const) diag_error(node->source_location, LANG_E_NOT_CONSTANT);
             }
             symbol->variable->initial_value = initial;
             break;
@@ -237,7 +237,7 @@ static void lower_tlc(pass_lower_context_t *context, ir_namespace_t *current_nam
     }
     for(size_t i = 0; i < node->attributes.attribute_count; i++) {
         if(node->attributes.attributes[i].consumed) continue;
-        diag_warn(node->attributes.attributes[i].source_location, "unhandled attribute");
+        diag_warn(node->attributes.attributes[i].source_location, LANG_E_UNHANDLED_ATTRIBUTE, node->attributes.attributes[i].kind);
     }
 }
 
@@ -265,13 +265,13 @@ static ir_stmt_t *lower_stmt(pass_lower_context_t *context, ir_namespace_t *curr
         case AST_NODE_TYPE_STMT_DECLARATION: {
             ir_variable_t *variable = ir_scope_find_variable(scope, node->stmt_declaration.name);
             if(variable != NULL) {
-                if(variable->is_local && variable->scope == scope) diag_error(node->source_location, "redeclaration of `%s`", node->stmt_declaration.name);
-                diag_warn(node->source_location, "declaration shadows `%s`", node->stmt_declaration.name);
+                if(variable->is_local && variable->scope == scope) diag_error(node->source_location, LANG_E_REDECLARATION, node->stmt_declaration.name);
+                diag_warn(node->source_location, LANG_E_SHADOWED_DECL, node->stmt_declaration.name);
             }
 
             ir_type_t *type = node->stmt_declaration.type == NULL ? NULL : lower_type(context, current_namespace, current_namespace_generics, node->stmt_declaration.type, node->source_location);
             ir_expr_t *initial = node->stmt_declaration.initial == NULL ? NULL : lower_expr(context, current_namespace, scope, current_namespace_generics, node->stmt_declaration.initial);
-            if(type == NULL && initial == NULL) diag_error(node->source_location, "declaration is missing both an explicit and inferred type");
+            if(type == NULL && initial == NULL) diag_error(node->source_location, LANG_E_DECL_MISSING_TYPE);
 
             stmt->kind = IR_STMT_KIND_DECLARATION;
             stmt->declaration.variable = ir_scope_add(scope, alloc_strdup(node->stmt_declaration.name), type, initial);
@@ -320,7 +320,7 @@ static ir_stmt_t *lower_stmt(pass_lower_context_t *context, ir_namespace_t *curr
     }
     for(size_t i = 0; i < node->attributes.attribute_count; i++) {
         if(node->attributes.attributes[i].consumed) continue;
-        diag_warn(node->attributes.attributes[i].source_location, "unhandled attribute");
+        diag_warn(node->attributes.attributes[i].source_location, LANG_E_UNHANDLED_ATTRIBUTE, node->attributes.attributes[i].kind);
     }
     return stmt;
 }
@@ -423,7 +423,7 @@ static ir_expr_t *lower_expr(pass_lower_context_t *context, ir_namespace_t *curr
 
             ir_symbol_t *symbol = ir_namespace_find_symbol(current_namespace, node->expr_variable.name);
             if(symbol == NULL) symbol = ir_namespace_find_symbol(&context->unit->root_namespace, node->expr_variable.name);
-            if(symbol == NULL) diag_error(node->source_location, "referenced an undefined variable `%s`", node->expr_variable.name);
+            if(symbol == NULL) diag_error(node->source_location, LANG_E_UNKNOWN_VARIABLE, node->expr_variable.name);
             switch(symbol->kind) {
                 case IR_SYMBOL_KIND_FUNCTION:
                     expr->variable.is_function = true;
@@ -433,7 +433,7 @@ static ir_expr_t *lower_expr(pass_lower_context_t *context, ir_namespace_t *curr
                     expr->variable.is_function = false;
                     expr->variable.variable = symbol->variable;
                     break;
-                default: diag_error(node->source_location, "not a variable");
+                default: diag_error(node->source_location, LANG_E_NOT_VARIABLE);
             }
             break;
         }
@@ -510,10 +510,10 @@ static ir_expr_t *lower_expr(pass_lower_context_t *context, ir_namespace_t *curr
             ir_symbol_t *symbol = ir_namespace_find_symbol_of_kind(current_namespace, node->expr_selector.name, IR_SYMBOL_KIND_ENUMERATION);
             if(symbol == NULL) {
                 symbol = ir_namespace_find_symbol_of_kind(&context->unit->root_namespace, node->expr_selector.name, IR_SYMBOL_KIND_ENUMERATION);
-                if(symbol == NULL) diag_error(node->source_location, "unknown selector `%s`", node->expr_selector.name);
+                if(symbol == NULL) diag_error(node->source_location, LANG_E_UNKNOWN_SELECTOR, node->expr_selector.name);
             }
 
-            if(node->expr_selector.value->type != AST_NODE_TYPE_EXPR_VARIABLE) diag_error(node->source_location, "invalid operation on enum");
+            if(node->expr_selector.value->type != AST_NODE_TYPE_EXPR_VARIABLE) diag_error(node->source_location, LANG_E_ENUM_INVALID_OP);
 
             for(size_t i = 0; i < symbol->enumeration->type->enumeration.member_count; i++) {
                 if(strcmp(node->expr_selector.value->expr_variable.name, symbol->enumeration->members[i]) != 0) continue;
@@ -523,7 +523,7 @@ static ir_expr_t *lower_expr(pass_lower_context_t *context, ir_namespace_t *curr
                 expr->enumeration_value.enumeration = symbol->enumeration;
                 goto enumeration_success;
             }
-            diag_error(node->source_location, "unknown enum member");
+            diag_error(node->source_location, LANG_E_UNKNOWN_ENUM_MEMBER, node->expr_selector.value->expr_variable.name);
             enumeration_success:
             break;
         }
@@ -555,7 +555,7 @@ static void populate_rest(pass_lower_context_t *context, ir_module_t *current_mo
             break;
         }
         case AST_NODE_TYPE_TLC_FUNCTION: {
-            if(ir_namespace_exists_symbol(current_namespace, node->tlc_function.name)) diag_error(node->source_location, "symbol `%s` already exists", node->tlc_function.name);
+            if(ir_namespace_exists_symbol(current_namespace, node->tlc_function.name)) diag_error(node->source_location, LANG_E_ALREADY_EXISTS_SYMBOL, node->tlc_function.name);
 
             ast_attribute_t *attr_link = ast_attribute_find(&node->attributes, "link", (ast_attribute_argument_type_t[]) { AST_ATTRIBUTE_ARGUMENT_TYPE_STRING }, 1);
             ir_function_t *function = alloc(sizeof(ir_function_t));
@@ -570,7 +570,7 @@ static void populate_rest(pass_lower_context_t *context, ir_module_t *current_mo
             break;
         }
         case AST_NODE_TYPE_TLC_EXTERN: {
-            if(ir_namespace_exists_symbol(current_namespace, node->tlc_extern.name)) diag_error(node->source_location, "symbol `%s` already exists", node->tlc_extern.name);
+            if(ir_namespace_exists_symbol(current_namespace, node->tlc_extern.name)) diag_error(node->source_location, LANG_E_ALREADY_EXISTS_SYMBOL, node->tlc_extern.name);
 
             ast_attribute_t *attr_link = ast_attribute_find(&node->attributes, "link", (ast_attribute_argument_type_t[]) { AST_ATTRIBUTE_ARGUMENT_TYPE_STRING }, 1);
             ir_function_t *function = alloc(sizeof(ir_function_t));
@@ -594,7 +594,7 @@ static void populate_rest(pass_lower_context_t *context, ir_module_t *current_mo
             break;
         }
         case AST_NODE_TYPE_TLC_DECLARATION:
-            if(ir_namespace_exists_symbol(current_namespace, node->tlc_declaration.name)) diag_error(node->source_location, "symbol `%s` already exists", node->tlc_declaration.name);
+            if(ir_namespace_exists_symbol(current_namespace, node->tlc_declaration.name)) diag_error(node->source_location, LANG_E_ALREADY_EXISTS_SYMBOL, node->tlc_declaration.name);
 
             ir_variable_t *variable = alloc(sizeof(ir_variable_t));
             variable->name = alloc_strdup(node->tlc_declaration.name);
@@ -632,12 +632,12 @@ static void populate_types_and_enums(pass_lower_context_t *context, ir_module_t 
         case AST_NODE_TYPE_TLC_FUNCTION: break;
         case AST_NODE_TYPE_TLC_EXTERN: break;
         case AST_NODE_TYPE_TLC_TYPE_DEFINITION: {
-            if(ir_namespace_exists_type(current_namespace, node->tlc_type_definition.name) || namespace_generics_find_generic(current_namespace_generics, node->tlc_type_definition.name) != NULL) diag_error(node->source_location, "type `%s` already exists", node->tlc_type_definition.name);
+            if(ir_namespace_exists_type(current_namespace, node->tlc_type_definition.name) || namespace_generics_find_generic(current_namespace_generics, node->tlc_type_definition.name) != NULL) diag_error(node->source_location, LANG_E_ALREADY_EXISTS_TYPE, node->tlc_type_definition.name);
             if(node->tlc_type_definition.generic_parameter_count > 0) {
                 const char **parameters = memory_allocate_array(context->work_allocator, NULL, node->tlc_type_definition.generic_parameter_count, sizeof(const char *));
                 for(size_t i = 0; i < node->tlc_type_definition.generic_parameter_count; i++) {
                     parameters[i] = memory_register_ptr(context->work_allocator, strdup(node->tlc_type_definition.generic_parameters[i]));
-                    if(ir_namespace_exists_type(current_namespace, parameters[i]) || namespace_generics_find_generic(current_namespace_generics, parameters[i]) != NULL) diag_error(node->source_location, "generic parameter `%s` conflicts with existing type", parameters[i]);
+                    if(ir_namespace_exists_type(current_namespace, parameters[i]) || namespace_generics_find_generic(current_namespace_generics, parameters[i]) != NULL) diag_error(node->source_location, LANG_E_GENERIC_PARAM_CONFLICT, parameters[i]);
                 }
                 namespace_generics_add(context, current_namespace_generics, memory_register_ptr(context->work_allocator, strdup(node->tlc_type_definition.name)), (generic_t) {
                     .base = node->tlc_type_definition.type,
@@ -651,8 +651,8 @@ static void populate_types_and_enums(pass_lower_context_t *context, ir_module_t 
         }
         case AST_NODE_TYPE_TLC_DECLARATION: break;
         case AST_NODE_TYPE_TLC_ENUMERATION: {
-            if(ir_namespace_exists_symbol(current_namespace, node->tlc_enumeration.name)) diag_error(node->source_location, "symbol `%s` already exists", node->tlc_enumeration.name);
-            if(ir_namespace_exists_type(current_namespace, node->tlc_enumeration.name) || namespace_generics_find_generic(current_namespace_generics, node->tlc_enumeration.name) != NULL) diag_error(node->source_location, "type `%s` already exists", node->tlc_enumeration.name);
+            if(ir_namespace_exists_symbol(current_namespace, node->tlc_enumeration.name)) diag_error(node->source_location, LANG_E_ALREADY_EXISTS_SYMBOL, node->tlc_enumeration.name);
+            if(ir_namespace_exists_type(current_namespace, node->tlc_enumeration.name) || namespace_generics_find_generic(current_namespace_generics, node->tlc_enumeration.name) != NULL) diag_error(node->source_location, LANG_E_ALREADY_EXISTS_TYPE, node->tlc_enumeration.name);
 
             ir_type_t *type = ir_type_cache_get_enumeration(context->type_cache, CONSTANTS_ENUM_SIZE, node->tlc_enumeration.member_count);
             ir_namespace_add_type(current_namespace, alloc_strdup(node->tlc_enumeration.name), type);
@@ -681,7 +681,7 @@ static void populate_modules(pass_lower_context_t *context, ir_module_t *current
         case AST_NODE_TYPE_ROOT: AST_NODE_LIST_FOREACH(&node->root.tlcs, populate_modules(context, current_module, current_namespace_generics, node)); break;
 
         case AST_NODE_TYPE_TLC_MODULE: {
-            if(ir_namespace_exists_symbol(current_namespace, node->tlc_module.name)) diag_error(node->source_location, "symbol `%s` already exists", node->tlc_module.name);
+            if(ir_namespace_exists_symbol(current_namespace, node->tlc_module.name)) diag_error(node->source_location, LANG_E_ALREADY_EXISTS_SYMBOL, node->tlc_module.name);
 
             ir_module_t *module = alloc(sizeof(ir_module_t));
             module->name = alloc_strdup(node->tlc_module.name);

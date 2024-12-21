@@ -52,7 +52,7 @@ ok:
 }
 
 static void visitor_global_variable(ir_unit_t *unit, ir_type_cache_t *type_cache, ir_module_t *module, ir_variable_t *variable) {
-    if(variable->initial_value != NULL && !try_coerce(&variable->initial_value, variable->type)) diag_error(variable->initial_value->source_location, "declarations initial value does not match its explicit type");
+    if(variable->initial_value != NULL && !try_coerce(&variable->initial_value, variable->type)) diag_error(variable->initial_value->source_location, LANG_E_DECL_TYPES_MISMATCH);
 }
 
 static void visitor_stmt(ir_unit_t *unit, ir_type_cache_t *type_cache, ir_module_t *module, ir_function_t *fn,  ir_scope_t *scope, ir_stmt_t *stmt) {
@@ -63,25 +63,25 @@ static void visitor_stmt(ir_unit_t *unit, ir_type_cache_t *type_cache, ir_module
                 assert(stmt->declaration.variable->initial_value != NULL);
                 stmt->declaration.variable->type = stmt->declaration.variable->initial_value->type;
             } else {
-                if(stmt->declaration.variable->initial_value != NULL && !try_coerce(&stmt->declaration.variable->initial_value, type)) diag_error(stmt->source_location, "declarations initial value does not match its explicit type");
+                if(stmt->declaration.variable->initial_value != NULL && !try_coerce(&stmt->declaration.variable->initial_value, type)) diag_error(stmt->source_location, LANG_E_DECL_TYPES_MISMATCH);
             }
             break;
         }
         case IR_STMT_KIND_RETURN: {
             assert(fn != NULL);
-            if(stmt->_return.value != NULL && !try_coerce(&stmt->_return.value, fn->prototype.return_type)) diag_error(stmt->source_location, "invalid type");
+            if(stmt->_return.value != NULL && !try_coerce(&stmt->_return.value, fn->prototype.return_type)) diag_error(stmt->source_location, LANG_E_INVALID_TYPE);
             break;
         }
         case IR_STMT_KIND_IF: {
-            if(!try_coerce(&stmt->_if.condition, TYPE_BOOL)) diag_error(stmt->_if.condition->source_location, "condition is not a boolean");
+            if(!try_coerce(&stmt->_if.condition, TYPE_BOOL)) diag_error(stmt->_if.condition->source_location, LANG_E_NOT_BOOL);
             break;
         }
         case IR_STMT_KIND_WHILE: {
-            if(stmt->_while.condition != NULL && !try_coerce(&stmt->_while.condition, TYPE_BOOL)) diag_error(stmt->_while.condition->source_location, "condition is not a boolean");
+            if(stmt->_while.condition != NULL && !try_coerce(&stmt->_while.condition, TYPE_BOOL)) diag_error(stmt->_while.condition->source_location, LANG_E_NOT_BOOL);
             break;
         }
         case IR_STMT_KIND_FOR: {
-            if(stmt->_for.condition != NULL && !try_coerce(&stmt->_for.condition, TYPE_BOOL)) diag_error(stmt->_for.condition->source_location, "condition is not a boolean");
+            if(stmt->_for.condition != NULL && !try_coerce(&stmt->_for.condition, TYPE_BOOL)) diag_error(stmt->_for.condition->source_location, LANG_E_NOT_BOOL);
             break;
         }
         default: break;
@@ -96,14 +96,14 @@ static void visitor_expr(ir_unit_t *unit, ir_type_cache_t *type_cache, ir_module
         case IR_EXPR_KIND_LITERAL_BOOL: expr->type = TYPE_BOOL; break;
         case IR_EXPR_KIND_BINARY: {
             if(expr->binary.operation == IR_BINARY_OPERATION_LOGICAL_AND || expr->binary.operation == IR_BINARY_OPERATION_LOGICAL_OR) {
-                if(!try_coerce(&expr->binary.left, TYPE_BOOL)) diag_error(expr->binary.left->source_location, "condition is not a boolean");
-                if(!try_coerce(&expr->binary.right, TYPE_BOOL)) diag_error(expr->binary.right->source_location, "condition is not a boolean");
+                if(!try_coerce(&expr->binary.left, TYPE_BOOL)) diag_error(expr->binary.left->source_location, LANG_E_NOT_BOOL);
+                if(!try_coerce(&expr->binary.right, TYPE_BOOL)) diag_error(expr->binary.right->source_location, LANG_E_NOT_BOOL);
                 expr->type = TYPE_BOOL;
                 break;
             }
 
             if(expr->binary.operation == IR_BINARY_OPERATION_ASSIGN) {
-                if(!try_coerce(&expr->binary.right, expr->binary.left->type)) diag_error(expr->source_location, "conflicting types in assignment");
+                if(!try_coerce(&expr->binary.right, expr->binary.left->type)) diag_error(expr->source_location, LANG_E_CONFLICTING_TYPES);
                 expr->type = expr->binary.right->type;
                 break;
             }
@@ -111,7 +111,7 @@ static void visitor_expr(ir_unit_t *unit, ir_type_cache_t *type_cache, ir_module
             ir_type_t *type = expr->binary.left->type;
             if(!try_coerce(&expr->binary.right, type)) {
                 type = expr->binary.right->type;
-                if(!try_coerce(&expr->binary.left, type)) diag_error(expr->source_location, "conflicting types in binary expression");
+                if(!try_coerce(&expr->binary.left, type)) diag_error(expr->source_location, LANG_E_CONFLICTING_TYPES);
             }
 
             if(expr->binary.operation == IR_BINARY_OPERATION_EQUAL || expr->binary.operation == IR_BINARY_OPERATION_NOT_EQUAL) {
@@ -119,7 +119,7 @@ static void visitor_expr(ir_unit_t *unit, ir_type_cache_t *type_cache, ir_module
                 break;
             }
 
-            if(type->kind != IR_TYPE_KIND_INTEGER) diag_error(expr->source_location, "invalid type in binary expression");
+            if(type->kind != IR_TYPE_KIND_INTEGER) diag_error(expr->source_location, LANG_E_INVALID_TYPE);
 
             switch(expr->binary.operation) {
                 case IR_BINARY_OPERATION_ADDITION:
@@ -150,15 +150,15 @@ static void visitor_expr(ir_unit_t *unit, ir_type_cache_t *type_cache, ir_module
         case IR_EXPR_KIND_UNARY: {
             switch(expr->unary.operation) {
                 case IR_UNARY_OPERATION_DEREF:
-                    if(expr->unary.operand->type->kind != IR_TYPE_KIND_POINTER) diag_error(expr->source_location, "unary operation \"dereference\" on a non-pointer value");
+                    if(expr->unary.operand->type->kind != IR_TYPE_KIND_POINTER) diag_error(expr->source_location, LANG_E_NOT_POINTER);
                     expr->type = expr->unary.operand->type->pointer.pointee;
                     break;
                 case IR_UNARY_OPERATION_NOT:
-                    if(expr->unary.operand->type->kind != IR_TYPE_KIND_INTEGER) diag_error(expr->source_location, "unary operation \"not\" on a non-numeric value");
+                    if(expr->unary.operand->type->kind != IR_TYPE_KIND_INTEGER) diag_error(expr->source_location, LANG_E_NOT_NUMERIC);
                     expr->type = TYPE_BOOL;
                     break;
                 case IR_UNARY_OPERATION_NEGATIVE:
-                    if(expr->unary.operand->type->kind != IR_TYPE_KIND_INTEGER) diag_error(expr->source_location, "unary operation \"negative\" on a non-numeric value");
+                    if(expr->unary.operand->type->kind != IR_TYPE_KIND_INTEGER) diag_error(expr->source_location, LANG_E_NOT_NUMERIC);
                     expr->type = expr->unary.operand->type;
                     break;
                 case IR_UNARY_OPERATION_REF:
@@ -179,16 +179,16 @@ static void visitor_expr(ir_unit_t *unit, ir_type_cache_t *type_cache, ir_module
         }
         case IR_EXPR_KIND_CALL: {
             ir_type_t *type = expr->call.function_reference->type;
-            if(type->kind != IR_TYPE_KIND_FUNCTION_REFERENCE) diag_error(expr->source_location, "not a function");
+            if(type->kind != IR_TYPE_KIND_FUNCTION_REFERENCE) diag_error(expr->source_location, LANG_E_NOT_FUNCTION);
 
             size_t argument_count = VECTOR_SIZE(&expr->call.arguments);
             ir_function_prototype_t prototype = type->function_reference.prototype;
 
-            if(argument_count < prototype.argument_count) diag_error(expr->source_location, "missing arguments");
-            if(!prototype.varargs && argument_count > prototype.argument_count) diag_error(expr->source_location, "invalid number of arguments");
+            if(argument_count < prototype.argument_count) diag_error(expr->source_location, LANG_E_MISSING_ARGS);
+            if(!prototype.varargs && argument_count > prototype.argument_count) diag_error(expr->source_location, LANG_E_INVALID_NUMBER_ARGS);
 
             VECTOR_FOREACH(&expr->call.arguments, i, elem) {
-                if(prototype.argument_count > i && !try_coerce(VECTOR_FOREACH_ELEMENT_REF(&expr->call.arguments, i), prototype.arguments[i])) diag_error(elem->source_location, "argument has invalid type");
+                if(prototype.argument_count > i && !try_coerce(VECTOR_FOREACH_ELEMENT_REF(&expr->call.arguments, i), prototype.arguments[i])) diag_error(elem->source_location, LANG_E_INVALID_TYPE);
             };
             expr->type = prototype.return_type;
             break;
@@ -203,32 +203,32 @@ static void visitor_expr(ir_unit_t *unit, ir_type_cache_t *type_cache, ir_module
         case IR_EXPR_KIND_SUBSCRIPT: {
             switch(expr->subscript.kind) {
                 case IR_SUBSCRIPT_KIND_INDEX: {
-                    if(expr->subscript.index->type->kind != IR_TYPE_KIND_INTEGER) diag_error(expr->source_location, "invalid type for indexing");
+                    if(expr->subscript.index->type->kind != IR_TYPE_KIND_INTEGER) diag_error(expr->source_location, LANG_E_INVALID_TYPE);
 
                     switch(expr->subscript.value->type->kind) {
                         case IR_TYPE_KIND_ARRAY: expr->type = expr->subscript.value->type->array.type; break;
                         case IR_TYPE_KIND_POINTER: expr->type = expr->subscript.value->type->pointer.pointee; break;
-                        default: diag_error(expr->source_location, "invalid type for indexing");
+                        default: diag_error(expr->source_location, LANG_E_INVALID_TYPE);
                     }
                     break;
                 }
                 case IR_SUBSCRIPT_KIND_INDEX_CONST: {
                     switch(expr->subscript.value->type->kind) {
                         case IR_TYPE_KIND_TUPLE:
-                            if(expr->subscript.index_const >= expr->subscript.value->type->tuple.type_count) diag_error(expr->source_location, "index out of bounds");
+                            if(expr->subscript.index_const >= expr->subscript.value->type->tuple.type_count) diag_error(expr->source_location, LANG_E_INDEX_OUT_BOUNDS);
                             expr->type = expr->subscript.value->type->tuple.types[expr->subscript.index_const];
                             break;
                         case IR_TYPE_KIND_ARRAY:
-                            if(expr->subscript.index_const >= expr->subscript.value->type->array.size) diag_error(expr->source_location, "index out of bounds");
+                            if(expr->subscript.index_const >= expr->subscript.value->type->array.size) diag_error(expr->source_location, LANG_E_INDEX_OUT_BOUNDS);
                             expr->type = expr->subscript.value->type->array.type;
                             break;
                         case IR_TYPE_KIND_POINTER: expr->type = expr->subscript.value->type->pointer.pointee; break;
-                        default: diag_error(expr->source_location, "invalid type for constant indexing");
+                        default: diag_error(expr->source_location, LANG_E_INVALID_TYPE);
                     }
                     break;
                 }
                 case IR_SUBSCRIPT_KIND_MEMBER: {
-                    if(expr->subscript.value->type->kind != IR_TYPE_KIND_STRUCTURE) diag_error(expr->source_location, "not a struct");
+                    if(expr->subscript.value->type->kind != IR_TYPE_KIND_STRUCTURE) diag_error(expr->source_location, LANG_E_NOT_STRUCT);
 
                     for(size_t i = 0; i < expr->subscript.value->type->structure.member_count; i++) {
                         ir_type_structure_member_t *member = &expr->subscript.value->type->structure.members[i];
@@ -236,7 +236,7 @@ static void visitor_expr(ir_unit_t *unit, ir_type_cache_t *type_cache, ir_module
                         expr->type = member->type;
                         goto brk;
                     }
-                    diag_error(expr->source_location, "unknown member `%s`", expr->subscript.member);
+                    diag_error(expr->source_location, LANG_E_UNKNOWN_MEMBER, expr->subscript.member);
                     break;
                 }
             }

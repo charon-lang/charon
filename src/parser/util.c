@@ -24,7 +24,7 @@ bool util_try_consume(tokenizer_t *tokenizer, token_kind_t kind) {
 token_t util_consume(tokenizer_t *tokenizer, token_kind_t kind) {
     token_t token = tokenizer_advance(tokenizer);
     if(token.kind == kind) return token;
-    diag_error(util_loc(tokenizer, token), "expected %s got %s", token_kind_stringify(kind), token_kind_stringify(token.kind));
+    diag_error(util_loc(tokenizer, token), LANG_E_EXPECTED, token_kind_stringify(kind), token_kind_stringify(token.kind));
 }
 
 char *util_text_make_from_token_inset(tokenizer_t *tokenizer, token_t token, size_t inset) {
@@ -49,14 +49,14 @@ uintmax_t util_number_make_from_token(tokenizer_t *tokenizer, token_t token) {
         case TOKEN_KIND_CONST_NUMBER_HEX: base = 16; break;
         case TOKEN_KIND_CONST_NUMBER_BIN: base = 2; break;
         case TOKEN_KIND_CONST_NUMBER_OCT: base = 8; break;
-        default: diag_error(util_loc(tokenizer, token), "expected a numeric literal");
+        default: diag_error(util_loc(tokenizer, token), LANG_E_EXPECTED_NUMERIC_LITERAL, token_kind_stringify(token.kind));
     }
     char *text = util_text_make_from_token(tokenizer, token);
     errno = 0;
     char *stripped = text;
     if(base != 10) stripped += 2;
     uintmax_t value = strtoull(stripped, NULL, base);
-    if(errno == ERANGE) diag_error(util_loc(tokenizer, token), "numeric constant too large");
+    if(errno == ERANGE) diag_error(util_loc(tokenizer, token), LANG_E_TOO_LARGE_NUMERIC_LITERAL);
     alloc_free(text);
     return value;
 }
@@ -187,7 +187,8 @@ ast_attribute_list_t util_parse_ast_attributes(tokenizer_t *tokenizer) {
         if(util_try_consume(tokenizer, TOKEN_KIND_PARENTHESES_LEFT)) {
             do {
                 arguments = alloc_array(arguments, ++argument_count, sizeof(ast_attribute_argument_type_t));
-                switch(tokenizer_peek(tokenizer).kind) {
+                token_t token = tokenizer_peek(tokenizer);
+                switch(token.kind) {
                     case TOKEN_KIND_CONST_STRING: {
                         token_t string_token = util_consume(tokenizer, TOKEN_KIND_CONST_STRING);
                         char *value = util_text_make_from_token_inset(tokenizer, string_token, 1);
@@ -203,7 +204,7 @@ ast_attribute_list_t util_parse_ast_attributes(tokenizer_t *tokenizer) {
                         arguments[argument_count - 1] = (ast_attribute_argument_t) { .type = AST_ATTRIBUTE_ARGUMENT_TYPE_NUMBER, .value.number = value };
                         break;
                     }
-                    default: diag_error(util_loc(tokenizer, tokenizer_peek(tokenizer)), "invalid attribute argument");
+                    default: diag_error(util_loc(tokenizer, token), LANG_E_EXPECTED_ATTR_ARG, token_kind_stringify(token.kind));
                 }
             } while(util_try_consume(tokenizer, TOKEN_KIND_COMMA));
             util_consume(tokenizer, TOKEN_KIND_PARENTHESES_RIGHT);

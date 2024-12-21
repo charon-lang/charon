@@ -144,13 +144,13 @@ static void cg_stmt_return(CG_STMT_PARAMS) {
     context->return_state.has_returned = true;
     if(context->return_state.type->kind == IR_TYPE_KIND_VOID) {
         if(stmt->_return.value != NULL) {
-            if(stmt->_return.value->type != IR_TYPE_KIND_VOID) diag_error(stmt->source_location, "value returned from a function without a return type");
+            if(stmt->_return.value->type != IR_TYPE_KIND_VOID) diag_error(stmt->source_location, LANG_E_UNEXPECTED_RETURN);
             cg_expr(context, stmt->_return.value);
         }
         LLVMBuildRetVoid(context->llvm_builder);
         return;
     }
-    if(stmt->_return.value == NULL) diag_error(stmt->source_location, "no return value");
+    if(stmt->_return.value == NULL) diag_error(stmt->source_location, LANG_E_MISSING_RETURN);
     LLVMBuildRet(context->llvm_builder, cg_expr(context, stmt->_return.value));
 }
 
@@ -244,13 +244,13 @@ static void cg_stmt_while(CG_STMT_PARAMS) {
 }
 
 static void cg_stmt_continue(CG_STMT_PARAMS) {
-    if(!context->loop_state.in_loop) diag_error(stmt->source_location, "continue out of loop");
+    if(!context->loop_state.in_loop) diag_error(stmt->source_location, LANG_E_NOT_IN_LOOP);
     context->loop_state.has_terminated = true;
     LLVMBuildBr(context->llvm_builder, context->loop_state.bb_beginning);
 }
 
 static void cg_stmt_break(CG_STMT_PARAMS) {
-    if(!context->loop_state.in_loop) diag_error(stmt->source_location, "break out of loop");
+    if(!context->loop_state.in_loop) diag_error(stmt->source_location, LANG_E_NOT_IN_LOOP);
     context->loop_state.has_terminated = true;
     context->loop_state.can_break = true;
     LLVMBuildBr(context->llvm_builder, context->loop_state.bb_end);
@@ -380,7 +380,7 @@ static value_t cg_expr_binary(CG_EXPR_PARAMS) {
     value_t left_value = cg_expr_ext(context, expr->binary.left);
 
     if(expr->binary.operation == IR_BINARY_OPERATION_ASSIGN) {
-        if(!left_value.is_ref) diag_error(expr->source_location, "invalid lvalue");
+        if(!left_value.is_ref) diag_error(expr->source_location, LANG_E_INVALID_LVALUE);
         LLVMBuildStore(context->llvm_builder, right, left_value.llvm_value);
         return (value_t) { .llvm_value = right };
     }
@@ -449,7 +449,7 @@ static value_t cg_expr_binary(CG_EXPR_PARAMS) {
 static value_t cg_expr_unary(CG_EXPR_PARAMS) {
     value_t operand_value = cg_expr_ext(context, expr->unary.operand);
     if(expr->unary.operation == IR_UNARY_OPERATION_REF) {
-        if(!operand_value.is_ref) diag_error(expr->source_location, "references can only be made to variables");
+        if(!operand_value.is_ref) diag_error(expr->source_location, LANG_E_REF_NOT_VAR);
         return (value_t) { .llvm_value = operand_value.llvm_value };
     }
 
@@ -544,7 +544,7 @@ static value_t cg_expr_cast(CG_EXPR_PARAMS) {
 
     if(type_from->kind == IR_TYPE_KIND_INTEGER && type_to->kind == IR_TYPE_KIND_POINTER) return (value_t) { .llvm_value = LLVMBuildIntToPtr(context->llvm_builder, value_from, ir_type_to_llvm(context, type_to), "cast.inttoptr") };
 
-    diag_error(expr->source_location, "invalid cast");
+    diag_error(expr->source_location, LANG_E_INVALID_CAST);
 }
 
 
@@ -563,7 +563,7 @@ static value_t cg_expr_subscript(CG_EXPR_PARAMS) {
                 case IR_TYPE_KIND_POINTER:
                     llvm_value = LLVMBuildGEP2(context->llvm_builder, ir_type_to_llvm(context, expr->type), resolve_ref(context, expr->subscript.value->type, value), &index, 1, "expr.subscript");
                     break;
-                default: diag_error(expr->source_location, "invalid type for indexing");
+                default: diag_error(expr->source_location, LANG_E_INVALID_TYPE);
             }
             break;
         }
@@ -578,7 +578,7 @@ static value_t cg_expr_subscript(CG_EXPR_PARAMS) {
                 case IR_TYPE_KIND_POINTER:
                     llvm_value = LLVMBuildGEP2(context->llvm_builder, ir_type_to_llvm(context, expr->type), resolve_ref(context, expr->subscript.value->type, value), (LLVMValueRef[]) { LLVMConstInt(LLVMInt64TypeInContext(context->llvm_context), expr->subscript.index_const, false) }, 1, "expr.subscript");
                     break;
-                default: diag_error(expr->source_location, "invalid type for constant indexing");
+                default: diag_error(expr->source_location, LANG_E_INVALID_TYPE);
             }
             break;
         }
@@ -589,7 +589,7 @@ static value_t cg_expr_subscript(CG_EXPR_PARAMS) {
                 llvm_value = LLVMBuildStructGEP2(context->llvm_builder, ir_type_to_llvm(context, expr->subscript.value->type), value.llvm_value, i, "expr.subscript");
                 goto brk;
             }
-            diag_error(expr->source_location, "unknown member `%s`", expr->subscript.member);
+            diag_error(expr->source_location, LANG_E_UNKNOWN_MEMBER, expr->subscript.member);
             brk:
             break;
         }
@@ -677,7 +677,7 @@ static void cg_function(context_t *context, ir_function_t *function) {
     cg_stmt(context, function->statement);
 
     if(!context->return_state.has_returned && !context->return_state.wont_return) {
-        if(context->return_state.type->kind != IR_TYPE_KIND_VOID) diag_error(function->statement->source_location, "missing return");
+        if(context->return_state.type->kind != IR_TYPE_KIND_VOID) diag_error(function->statement->source_location, LANG_E_MISSING_RETURN);
         LLVMBuildRetVoid(context->llvm_builder);
     }
 }

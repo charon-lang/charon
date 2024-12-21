@@ -93,7 +93,7 @@ ast_node_t *parser_tlc(tokenizer_t *tokenizer) {
         case TOKEN_KIND_KEYWORD_TYPE: return parse_type(tokenizer, attributes);
         case TOKEN_KIND_KEYWORD_LET: return parse_declaration(tokenizer, attributes);
         case TOKEN_KIND_KEYWORD_ENUM: return parse_enum(tokenizer, attributes);
-        default: diag_error(util_loc(tokenizer, token), "expected top level construct, got %s", token_kind_stringify(token.kind));
+        default: diag_error(util_loc(tokenizer, token), LANG_E_EXPECTED_TLC, token_kind_stringify(token.kind));
     }
     __builtin_unreachable();
 }

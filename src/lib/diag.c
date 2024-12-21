@@ -12,7 +12,14 @@ typedef struct {
     size_t offset, length;
 } line_t;
 
-static void diag(source_location_t *source_location, char *fmt, va_list list, char *type, FILE *fd) {
+static const char *g_strings[] = {
+    [LANG_MISSING] = "Missing language translation",
+    #define STRING(ID, VALUE) [LANG_##ID] = VALUE,
+    #include "lang_strings.def"
+    #undef STRING
+};
+
+static void diag(source_location_t *source_location, lang_t fmt, va_list list, char *type, FILE *fd) {
     size_t x = 0, y = 0;
     line_t lines[INFO_LINE_COUNT] = {
         { .present = true }
@@ -35,7 +42,7 @@ static void diag(source_location_t *source_location, char *fmt, va_list list, ch
     }
 
     fprintf(fd, "\e[1m%s:%lu:%lu\e[0m %s: \e[0m", source_location->source->name, y + 1, x + 1, type);
-    vfprintf(fd, fmt, list);
+    vfprintf(fd, g_strings[fmt], list);
     fprintf(fd, "\n");
 
     for(size_t i = INFO_LINE_COUNT; i > 0; i--) {
@@ -45,7 +52,7 @@ static void diag(source_location_t *source_location, char *fmt, va_list list, ch
     fprintf(fd, "%*s^\n", (int) (source_location->offset - lines[0].offset), "");
 }
 
-[[noreturn]] void diag_error(source_location_t source_location, char *fmt, ...) {
+[[noreturn]] void diag_error(source_location_t source_location, lang_t fmt, ...) {
     va_list list;
     va_start(list, fmt);
     diag(&source_location, fmt, list, "\e[91merror", stderr);
@@ -53,7 +60,7 @@ static void diag(source_location_t *source_location, char *fmt, va_list list, ch
     exit(EXIT_FAILURE);
 }
 
-void diag_warn(source_location_t source_location, char *fmt, ...) {
+void diag_warn(source_location_t source_location, lang_t fmt, ...) {
     va_list list;
     va_start(list, fmt);
     diag(&source_location, fmt, list, "\e[93mwarn", stderr);
