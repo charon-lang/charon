@@ -39,6 +39,12 @@ static void cache_add(ir_type_cache_t *cache, ir_type_t *type) {
 }
 
 bool ir_type_eq(ir_type_t *a, ir_type_t *b) {
+    if(
+        a->kind == IR_TYPE_KIND_INTEGER && b->kind == IR_TYPE_KIND_INTEGER
+        && a->integer.bit_size == b->integer.bit_size
+        && a->integer.is_signed == b->integer.is_signed
+        && a->integer.allow_coerce_pointer == b->integer.allow_coerce_pointer
+    ) return true;
     return a == b;
 }
 
