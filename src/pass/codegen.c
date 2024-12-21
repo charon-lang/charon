@@ -475,18 +475,13 @@ static value_t cg_expr_call(CG_EXPR_PARAMS) {
     assert(expr->call.function_reference->type->kind == IR_TYPE_KIND_FUNCTION_REFERENCE);
     ir_function_prototype_t prototype = expr->call.function_reference->type->function_reference.prototype;
 
-    size_t argument_count = VECTOR_SIZE(&expr->call.arguments);
-
-    if(argument_count < prototype.argument_count) diag_error(expr->source_location, "missing arguments");
-    if(!prototype.varargs && argument_count > prototype.argument_count) diag_error(expr->source_location, "invalid number of arguments");
-
     LLVMValueRef llvm_value;
-    if(argument_count > 0) {
-        LLVMValueRef arguments[argument_count];
+    if(VECTOR_SIZE(&expr->call.arguments) > 0) {
+        LLVMValueRef arguments[VECTOR_SIZE(&expr->call.arguments)];
         VECTOR_FOREACH(&expr->call.arguments, i, elem) {
             arguments[i] = cg_expr(context, elem);
         }
-        llvm_value = LLVMBuildCall2(context->llvm_builder, ir_function_prototype_to_llvm(context, prototype), value, arguments, argument_count, "");
+        llvm_value = LLVMBuildCall2(context->llvm_builder, ir_function_prototype_to_llvm(context, prototype), value, arguments, VECTOR_SIZE(&expr->call.arguments), "");
     } else {
         llvm_value = LLVMBuildCall2(context->llvm_builder, ir_function_prototype_to_llvm(context, prototype), value, NULL, 0, "");
     }

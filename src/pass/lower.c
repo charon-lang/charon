@@ -102,13 +102,16 @@ static ir_type_t *lower_type_ext(pass_lower_context_t *context, ir_namespace_t *
 
         for(size_t i = 0; i < type->reference.module_count; i++) {
             ir_symbol_t *symbol = ir_namespace_find_symbol_of_kind(current_namespace, type->reference.modules[i], IR_SYMBOL_KIND_MODULE);
+            namespace_generics_t *child_generics = namespace_generics_find_child(current_namespace_generics, type->reference.modules[i]);
             if(symbol == NULL) {
                 symbol = ir_namespace_find_symbol_of_kind(&context->unit->root_namespace, type->reference.modules[i], IR_SYMBOL_KIND_MODULE);
+                child_generics = namespace_generics_find_child(context->namespace_generics, type->reference.modules[i]);
                 if(symbol == NULL) diag_error(source_location, "unknown module `%s`", type->reference.modules[i]);
             }
+            assert(child_generics != NULL);
+
             current_namespace = &symbol->module->namespace;
-            current_namespace_generics = namespace_generics_find_child(current_namespace_generics, type->reference.modules[i]);
-            assert(current_namespace_generics != NULL);
+            current_namespace_generics = child_generics;
         }
 
         generic_t *generic = namespace_generics_find_generic(current_namespace_generics, type->reference.type_name);
@@ -487,12 +490,12 @@ static ir_expr_t *lower_expr(pass_lower_context_t *context, ir_namespace_t *curr
         }
         case AST_NODE_TYPE_EXPR_SELECTOR: {
             ir_symbol_t *symbol = ir_namespace_find_symbol_of_kind(current_namespace, node->expr_selector.name, IR_SYMBOL_KIND_MODULE);
+            namespace_generics_t *child_generics = namespace_generics_find_child(current_namespace_generics, node->expr_selector.name);
             if(symbol == NULL) {
                 symbol = ir_namespace_find_symbol_of_kind(&context->unit->root_namespace, node->expr_selector.name, IR_SYMBOL_KIND_MODULE);
+                child_generics = namespace_generics_find_child(context->namespace_generics, node->expr_selector.name);
                 if(symbol == NULL) goto enumeration;
             }
-
-            namespace_generics_t *child_generics = namespace_generics_find_child(current_namespace_generics, node->expr_selector.name);
             assert(child_generics != NULL);
 
             ir_expr_t *value = lower_expr(context, &symbol->module->namespace, scope, child_generics, node->expr_selector.value);
@@ -535,12 +538,11 @@ static ir_expr_t *lower_expr(pass_lower_context_t *context, ir_namespace_t *curr
     return expr;
 }
 
-static void populate_namespace_pass_two(pass_lower_context_t *context, ir_module_t *current_module, namespace_generics_t *current_namespace_generics, ast_node_t *node) {
-    ir_namespace_t *current_namespace = &context->unit->root_namespace;
-    if(current_module != NULL) current_namespace = &current_module->namespace;
+static void populate_rest(pass_lower_context_t *context, ir_module_t *current_module, namespace_generics_t *current_namespace_generics, ast_node_t *node) {
+    ir_namespace_t *current_namespace = current_module != NULL ? &current_module->namespace : &context->unit->root_namespace;
 
     switch(node->type) {
-        case AST_NODE_TYPE_ROOT: AST_NODE_LIST_FOREACH(&node->root.tlcs, populate_namespace_pass_two(context, current_module, current_namespace_generics, node)); break;
+        case AST_NODE_TYPE_ROOT: AST_NODE_LIST_FOREACH(&node->root.tlcs, populate_rest(context, current_module, current_namespace_generics, node)); break;
 
         case AST_NODE_TYPE_TLC_MODULE: {
             ir_symbol_t *symbol = ir_namespace_find_symbol_of_kind(current_namespace, node->tlc_module.name, IR_SYMBOL_KIND_MODULE);
@@ -549,7 +551,7 @@ static void populate_namespace_pass_two(pass_lower_context_t *context, ir_module
             namespace_generics_t *child_generics = namespace_generics_find_child(current_namespace_generics, node->tlc_module.name);
             assert(child_generics != NULL);
 
-            AST_NODE_LIST_FOREACH(&node->tlc_module.tlcs, populate_namespace_pass_two(context, symbol->module, child_generics, node));
+            AST_NODE_LIST_FOREACH(&node->tlc_module.tlcs, populate_rest(context, symbol->module, child_generics, node));
             break;
         }
         case AST_NODE_TYPE_TLC_FUNCTION: {
@@ -587,6 +589,7 @@ static void populate_namespace_pass_two(pass_lower_context_t *context, ir_module
 
             ir_type_declaration_t *type_decl = ir_namespace_find_type(current_namespace, node->tlc_type_definition.name);
             assert(type_decl != NULL);
+            // TODO: for primitives this does not make sense
             *type_decl->type = *lower_type(context, current_namespace, current_namespace_generics, node->tlc_type_definition.type, node->source_location);
             break;
         }
@@ -610,26 +613,20 @@ static void populate_namespace_pass_two(pass_lower_context_t *context, ir_module
     }
 }
 
-static void populate_namespace_pass_one(pass_lower_context_t *context, ir_module_t *current_module, namespace_generics_t *current_namespace_generics, ast_node_t *node) {
-    ir_namespace_t *current_namespace = &context->unit->root_namespace;
-    if(current_module != NULL) current_namespace = &current_module->namespace;
+static void populate_types_and_enums(pass_lower_context_t *context, ir_module_t *current_module, namespace_generics_t *current_namespace_generics, ast_node_t *node) {
+    ir_namespace_t *current_namespace = current_module != NULL ? &current_module->namespace : &context->unit->root_namespace;
 
     switch(node->type) {
-        case AST_NODE_TYPE_ROOT: AST_NODE_LIST_FOREACH(&node->root.tlcs, populate_namespace_pass_one(context, current_module, current_namespace_generics, node)); break;
+        case AST_NODE_TYPE_ROOT: AST_NODE_LIST_FOREACH(&node->root.tlcs, populate_types_and_enums(context, current_module, current_namespace_generics, node)); break;
 
         case AST_NODE_TYPE_TLC_MODULE: {
-            if(ir_namespace_exists_symbol(current_namespace, node->tlc_module.name)) diag_error(node->source_location, "symbol `%s` already exists", node->tlc_module.name);
+            ir_symbol_t *symbol = ir_namespace_find_symbol_of_kind(current_namespace, node->tlc_module.name, IR_SYMBOL_KIND_MODULE);
+            assert(symbol != NULL);
 
-            ir_module_t *module = alloc(sizeof(ir_module_t));
-            module->name = alloc_strdup(node->tlc_module.name);
-            module->parent = current_module;
-            module->namespace = IR_NAMESPACE_INIT;
+            namespace_generics_t *child_generics = namespace_generics_find_child(current_namespace_generics, node->tlc_module.name);
+            assert(child_generics != NULL);
 
-            ir_symbol_t *symbol = ir_namespace_add_symbol(current_namespace, IR_SYMBOL_KIND_MODULE);
-            symbol->module = module;
-
-            namespace_generics_t *child_generics = namespace_generics_make(context, memory_register_ptr(context->work_allocator, strdup(node->tlc_module.name)), current_namespace_generics);
-            AST_NODE_LIST_FOREACH(&node->tlc_module.tlcs, populate_namespace_pass_one(context, symbol->module, child_generics, node));
+            AST_NODE_LIST_FOREACH(&node->tlc_module.tlcs, populate_types_and_enums(context, symbol->module, child_generics, node));
             break;
         }
         case AST_NODE_TYPE_TLC_FUNCTION: break;
@@ -677,6 +674,38 @@ static void populate_namespace_pass_one(pass_lower_context_t *context, ir_module
     }
 }
 
+static void populate_modules(pass_lower_context_t *context, ir_module_t *current_module, namespace_generics_t *current_namespace_generics, ast_node_t *node) {
+    ir_namespace_t *current_namespace = current_module != NULL ? &current_module->namespace : &context->unit->root_namespace;
+
+    switch(node->type) {
+        case AST_NODE_TYPE_ROOT: AST_NODE_LIST_FOREACH(&node->root.tlcs, populate_modules(context, current_module, current_namespace_generics, node)); break;
+
+        case AST_NODE_TYPE_TLC_MODULE: {
+            if(ir_namespace_exists_symbol(current_namespace, node->tlc_module.name)) diag_error(node->source_location, "symbol `%s` already exists", node->tlc_module.name);
+
+            ir_module_t *module = alloc(sizeof(ir_module_t));
+            module->name = alloc_strdup(node->tlc_module.name);
+            module->parent = current_module;
+            module->namespace = IR_NAMESPACE_INIT;
+
+            ir_symbol_t *symbol = ir_namespace_add_symbol(current_namespace, IR_SYMBOL_KIND_MODULE);
+            symbol->module = module;
+
+            namespace_generics_t *child_generics = namespace_generics_make(context, memory_register_ptr(context->work_allocator, strdup(node->tlc_module.name)), current_namespace_generics);
+            AST_NODE_LIST_FOREACH(&node->tlc_module.tlcs, populate_modules(context, symbol->module, child_generics, node));
+            break;
+        }
+        case AST_NODE_TYPE_TLC_FUNCTION: break;
+        case AST_NODE_TYPE_TLC_EXTERN: break;
+        case AST_NODE_TYPE_TLC_TYPE_DEFINITION: break;
+        case AST_NODE_TYPE_TLC_DECLARATION: break;
+        case AST_NODE_TYPE_TLC_ENUMERATION: break;
+
+        AST_CASE_STMT()
+        AST_CASE_EXPRESSION()
+    }
+}
+
 pass_lower_context_t *pass_lower_context_make(memory_allocator_t *work_allocator, ir_unit_t *unit, ir_type_cache_t *type_cache) {
     pass_lower_context_t *context = memory_allocate(work_allocator, sizeof(pass_lower_context_t));
     context->work_allocator = work_allocator;
@@ -686,10 +715,19 @@ pass_lower_context_t *pass_lower_context_make(memory_allocator_t *work_allocator
     return context;
 }
 
-void pass_lower_populate_namespace(pass_lower_context_t *context, ast_node_t *root_node) {
+void pass_lower_populate_final(pass_lower_context_t *context, ast_node_t *root_node) {
     assert(root_node->type == AST_NODE_TYPE_ROOT);
-    populate_namespace_pass_one(context, NULL, context->namespace_generics, root_node);
-    populate_namespace_pass_two(context, NULL, context->namespace_generics, root_node);
+    populate_rest(context, NULL, context->namespace_generics, root_node);
+}
+
+void pass_lower_populate_types(pass_lower_context_t *context, ast_node_t *root_node) {
+    assert(root_node->type == AST_NODE_TYPE_ROOT);
+    populate_types_and_enums(context, NULL, context->namespace_generics, root_node);
+}
+
+void pass_lower_populate_modules(pass_lower_context_t *context, ast_node_t *root_node) {
+    assert(root_node->type == AST_NODE_TYPE_ROOT);
+    populate_modules(context, NULL, context->namespace_generics, root_node);
 }
 
 void pass_lower(pass_lower_context_t *context, ast_node_t *root_node) {

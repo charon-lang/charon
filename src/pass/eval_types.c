@@ -181,7 +181,12 @@ static void visitor_expr(ir_unit_t *unit, ir_type_cache_t *type_cache, ir_module
             ir_type_t *type = expr->call.function_reference->type;
             if(type->kind != IR_TYPE_KIND_FUNCTION_REFERENCE) diag_error(expr->source_location, "not a function");
 
+            size_t argument_count = VECTOR_SIZE(&expr->call.arguments);
             ir_function_prototype_t prototype = type->function_reference.prototype;
+
+            if(argument_count < prototype.argument_count) diag_error(expr->source_location, "missing arguments");
+            if(!prototype.varargs && argument_count > prototype.argument_count) diag_error(expr->source_location, "invalid number of arguments");
+
             VECTOR_FOREACH(&expr->call.arguments, i, elem) {
                 if(prototype.argument_count > i && !try_coerce(VECTOR_FOREACH_ELEMENT_REF(&expr->call.arguments, i), prototype.arguments[i])) diag_error(elem->source_location, "argument has invalid type");
             };

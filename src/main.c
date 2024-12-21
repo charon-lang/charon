@@ -216,7 +216,9 @@ static void compile(source_t **sources, size_t source_count, const char *dest_pa
     ir_type_cache_t *type_cache = ir_type_cache_make();
 
     pass_lower_context_t *lower_context = pass_lower_context_make(work_allocator, &unit, type_cache);
-    for(size_t i = 0; i < source_count; i++) pass_lower_populate_namespace(lower_context, ast_root_nodes[i]);
+    for(size_t i = 0; i < source_count; i++) pass_lower_populate_modules(lower_context, ast_root_nodes[i]);
+    for(size_t i = 0; i < source_count; i++) pass_lower_populate_types(lower_context, ast_root_nodes[i]);
+    for(size_t i = 0; i < source_count; i++) pass_lower_populate_final(lower_context, ast_root_nodes[i]);
     for(size_t i = 0; i < source_count; i++) pass_lower(lower_context, ast_root_nodes[i]);
 
     memory_allocator_free(work_allocator);
