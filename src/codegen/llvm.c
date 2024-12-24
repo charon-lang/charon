@@ -1,4 +1,4 @@
-#include "pass.h"
+#include "codegen.h"
 
 #include "constants.h"
 #include "lib/diag.h"
@@ -7,8 +7,20 @@
 
 #include <assert.h>
 #include <string.h>
+#include <llvm-c/Core.h>
+#include <llvm-c/Analysis.h>
+#include <llvm-c/TargetMachine.h>
+#include <llvm-c/Transforms/PassBuilder.h>
+#include <llvm-c/ExecutionEngine.h>
 
 #define TYPE_BOOL ir_type_cache_get_integer(context->type_cache, 1, false, false)
+
+struct codegen_context {
+    LLVMContextRef llvm_context;
+    LLVMBuilderRef llvm_builder;
+    LLVMModuleRef llvm_module;
+    LLVMTargetMachineRef llvm_machine;
+};
 
 typedef struct {
     LLVMContextRef llvm_context;
@@ -723,8 +735,24 @@ static void populate_namespace(context_t *context, ir_module_t *current_module, 
     }
 }
 
-void pass_codegen(ir_unit_t *unit, ir_type_cache_t *type_cache, const char *path, const char *passes, LLVMCodeModel code_model) {
-    char *error_message;
+codegen_context_t *codegen(ir_unit_t *unit, ir_type_cache_t *type_cache, codegen_optimization_t optimization, codegen_code_model_t code_model) {
+    LLVMCodeModel llvm_code_model;
+    switch(code_model) {
+        case CODEGEN_CODE_MODEL_DEFAULT: llvm_code_model = LLVMCodeModelDefault; break;
+        case CODEGEN_CODE_MODEL_TINY: llvm_code_model = LLVMCodeModelTiny; break;
+        case CODEGEN_CODE_MODEL_SMALL: llvm_code_model = LLVMCodeModelSmall; break;
+        case CODEGEN_CODE_MODEL_MEDIUM: llvm_code_model = LLVMCodeModelMedium; break;
+        case CODEGEN_CODE_MODEL_LARGE: llvm_code_model = LLVMCodeModelLarge; break;
+        case CODEGEN_CODE_MODEL_KERNEL: llvm_code_model = LLVMCodeModelKernel; break;
+    }
+
+    const char *passes = NULL;
+    switch(optimization) {
+        case CODEGEN_OPTIMIZATION_NONE: break;
+        case CODEGEN_OPTIMIZATION_O1: passes = "default<O1>"; break;
+        case CODEGEN_OPTIMIZATION_O2: passes = "default<O2>"; break;
+        case CODEGEN_OPTIMIZATION_O3: passes = "default<O3>"; break;
+    }
 
     // OPTIMIZE: this is kind of lazy
     LLVMInitializeAllTargetInfos();
@@ -733,12 +761,14 @@ void pass_codegen(ir_unit_t *unit, ir_type_cache_t *type_cache, const char *path
     LLVMInitializeAllAsmParsers();
     LLVMInitializeAllAsmPrinters();
 
+    char *error_message;
+
     const char *triple = LLVMGetDefaultTargetTriple();
 
     LLVMTargetRef target;
     if(LLVMGetTargetFromTriple(triple, &target, &error_message) != 0) log_fatal("failed to create target (%s)", error_message);
 
-    LLVMTargetMachineRef machine = LLVMCreateTargetMachine(target, triple, "generic", "", LLVMCodeGenLevelDefault, LLVMRelocDefault, code_model);
+    LLVMTargetMachineRef machine = LLVMCreateTargetMachine(target, triple, "generic", "", LLVMCodeGenLevelDefault, LLVMRelocDefault, llvm_code_model);
     if(machine == NULL) log_fatal("failed to create target machine");
 
     context_t context;
@@ -751,9 +781,7 @@ void pass_codegen(ir_unit_t *unit, ir_type_cache_t *type_cache, const char *path
     populate_namespace(&context, NULL, &unit->root_namespace);
     cg_namespace(&context, &unit->root_namespace);
 
-    error_message = NULL;
-    LLVMBool failure = LLVMVerifyModule(context.llvm_module, LLVMReturnStatusAction, &error_message);
-    if(failure) log_fatal("failed to verify module (%s)", error_message);
+    if(LLVMVerifyModule(context.llvm_module, LLVMReturnStatusAction, &error_message)) log_fatal("failed to verify module (%s)", error_message);
     LLVMDisposeMessage(error_message);
 
     if(passes != NULL) {
@@ -766,38 +794,37 @@ void pass_codegen(ir_unit_t *unit, ir_type_cache_t *type_cache, const char *path
     LLVMSetDataLayout(context.llvm_module, layout);
     LLVMDisposeMessage(layout);
 
-    if(LLVMTargetMachineEmitToFile(machine, context.llvm_module, path, LLVMObjectFile, &error_message) != 0) log_fatal("emit failed (%s)", error_message);
-
-    LLVMDisposeBuilder(context.llvm_builder);
-    LLVMDisposeModule(context.llvm_module);
-    LLVMContextDispose(context.llvm_context);
+    codegen_context_t *codegen_context = alloc(sizeof(codegen_context_t));
+    codegen_context->llvm_context = context.llvm_context;
+    codegen_context->llvm_module = context.llvm_module;
+    codegen_context->llvm_builder = context.llvm_builder;
+    codegen_context->llvm_machine = machine;
+    return codegen_context;
 }
 
-void pass_codegen_ir(ir_unit_t *unit, ir_type_cache_t *type_cache, const char *path) {
-    context_t context;
-    context.llvm_context = LLVMContextCreate();
-    context.llvm_builder = LLVMCreateBuilderInContext(context.llvm_context);
-    context.llvm_module = LLVMModuleCreateWithNameInContext("CharonModule", context.llvm_context);
-    context.unit = unit;
-    context.type_cache = type_cache;
-
-    populate_namespace(&context, NULL, &unit->root_namespace);
-    cg_namespace(&context, &unit->root_namespace);
-
-    LLVMBool failure;
+void codegen_emit(codegen_context_t *context, const char *path, bool ir) {
     char *error_message;
-
-    failure = LLVMVerifyModule(context.llvm_module, LLVMReturnStatusAction, &error_message);
-    if(failure) log_fatal("failed to verify module (%s)", error_message);
-    LLVMDisposeMessage(error_message);
-
-    failure = LLVMPrintModuleToFile(context.llvm_module, path, &error_message);
-    if(failure) {
-        log_fatal("emit failed (%s)\n", error_message);
-        LLVMDisposeMessage(error_message);
+    if(ir) {
+        if(LLVMPrintModuleToFile(context->llvm_module, path, &error_message)) log_fatal("emit failed (%s)\n", error_message);
+    } else {
+        if(LLVMTargetMachineEmitToFile(context->llvm_machine, context->llvm_module, path, LLVMObjectFile, &error_message) != 0) log_fatal("emit failed (%s)", error_message);
     }
+}
 
-    LLVMDisposeBuilder(context.llvm_builder);
-    LLVMDisposeModule(context.llvm_module);
-    LLVMContextDispose(context.llvm_context);
+int codegen_run(codegen_context_t *context) {
+    char *error_message;
+    LLVMExecutionEngineRef engine;
+    if(LLVMCreateInterpreterForModule(&engine, context->llvm_module, &error_message)) log_fatal("failed to create execution engine (%s)", error_message);
+
+    LLVMValueRef fn;
+    if(LLVMFindFunction(engine, "main", &fn)) log_fatal("missing main function");
+    return LLVMRunFunctionAsMain(engine, fn, 1, (const char *[]) { "CharonModule" }, (const char *[]) { NULL });
+}
+
+void codegen_dispose_context(codegen_context_t *context) {
+    LLVMDisposeTargetMachine(context->llvm_machine);
+    LLVMDisposeBuilder(context->llvm_builder);
+    LLVMDisposeModule(context->llvm_module);
+    LLVMContextDispose(context->llvm_context);
+    alloc_free(context);
 }
