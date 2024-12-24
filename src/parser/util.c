@@ -128,6 +128,7 @@ ast_type_t *util_parse_type(tokenizer_t *tokenizer) {
         return ast_type_integer_make(CONSTANTS_ADDRESS_SIZE, false, attributes);
     }
     if(util_token_cmp(tokenizer, token_identifier, "ptr") == 0) goto type_vaddr;
+    if(util_token_cmp(tokenizer, token_identifier, "size") == 0) return ast_type_integer_make(CONSTANTS_SIZE_SIZE, false, attributes);
 
     if(util_token_cmp(tokenizer, token_identifier, "uint") == 0) return ast_type_integer_make(CONSTANTS_INT_SIZE, false, attributes);
     if(util_token_cmp(tokenizer, token_identifier, "u8") == 0) return ast_type_integer_make(8, false, attributes);
