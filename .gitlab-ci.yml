@@ -1,0 +1,27 @@
+stages:
+  - build
+  - deploy
+
+build_extension:
+  image: node:latest
+  cache:
+    paths:
+      - node_modules/
+  stage: build
+  script:
+    - cd tools/vscode-extension
+    - npm install
+    - npx vsce package
+  artifacts:
+    paths:
+      - tools/vscode-extension/charon-lang-*.vsix
+
+publish_extension:
+  image: bash:latest
+  stage: deploy
+  script:
+    - apk add curl
+    - FILE_PATH="$(find tools/vscode-extension/ -type f -name "charon-lang-*.vsix")"
+    - FILE_NAME="$(basename $FILE_PATH)"
+    - |
+      curl --header "JOB-TOKEN: $CI_JOB_TOKEN" --upload-file "$FILE_PATH" "${CI_API_V4_URL}/projects/${CI_PROJECT_ID}/packages/generic/vscode_extension/${CI_COMMIT_SHA}/charon-lang-${CI_COMMIT_SHA}.vsix"
