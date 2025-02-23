@@ -11,9 +11,6 @@
         "vscode": "^1.89.0"
     },
     "activationEvents": [],
-    "files": [
-        "../tree-sitter-charon/tree-sitter-charon.wasm"
-    ],
     "main": "./out/extension.js",
     "contributes": {
         "languages": [{
@@ -38,7 +35,7 @@
         "watch": "tsc -watch -p ./"
     },
     "dependencies": {
-        "web-tree-sitter": "^0.24.4"
+        "web-tree-sitter": "^0.25.2"
     },
     "devDependencies": {
         "@types/mocha": "^10.0.9",
