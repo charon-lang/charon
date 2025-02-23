@@ -1,15 +1,15 @@
-package tree_sitter_treesitter_test
+package tree_sitter_charon_test
 
 import (
 	"testing"
 
-	tree_sitter "github.com/smacker/go-tree-sitter"
-	"github.com/tree-sitter/tree-sitter-treesitter"
+	tree_sitter "github.com/tree-sitter/go-tree-sitter"
+	tree_sitter_charon "git.thenest.dev/wux/charon/bindings/go"
 )
 
 func TestCanLoadGrammar(t *testing.T) {
-	language := tree_sitter.NewLanguage(tree_sitter_treesitter.Language())
+	language := tree_sitter.NewLanguage(tree_sitter_charon.Language())
 	if language == nil {
-		t.Errorf("Error loading Treesitter grammar")
+		t.Errorf("Error loading Charon grammar")
 	}
 }

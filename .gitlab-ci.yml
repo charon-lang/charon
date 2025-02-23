@@ -9,7 +9,6 @@ build_tree_sitter:
     - pacman -Syu --noconfirm
     - pacman -S --noconfirm tree-sitter-cli nodejs
     - cd tools/tree-sitter-charon
-    - tree-sitter init-config
     - tree-sitter generate
     - tree-sitter build --wasm
   artifacts:

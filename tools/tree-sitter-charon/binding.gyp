@@ -1,7 +1,7 @@
 {
   "targets": [
     {
-      "target_name": "tree_sitter_treesitter_binding",
+      "target_name": "tree_sitter_charon_binding",
       "dependencies": [
         "<!(node -p \"require('node-addon-api').targets\"):node_addon_api_except",
       ],
@@ -11,7 +11,7 @@
       "sources": [
         "bindings/node/binding.cc",
         "src/parser.c",
-        "src/scanner.c",
+        # NOTE: if your language has an external scanner, add it here.
       ],
       "conditions": [
         ["OS!='win'", {
