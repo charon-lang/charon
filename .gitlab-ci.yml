@@ -9,8 +9,10 @@ build_extension:
       - node_modules/
   stage: build
   script:
-    - apt-get update
-    - apt-get install tree-sitter-cli
+    - wget https://github.com/tree-sitter/tree-sitter/releases/download/v0.25.2/tree-sitter-linux-x64.gz
+    - gunzip tree-sitter-linux-x64.gz
+    - chmod +x tree-sitter-linux-x64
+    - mv tree-sitter-linux-x64 /usr/bin/tree-sitter
     - cd tools/vscode-extension
     - npm install
     - npx vsce package
