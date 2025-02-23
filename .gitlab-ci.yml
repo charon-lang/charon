@@ -7,7 +7,7 @@ build_tree_sitter:
   stage: build
   script:
     - pacman -Syu --noconfirm
-    - pacman -S --noconfirm tree-sitter-cli
+    - pacman -S --noconfirm tree-sitter-cli nodejs
     - cd tools/tree-sitter-charon
     - tree-sitter generate
     - tree-sitter build --wasm
