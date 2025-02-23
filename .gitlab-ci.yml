@@ -2,17 +2,30 @@ stages:
   - build
   - deploy
 
+build_tree_sitter:
+  image: archlinux:latest
+  stage: build
+  script:
+    - pacman -S --noconfirm tree-sitter
+    - cd tools/tree-sitter-charon
+    - tree-sitter generate
+    - tree-sitter build --wasm
+  artifacts:
+    paths:
+      - tools/tree-sitter-charon/tree-sitter-charon.wasm
+
 build_extension:
   image: node:latest
+  stage: build
+  needs:
+    - build_tree_sitter
   cache:
     paths:
       - node_modules/
-  stage: build
   script:
-    - wget https://github.com/tree-sitter/tree-sitter/releases/download/v0.25.2/tree-sitter-linux-x64.gz
-    - gunzip tree-sitter-linux-x64.gz
-    - chmod +x tree-sitter-linux-x64
-    - mv tree-sitter-linux-x64 /usr/bin/tree-sitter
+    - mkdir -p tools/vscode-extension/out
+    - cp tools/tree-sitter-charon/tree-sitter-charon.wasm tools/vscode-extension/out
+    - cp tools/tree-sitter-charon/queries/highlights.scm tools/vscode-extension/out
     - cd tools/vscode-extension
     - npm install
     - npx vsce package
