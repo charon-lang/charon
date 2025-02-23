@@ -9,6 +9,8 @@ build_extension:
       - node_modules/
   stage: build
   script:
+    - apt update
+    - apt install tree-sitter
     - cd tools/vscode-extension
     - npm install
     - npx vsce package
