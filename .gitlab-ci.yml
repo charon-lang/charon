@@ -8,6 +8,7 @@ build_tree_sitter:
   script:
     - pacman -Syu --noconfirm
     - pacman -S --noconfirm tree-sitter-cli nodejs emscripten
+    - source /etc/profile.d/emscripten.sh
     - cd tools/tree-sitter-charon
     - tree-sitter generate
     - tree-sitter build --wasm
