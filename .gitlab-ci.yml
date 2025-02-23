@@ -6,6 +6,7 @@ build_tree_sitter:
   image: archlinux:latest
   stage: build
   script:
+    - pacman -Syu
     - pacman -S --noconfirm tree-sitter
     - cd tools/tree-sitter-charon
     - tree-sitter generate
