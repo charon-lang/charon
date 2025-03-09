@@ -1,0 +1,46 @@
+stages:
+  - build
+  - deploy
+
+build_tree_sitter:
+  image: archlinux:latest
+  stage: build
+  script:
+    - pacman -Syu --noconfirm
+    - pacman -S --noconfirm tree-sitter-cli nodejs emscripten
+    - source /etc/profile.d/emscripten.sh
+    - cd tools/tree-sitter-charon
+    - tree-sitter generate
+    - tree-sitter build --wasm
+  artifacts:
+    paths:
+      - tools/tree-sitter-charon/tree-sitter-charon.wasm
+
+build_extension:
+  image: node:latest
+  stage: build
+  needs:
+    - build_tree_sitter
+  cache:
+    paths:
+      - node_modules/
+  script:
+    - mkdir -p tools/vscode-extension/out
+    - cp tools/tree-sitter-charon/tree-sitter-charon.wasm tools/vscode-extension/out
+    - cp tools/tree-sitter-charon/queries/highlights.scm tools/vscode-extension/out
+    - cd tools/vscode-extension
+    - npm install
+    - npx vsce package
+  artifacts:
+    paths:
+      - tools/vscode-extension/charon-lang-*.vsix
+
+publish_extension:
+  image: bash:latest
+  stage: deploy
+  script:
+    - apk add curl
+    - FILE_PATH="$(find tools/vscode-extension/ -type f -name "charon-lang-*.vsix")"
+    - FILE_NAME="$(basename $FILE_PATH)"
+    - |
+      curl --header "JOB-TOKEN: $CI_JOB_TOKEN" --upload-file "$FILE_PATH" "${CI_API_V4_URL}/projects/${CI_PROJECT_ID}/packages/generic/vscode_extension/${CI_COMMIT_SHA}/charon-lang-${CI_COMMIT_SHA}.vsix"

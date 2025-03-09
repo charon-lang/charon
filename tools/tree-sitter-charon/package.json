@@ -1,49 +1,52 @@
 {
-  "name": "tree-sitter-treesitter",
-  "version": "0.0.1",
-  "description": "Treesitter grammar for tree-sitter",
-  "repository": "github:tree-sitter/tree-sitter-treesitter",
+  "name": "tree-sitter-charon",
+  "version": "0.1.0",
+  "description": "Charon language parser",
+  "repository": "https://git.thenest.dev/wux/charon",
   "license": "MIT",
+  "author": {
+    "name": "WuX",
+    "email": "wux@thenest.dev",
+    "url": "https://thenest.dev/"
+  },
   "main": "bindings/node",
   "types": "bindings/node",
   "keywords": [
     "incremental",
     "parsing",
     "tree-sitter",
-    "treesitter"
+    "charon"
   ],
   "files": [
     "grammar.js",
+    "tree-sitter.json",
     "binding.gyp",
     "prebuilds/**",
     "bindings/node/*",
     "queries/*",
-    "src/**"
+    "src/**",
+    "*.wasm"
   ],
   "dependencies": {
-    "node-addon-api": "^7.1.0",
-    "node-gyp-build": "^4.8.0"
+    "node-addon-api": "^8.2.1",
+    "node-gyp-build": "^4.8.2"
   },
   "devDependencies": {
-    "prebuildify": "^6.0.0",
-    "tree-sitter-cli": "^0.22.5"
+    "prebuildify": "^6.0.1",
+    "tree-sitter-cli": "^0.24.6"
   },
   "peerDependencies": {
-    "tree-sitter": "^0.21.0"
+    "tree-sitter": "^0.21.1"
   },
   "peerDependenciesMeta": {
     "tree-sitter": {
       "optional": true
     }
   },
-  "tree-sitter": [
-    {
-      "scope": "source.treesitter",
-      "injection-regex": "^treesitter$"
-    }
-  ],
   "scripts": {
     "install": "node-gyp-build",
-    "prebuildify": "prebuildify --napi --strip"
+    "prestart": "tree-sitter build --wasm",
+    "start": "tree-sitter playground",
+    "test": "node --test bindings/node/*_test.js"
   }
 }

@@ -1,5 +1,5 @@
 import * as vscode from "vscode";
-import Parser from "web-tree-sitter";
+import { Parser, Language, Query } from "web-tree-sitter";
 import fs from "fs";
 
 const terms: {[key: string]: { token?: string, modifiers?: string[] }} = {
@@ -39,11 +39,11 @@ const legend = (() => {
 })();
 
 class TokenProvider implements vscode.DocumentSemanticTokensProvider {
-    readonly language: Parser.Language;
+    readonly language: Language;
     readonly parser: Parser;
-    readonly query: Parser.Query;
+    readonly query: Query;
 
-    constructor(language: Parser.Language, parser: Parser, highlights: string) {
+    constructor(language: Language, parser: Parser, highlights: string) {
         this.language = language;
         this.parser = parser;
         this.query = this.language.query(highlights);
@@ -53,7 +53,7 @@ class TokenProvider implements vscode.DocumentSemanticTokensProvider {
         const tree = this.parser.parse(doc.getText());
 
         let foundCaptures: { term: string; range: vscode.Range, nodeId: number }[] = [];
-        for(const match of this.query.matches(tree.rootNode, {}).reverse()) {
+        for(const match of this.query.matches(tree!.rootNode, {}).reverse()) {
             for(const capture of match.captures) {
                 if(!(capture.name in terms)) continue;
                 if(foundCaptures.find((c) => c.nodeId == capture.node.id) != undefined) continue;
@@ -93,7 +93,7 @@ export async function activate(context: vscode.ExtensionContext) {
 
     await Parser.init();
 
-    let lang = await Parser.Language.load(context.asAbsolutePath("out/tree-sitter-charon.wasm"));
+    let lang = await Language.load(context.asAbsolutePath("out/tree-sitter-charon.wasm"));
     let parser = new Parser;
     parser.setLanguage(lang);
 

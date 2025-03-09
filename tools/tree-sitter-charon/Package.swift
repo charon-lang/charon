@@ -2,46 +2,36 @@
 import PackageDescription
 
 let package = Package(
-    name: "TreeSitterTreesitter",
+    name: "TreeSitterCharon",
     products: [
-        .library(name: "TreeSitterTreesitter", targets: ["TreeSitterTreesitter"]),
+        .library(name: "TreeSitterCharon", targets: ["TreeSitterCharon"]),
     ],
-    dependencies: [],
+    dependencies: [
+        .package(url: "https://github.com/ChimeHQ/SwiftTreeSitter", from: "0.8.0"),
+    ],
     targets: [
-        .target(name: "TreeSitterTreesitter",
-                path: ".",
-                exclude: [
-                    "Cargo.toml",
-                    "Makefile",
-                    "binding.gyp",
-                    "bindings/c",
-                    "bindings/go",
-                    "bindings/node",
-                    "bindings/python",
-                    "bindings/rust",
-                    "prebuilds",
-                    "grammar.js",
-                    "package.json",
-                    "package-lock.json",
-                    "pyproject.toml",
-                    "setup.py",
-                    "test",
-                    "examples",
-                    ".editorconfig",
-                    ".github",
-                    ".gitignore",
-                    ".gitattributes",
-                    ".gitmodules",
-                ],
-                sources: [
-                    "src/parser.c",
-                    // NOTE: if your language has an external scanner, add it here.
-                ],
-                resources: [
-                    .copy("queries")
-                ],
-                publicHeadersPath: "bindings/swift",
-                cSettings: [.headerSearchPath("src")])
+        .target(
+            name: "TreeSitterCharon",
+            dependencies: [],
+            path: ".",
+            sources: [
+                "src/parser.c",
+                // NOTE: if your language has an external scanner, add it here.
+            ],
+            resources: [
+                .copy("queries")
+            ],
+            publicHeadersPath: "bindings/swift",
+            cSettings: [.headerSearchPath("src")]
+        ),
+        .testTarget(
+            name: "TreeSitterCharonTests",
+            dependencies: [
+                "SwiftTreeSitter",
+                "TreeSitterCharon",
+            ],
+            path: "bindings/swift/TreeSitterCharonTests"
+        )
     ],
     cLanguageStandard: .c11
 )

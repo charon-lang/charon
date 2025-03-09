@@ -3,7 +3,7 @@
 TREE_SITTER_PATH=../tree-sitter-charon
 
 (cd $TREE_SITTER_PATH && tree-sitter generate)
-(cd $TREE_SITTER_PATH &&  tree-sitter build --wasm)
+(cd $TREE_SITTER_PATH && tree-sitter build --wasm)
 
 mkdir -p ./out
 cp $TREE_SITTER_PATH/tree-sitter-charon.wasm ./out
