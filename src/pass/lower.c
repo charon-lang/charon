@@ -222,9 +222,14 @@ static void lower_tlc(pass_lower_context_t *context, ir_namespace_t *current_nam
             ir_symbol_t *symbol = ir_namespace_find_symbol_of_kind(current_namespace, node->tlc_declaration.name, IR_SYMBOL_KIND_VARIABLE);
             assert(symbol != NULL);
 
+            ir_scope_t *new_scope = alloc(sizeof(ir_scope_t));
+            new_scope->parent = scope;
+            new_scope->variable_count = 0;
+            new_scope->variables = NULL;
+
             ir_expr_t *initial = NULL;
             if(node->tlc_declaration.initial != NULL) {
-                initial = lower_expr(context, current_namespace, scope, current_namespace_generics, node->tlc_declaration.initial);
+                initial = lower_expr(context, current_namespace, new_scope, current_namespace_generics, node->tlc_declaration.initial);
                 if(!initial->is_const) diag_error(node->source_location, LANG_E_NOT_CONSTANT);
             }
             symbol->variable->initial_value = initial;
