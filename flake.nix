@@ -10,7 +10,7 @@
             inherit (pkgs) lib stdenv mkShell;
         in {
             devShells.default = mkShell {
-                shellHook = "export DEVSHELL_PS1_PREFIX='charon'";
+                shellHook = "export NIX_SHELL_NAME='charon'";
                 nativeBuildInputs = with pkgs; [
                     pcre2
                     llvmPackages_18.libllvm
@@ -21,9 +21,6 @@
                     gdb
                     bear
                     gcc14
-                    tree-sitter
-                    python3
-                    emscripten
                     valgrind
                 ];
             };
