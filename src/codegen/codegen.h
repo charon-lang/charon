@@ -20,7 +20,7 @@ typedef enum {
 
 typedef struct codegen_context codegen_context_t;
 
-codegen_context_t *codegen(ir_unit_t *unit, ir_type_cache_t *type_cache, codegen_optimization_t optimization, codegen_code_model_t code_model);
+codegen_context_t *codegen(ir_unit_t *unit, ir_type_cache_t *type_cache, codegen_optimization_t optimization, codegen_code_model_t code_model, const char *features);
 void codegen_emit(codegen_context_t *context, const char *path, bool ir);
 int codegen_run(codegen_context_t *context);
 void codegen_dispose_context(codegen_context_t *context);

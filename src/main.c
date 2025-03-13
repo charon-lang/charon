@@ -60,6 +60,7 @@ int main(int argc, const char *argv[]) {
     bool emit_ir = false;
     codegen_code_model_t code_model = CODEGEN_CODE_MODEL_DEFAULT;
     codegen_optimization_t optimization = mode == CODEGEN_OPTIMIZATION_O1;
+    const char *features = "";
     for(int i = 2; i < argc; i++) {
         if(argv[i][0] != '-') {
             char *name = strdup_basename(argv[i]);
@@ -97,6 +98,11 @@ int main(int argc, const char *argv[]) {
                 invalid_optimization:
                 log_warning("invalid optimization level '%s'", &argv[i][15]);
             }
+            continue;
+        }
+
+        if(strncasecmp(argv[i], "--features=", 11) == 0) {
+            features = &argv[i][11];
             continue;
         }
 
@@ -158,7 +164,7 @@ int main(int argc, const char *argv[]) {
     pass_eval_types(&unit, type_cache);
 
     /* Codegen: IR -> LLVM_IR */
-    codegen_context_t *cg_context = codegen(&unit, type_cache, optimization, code_model);
+    codegen_context_t *cg_context = codegen(&unit, type_cache, optimization, code_model, features);
 
     int ret = EXIT_SUCCESS;
     switch(mode) {

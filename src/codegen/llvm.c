@@ -1,6 +1,5 @@
 #include "codegen.h"
 
-#include "constants.h"
 #include "lib/diag.h"
 #include "lib/alloc.h"
 #include "lib/log.h"
@@ -556,6 +555,8 @@ static value_t cg_expr_cast(CG_EXPR_PARAMS) {
 
     if(type_from->kind == IR_TYPE_KIND_INTEGER && type_to->kind == IR_TYPE_KIND_POINTER) return (value_t) { .llvm_value = LLVMBuildIntToPtr(context->llvm_builder, value_from, ir_type_to_llvm(context, type_to), "cast.inttoptr") };
 
+    if(type_from->kind == IR_TYPE_KIND_ENUMERATION && type_to->kind == IR_TYPE_KIND_INTEGER) return (value_t) { .llvm_value = value_from };
+
     diag_error(expr->source_location, LANG_E_INVALID_CAST);
 }
 
@@ -735,7 +736,7 @@ static void populate_namespace(context_t *context, ir_module_t *current_module, 
     }
 }
 
-codegen_context_t *codegen(ir_unit_t *unit, ir_type_cache_t *type_cache, codegen_optimization_t optimization, codegen_code_model_t code_model) {
+codegen_context_t *codegen(ir_unit_t *unit, ir_type_cache_t *type_cache, codegen_optimization_t optimization, codegen_code_model_t code_model, const char *features) {
     LLVMCodeModel llvm_code_model;
     switch(code_model) {
         case CODEGEN_CODE_MODEL_DEFAULT: llvm_code_model = LLVMCodeModelDefault; break;
@@ -768,7 +769,7 @@ codegen_context_t *codegen(ir_unit_t *unit, ir_type_cache_t *type_cache, codegen
     LLVMTargetRef target;
     if(LLVMGetTargetFromTriple(triple, &target, &error_message) != 0) log_fatal("failed to create target (%s)", error_message);
 
-    LLVMTargetMachineRef machine = LLVMCreateTargetMachine(target, triple, "generic", "", LLVMCodeGenLevelDefault, LLVMRelocDefault, llvm_code_model);
+    LLVMTargetMachineRef machine = LLVMCreateTargetMachine(target, triple, "generic", features, LLVMCodeGenLevelDefault, LLVMRelocDefault, llvm_code_model);
     if(machine == NULL) log_fatal("failed to create target machine");
 
     context_t context;
