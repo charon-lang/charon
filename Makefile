@@ -3,7 +3,7 @@
 all: clean charon
 
 CC := clang
-CFLAGS := -std=gnu23 -D PCRE2_CODE_UNIT_WIDTH=8
+CFLAGS := -xc -std=gnu23 -D PCRE2_CODE_UNIT_WIDTH=8
 CFLAGS += -Werror -Wswitch -Wimplicit-fallthrough -Wall
 CFLAGS += $(shell pcre2-config --cflags --libs8)
 CFLAGS += $(shell llvm-config --cflags --ldflags --system-libs --libs core)
