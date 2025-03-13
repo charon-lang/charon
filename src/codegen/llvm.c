@@ -736,7 +736,7 @@ static void populate_namespace(context_t *context, ir_module_t *current_module, 
     }
 }
 
-codegen_context_t *codegen(ir_unit_t *unit, ir_type_cache_t *type_cache, codegen_optimization_t optimization, codegen_code_model_t code_model, const char *features) {
+codegen_context_t *codegen(ir_unit_t *unit, ir_type_cache_t *type_cache, codegen_optimization_t optimization, codegen_code_model_t code_model, codegen_relocation_t relocation_mode, const char *features) {
     LLVMCodeModel llvm_code_model;
     switch(code_model) {
         case CODEGEN_CODE_MODEL_DEFAULT: llvm_code_model = LLVMCodeModelDefault; break;
@@ -745,6 +745,13 @@ codegen_context_t *codegen(ir_unit_t *unit, ir_type_cache_t *type_cache, codegen
         case CODEGEN_CODE_MODEL_MEDIUM: llvm_code_model = LLVMCodeModelMedium; break;
         case CODEGEN_CODE_MODEL_LARGE: llvm_code_model = LLVMCodeModelLarge; break;
         case CODEGEN_CODE_MODEL_KERNEL: llvm_code_model = LLVMCodeModelKernel; break;
+    }
+
+    LLVMRelocMode llvm_reloc_model;
+    switch(relocation_mode) {
+        case CODEGEN_RELOCATION_DEFAULT: llvm_reloc_model = LLVMRelocDefault; break;
+        case CODEGEN_RELOCATION_STATIC: llvm_reloc_model = LLVMRelocStatic; break;
+        case CODEGEN_RELOCATION_PIC: llvm_reloc_model = LLVMRelocPIC; break;
     }
 
     const char *passes = NULL;
@@ -769,7 +776,7 @@ codegen_context_t *codegen(ir_unit_t *unit, ir_type_cache_t *type_cache, codegen
     LLVMTargetRef target;
     if(LLVMGetTargetFromTriple(triple, &target, &error_message) != 0) log_fatal("failed to create target (%s)", error_message);
 
-    LLVMTargetMachineRef machine = LLVMCreateTargetMachine(target, triple, "generic", features, LLVMCodeGenLevelDefault, LLVMRelocDefault, llvm_code_model);
+    LLVMTargetMachineRef machine = LLVMCreateTargetMachine(target, triple, "generic", features, LLVMCodeGenLevelDefault, llvm_reloc_model, llvm_code_model);
     if(machine == NULL) log_fatal("failed to create target machine");
 
     context_t context;

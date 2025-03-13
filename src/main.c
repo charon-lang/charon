@@ -6,6 +6,7 @@
 #include "parser/parser.h"
 #include "pass/pass.h"
 #include "codegen/codegen.h"
+#include "strings.h"
 
 #include <stdlib.h>
 #include <string.h>
@@ -58,6 +59,7 @@ int main(int argc, const char *argv[]) {
 
     const char *dest_path = NULL;
     bool emit_ir = false;
+    codegen_relocation_t reloc_mode = CODEGEN_RELOCATION_DEFAULT;
     codegen_code_model_t code_model = CODEGEN_CODE_MODEL_DEFAULT;
     codegen_optimization_t optimization = mode == CODEGEN_OPTIMIZATION_O1;
     const char *features = "";
@@ -115,6 +117,15 @@ int main(int argc, const char *argv[]) {
             else if(strcasecmp(left, "medium") == 0) code_model = CODEGEN_CODE_MODEL_MEDIUM;
             else if(strcasecmp(left, "large") == 0) code_model = CODEGEN_CODE_MODEL_LARGE;
             else log_warning("invalid code model '%s', ignoring", left);
+            continue;
+        }
+
+        if(mode == COMPILE && strncasecmp(argv[i], "--reloc=", 8) == 0) {
+            const char *left = &argv[i][8];
+            if(strcasecmp(left, "default") == 0) reloc_mode = CODEGEN_RELOCATION_DEFAULT;
+            else if(strcasecmp(left, "static") == 0) reloc_mode = CODEGEN_RELOCATION_STATIC;
+            else if(strcasecmp(left, "pic") == 0) reloc_mode = CODEGEN_RELOCATION_PIC;
+            else log_warning("invalid relocation mode '%s', ignoring", left);
             continue;
         }
 
