@@ -175,7 +175,7 @@ int main(int argc, const char *argv[]) {
     pass_eval_types(&unit, type_cache);
 
     /* Codegen: IR -> LLVM_IR */
-    codegen_context_t *cg_context = codegen(&unit, type_cache, optimization, code_model, features);
+    codegen_context_t *cg_context = codegen(&unit, type_cache, optimization, code_model, reloc_mode, features);
 
     int ret = EXIT_SUCCESS;
     switch(mode) {
