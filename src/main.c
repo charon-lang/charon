@@ -6,9 +6,9 @@
 #include "parser/parser.h"
 #include "pass/pass.h"
 #include "codegen/codegen.h"
-#include "strings.h"
 
 #include <stdlib.h>
+#include <strings.h>
 #include <string.h>
 #include <stdio.h>
 #include <sys/stat.h>

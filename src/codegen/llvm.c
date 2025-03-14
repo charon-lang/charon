@@ -560,7 +560,6 @@ static value_t cg_expr_cast(CG_EXPR_PARAMS) {
     diag_error(expr->source_location, LANG_E_INVALID_CAST);
 }
 
-
 static value_t cg_expr_subscript(CG_EXPR_PARAMS) {
     value_t value = cg_expr_ext(context, expr->subscript.value);
 
