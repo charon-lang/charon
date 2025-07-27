@@ -12,7 +12,11 @@
             devShells.default = mkShell {
                 shellHook = "export NIX_SHELL_NAME='charon'";
                 nativeBuildInputs = with pkgs; [
+                    meson
+                    ninja
+                    pkgconf
                     pcre2
+                    cjson
                     llvmPackages_18.libllvm
                     lld_18
                     clang_18
@@ -20,7 +24,6 @@
                     gnumake
                     gdb
                     bear
-                    gcc14
                     valgrind
                 ];
             };
