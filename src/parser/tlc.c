@@ -1,7 +1,6 @@
-#include "parser.h"
-
-#include "lib/diag.h"
 #include "lib/alloc.h"
+#include "lib/diag.h"
+#include "parser.h"
 #include "parser/util.h"
 
 static ast_node_t *parse_type(tokenizer_t *tokenizer, ast_attribute_list_t attributes) {
@@ -37,10 +36,21 @@ static ast_node_t *parse_function(tokenizer_t *tokenizer, ast_attribute_list_t a
     source_location_t source_location = util_loc(tokenizer, util_consume(tokenizer, TOKEN_KIND_KEYWORD_FUNCTION));
 
     const char *name = util_text_make_from_token(tokenizer, util_consume(tokenizer, TOKEN_KIND_IDENTIFIER));
+
+    const char **parameters = NULL;
+    size_t parameter_count = 0;
+    if(util_try_consume(tokenizer, TOKEN_KIND_CARET_LEFT)) {
+        do {
+            parameters = alloc_array(parameters, ++parameter_count, sizeof(const char *));
+            parameters[parameter_count - 1] = util_text_make_from_token(tokenizer, util_consume(tokenizer, TOKEN_KIND_IDENTIFIER));
+        } while(util_try_consume(tokenizer, TOKEN_KIND_COMMA));
+        util_consume(tokenizer, TOKEN_KIND_CARET_RIGHT);
+    }
+
     const char **argument_names = NULL;
     ast_type_function_t *function_type = util_parse_function_type(tokenizer, &argument_names);
 
-    return ast_node_make_tlc_function(name, function_type, argument_names, parser_stmt(tokenizer), attributes, source_location);
+    return ast_node_make_tlc_function(name, function_type, argument_names, parser_stmt(tokenizer), parameter_count, parameters, attributes, source_location);
 }
 
 static ast_node_t *parse_extern(tokenizer_t *tokenizer, ast_attribute_list_t attributes) {
@@ -87,13 +97,13 @@ ast_node_t *parser_tlc(tokenizer_t *tokenizer) {
     ast_attribute_list_t attributes = util_parse_ast_attributes(tokenizer);
     token_t token = tokenizer_peek(tokenizer);
     switch(token.kind) {
-        case TOKEN_KIND_KEYWORD_MODULE: return parse_module(tokenizer, attributes);
+        case TOKEN_KIND_KEYWORD_MODULE:   return parse_module(tokenizer, attributes);
         case TOKEN_KIND_KEYWORD_FUNCTION: return parse_function(tokenizer, attributes);
-        case TOKEN_KIND_KEYWORD_EXTERN: return parse_extern(tokenizer, attributes);
-        case TOKEN_KIND_KEYWORD_TYPE: return parse_type(tokenizer, attributes);
-        case TOKEN_KIND_KEYWORD_LET: return parse_declaration(tokenizer, attributes);
-        case TOKEN_KIND_KEYWORD_ENUM: return parse_enum(tokenizer, attributes);
-        default: diag_error(util_loc(tokenizer, token), LANG_E_EXPECTED_TLC, token_kind_stringify(token.kind));
+        case TOKEN_KIND_KEYWORD_EXTERN:   return parse_extern(tokenizer, attributes);
+        case TOKEN_KIND_KEYWORD_TYPE:     return parse_type(tokenizer, attributes);
+        case TOKEN_KIND_KEYWORD_LET:      return parse_declaration(tokenizer, attributes);
+        case TOKEN_KIND_KEYWORD_ENUM:     return parse_enum(tokenizer, attributes);
+        default:                          diag_error(util_loc(tokenizer, token), LANG_E_EXPECTED_TLC, token_kind_stringify(token.kind));
     }
     __builtin_unreachable();
 }

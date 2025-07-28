@@ -6,7 +6,7 @@
 
 ir_symbol_t *ir_namespace_find_symbol(ir_namespace_t *namespace, const char *name) {
     for(size_t i = 0; i < namespace->symbol_count; i++) {
-        ir_symbol_t *symbol = &namespace->symbols[i];
+        ir_symbol_t *symbol = namespace->symbols[i];
         switch(symbol->kind) {
             case IR_SYMBOL_KIND_MODULE:
                 if(strcmp(name, symbol->module->name) != 0) continue;
@@ -37,9 +37,12 @@ bool ir_namespace_exists_symbol(ir_namespace_t *namespace, const char *name) {
 }
 
 ir_symbol_t *ir_namespace_add_symbol(ir_namespace_t *namespace, ir_symbol_kind_t kind) {
-    namespace->symbols = alloc_array(namespace->symbols, ++namespace->symbol_count, sizeof(ir_symbol_t));
-    namespace->symbols[namespace->symbol_count - 1].kind = kind;
-    return &namespace->symbols[namespace->symbol_count - 1];
+    ir_symbol_t *symbol = alloc(sizeof(ir_symbol_t));
+    symbol->kind = kind;
+
+    namespace->symbols = alloc_array(namespace->symbols, ++namespace->symbol_count, sizeof(ir_symbol_t *));
+    namespace->symbols[namespace->symbol_count - 1] = symbol;
+    return symbol;
 }
 
 ir_type_declaration_t *ir_namespace_find_type(ir_namespace_t *namespace, const char *name) {

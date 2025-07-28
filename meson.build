@@ -41,6 +41,16 @@ flags = [
     '-O3'
 ]
 
+if get_option('buildtype') == 'release'
+    flags += ['-O3']
+else
+    flags += ['-O1', '-g']
+endif
+
+flags += run_command('llvm-config', '--cflags', 'core', check: false).stdout().strip().split()
+
+llvm_modules = ['core', 'analysis', 'executionengine']
+
 includes = include_directories('src')
 
 executable('charon', 'src/main.c', sources, dependencies: dependencies, include_directories: includes, c_args: flags)

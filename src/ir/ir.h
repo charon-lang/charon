@@ -168,7 +168,7 @@ struct ir_type_declaration {
 
 struct ir_namespace {
     size_t symbol_count;
-    ir_symbol_t *symbols;
+    ir_symbol_t **symbols;
 
     size_t type_count;
     ir_type_declaration_t *types;

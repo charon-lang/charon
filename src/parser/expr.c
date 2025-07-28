@@ -1,14 +1,13 @@
-#include "parser.h"
-
-#include "lib/diag.h"
+#include "lexer/token.h"
 #include "lib/alloc.h"
+#include "lib/diag.h"
+#include "parser.h"
 #include "parser/util.h"
 
-#include <stdlib.h>
-#include <stdarg.h>
-#include <string.h>
 #include <errno.h>
-#include <ctype.h>
+#include <stdarg.h>
+#include <stdlib.h>
+#include <string.h>
 
 typedef struct {
     char *data;
@@ -47,7 +46,7 @@ static string_t helper_string_escape(source_location_t source_location, const ch
 
         if(escape_sequence_length > 0) {
             i--;
-            write_escape:
+        write_escape:
             uintmax_t value = strtoull(escape_sequence, NULL, 10);
             if(errno == ERANGE || value > UINT8_MAX) diag_error(source_location, LANG_E_TOO_LARGE_ESCAPE_SEQUENCE);
             string_append_char(&dest, (char) value);
@@ -60,16 +59,16 @@ static string_t helper_string_escape(source_location_t source_location, const ch
 
         switch(c) {
             case '\'': string_append_char(&dest, '\''); break;
-            case '"': string_append_char(&dest, '\"'); break;
-            case '?': string_append_char(&dest, '\?'); break;
+            case '"':  string_append_char(&dest, '\"'); break;
+            case '?':  string_append_char(&dest, '\?'); break;
             case '\\': string_append_char(&dest, '\\'); break;
-            case 'a': string_append_char(&dest, '\a'); break;
-            case 'b': string_append_char(&dest, '\b'); break;
-            case 'f': string_append_char(&dest, '\f'); break;
-            case 'n': string_append_char(&dest, '\n'); break;
-            case 'r': string_append_char(&dest, '\r'); break;
-            case 't': string_append_char(&dest, '\t'); break;
-            case 'v': string_append_char(&dest, '\v'); break;
+            case 'a':  string_append_char(&dest, '\a'); break;
+            case 'b':  string_append_char(&dest, '\b'); break;
+            case 'f':  string_append_char(&dest, '\f'); break;
+            case 'n':  string_append_char(&dest, '\n'); break;
+            case 'r':  string_append_char(&dest, '\r'); break;
+            case 't':  string_append_char(&dest, '\t'); break;
+            case 'v':  string_append_char(&dest, '\v'); break;
             default:
                 diag_warn(source_location, LANG_E_UNKNOWN_ESCAPE_SEQUENCE, c);
                 string_append_char(&dest, c);
@@ -99,25 +98,25 @@ static ast_node_t *helper_binary_operation(tokenizer_t *tokenizer, ast_node_t *(
         token_t token_operation = tokenizer_advance(tokenizer);
         ast_node_binary_operation_t operation;
         switch(token_operation.kind) {
-            case TOKEN_KIND_PLUS: operation = AST_NODE_BINARY_OPERATION_ADDITION; break;
-            case TOKEN_KIND_MINUS: operation = AST_NODE_BINARY_OPERATION_SUBTRACTION; break;
-            case TOKEN_KIND_STAR: operation = AST_NODE_BINARY_OPERATION_MULTIPLICATION; break;
-            case TOKEN_KIND_SLASH: operation = AST_NODE_BINARY_OPERATION_DIVISION; break;
-            case TOKEN_KIND_PERCENTAGE: operation = AST_NODE_BINARY_OPERATION_MODULO; break;
-            case TOKEN_KIND_CARET_RIGHT: operation = AST_NODE_BINARY_OPERATION_GREATER; break;
+            case TOKEN_KIND_PLUS:          operation = AST_NODE_BINARY_OPERATION_ADDITION; break;
+            case TOKEN_KIND_MINUS:         operation = AST_NODE_BINARY_OPERATION_SUBTRACTION; break;
+            case TOKEN_KIND_STAR:          operation = AST_NODE_BINARY_OPERATION_MULTIPLICATION; break;
+            case TOKEN_KIND_SLASH:         operation = AST_NODE_BINARY_OPERATION_DIVISION; break;
+            case TOKEN_KIND_PERCENTAGE:    operation = AST_NODE_BINARY_OPERATION_MODULO; break;
+            case TOKEN_KIND_CARET_RIGHT:   operation = AST_NODE_BINARY_OPERATION_GREATER; break;
             case TOKEN_KIND_GREATER_EQUAL: operation = AST_NODE_BINARY_OPERATION_GREATER_EQUAL; break;
-            case TOKEN_KIND_CARET_LEFT: operation = AST_NODE_BINARY_OPERATION_LESS; break;
-            case TOKEN_KIND_LESS_EQUAL: operation = AST_NODE_BINARY_OPERATION_LESS_EQUAL; break;
-            case TOKEN_KIND_EQUAL_EQUAL: operation = AST_NODE_BINARY_OPERATION_EQUAL; break;
-            case TOKEN_KIND_NOT_EQUAL: operation = AST_NODE_BINARY_OPERATION_NOT_EQUAL; break;
-            case TOKEN_KIND_LOGICAL_AND: operation = AST_NODE_BINARY_OPERATION_LOGICAL_AND; break;
-            case TOKEN_KIND_LOGICAL_OR: operation = AST_NODE_BINARY_OPERATION_LOGICAL_OR; break;
-            case TOKEN_KIND_SHIFT_LEFT: operation = AST_NODE_BINARY_OPERATION_SHIFT_LEFT; break;
-            case TOKEN_KIND_SHIFT_RIGHT: operation = AST_NODE_BINARY_OPERATION_SHIFT_RIGHT; break;
-            case TOKEN_KIND_AMPERSAND: operation = AST_NODE_BINARY_OPERATION_AND; break;
-            case TOKEN_KIND_PIPE: operation = AST_NODE_BINARY_OPERATION_OR; break;
-            case TOKEN_KIND_CARET: operation = AST_NODE_BINARY_OPERATION_XOR; break;
-            default: diag_error(util_loc(tokenizer, token_operation), LANG_E_EXPECTED_BINARY_OP, token_kind_stringify(token_operation.kind));
+            case TOKEN_KIND_CARET_LEFT:    operation = AST_NODE_BINARY_OPERATION_LESS; break;
+            case TOKEN_KIND_LESS_EQUAL:    operation = AST_NODE_BINARY_OPERATION_LESS_EQUAL; break;
+            case TOKEN_KIND_EQUAL_EQUAL:   operation = AST_NODE_BINARY_OPERATION_EQUAL; break;
+            case TOKEN_KIND_NOT_EQUAL:     operation = AST_NODE_BINARY_OPERATION_NOT_EQUAL; break;
+            case TOKEN_KIND_LOGICAL_AND:   operation = AST_NODE_BINARY_OPERATION_LOGICAL_AND; break;
+            case TOKEN_KIND_LOGICAL_OR:    operation = AST_NODE_BINARY_OPERATION_LOGICAL_OR; break;
+            case TOKEN_KIND_SHIFT_LEFT:    operation = AST_NODE_BINARY_OPERATION_SHIFT_LEFT; break;
+            case TOKEN_KIND_SHIFT_RIGHT:   operation = AST_NODE_BINARY_OPERATION_SHIFT_RIGHT; break;
+            case TOKEN_KIND_AMPERSAND:     operation = AST_NODE_BINARY_OPERATION_AND; break;
+            case TOKEN_KIND_PIPE:          operation = AST_NODE_BINARY_OPERATION_OR; break;
+            case TOKEN_KIND_CARET:         operation = AST_NODE_BINARY_OPERATION_XOR; break;
+            default:                       diag_error(util_loc(tokenizer, token_operation), LANG_E_EXPECTED_BINARY_OP, token_kind_stringify(token_operation.kind));
         }
         left = ast_node_make_expr_binary(operation, left, func(tokenizer), util_loc(tokenizer, token_operation));
         va_end(list);
@@ -168,12 +167,26 @@ static ast_node_t *parse_identifier(tokenizer_t *tokenizer) {
     const char *name = util_text_make_from_token(tokenizer, token_name);
 
     switch(tokenizer_peek(tokenizer).kind) {
-        case TOKEN_KIND_DOUBLE_COLON:
+        case TOKEN_KIND_DOUBLE_COLON: {
             util_consume(tokenizer, TOKEN_KIND_DOUBLE_COLON);
 
             ast_node_t *value = parse_identifier(tokenizer);
             return ast_node_make_expr_selector(name, value, util_loc(tokenizer, token_name));
-        default: return ast_node_make_expr_variable(name, util_loc(tokenizer, token_name));
+        }
+        case TOKEN_KIND_CARET_LEFT: {
+            util_consume(tokenizer, TOKEN_KIND_CARET_LEFT);
+
+            size_t type_count = 0;
+            ast_type_t **types = NULL;
+            do {
+                types = alloc_array(types, ++type_count, sizeof(ast_type_t *));
+                types[type_count - 1] = util_parse_type(tokenizer);
+            } while(util_try_consume(tokenizer, TOKEN_KIND_COMMA));
+
+            util_consume(tokenizer, TOKEN_KIND_CARET_RIGHT);
+            return ast_node_make_expr_variable(name, type_count, types, util_loc(tokenizer, token_name));
+        }
+        default: return ast_node_make_expr_variable(name, 0, NULL, util_loc(tokenizer, token_name));
     }
     __builtin_unreachable();
 }
@@ -196,17 +209,16 @@ static ast_node_t *parse_primary(tokenizer_t *tokenizer) {
             util_consume(tokenizer, TOKEN_KIND_PARENTHESES_RIGHT);
             return value;
         }
-        case TOKEN_KIND_IDENTIFIER: return parse_identifier(tokenizer);
-        case TOKEN_KIND_CONST_STRING: return parse_literal_string(tokenizer);
+        case TOKEN_KIND_IDENTIFIER:       return parse_identifier(tokenizer);
+        case TOKEN_KIND_CONST_STRING:     return parse_literal_string(tokenizer);
         case TOKEN_KIND_CONST_STRING_RAW: return parse_literal_string_raw(tokenizer);
-        case TOKEN_KIND_CONST_CHAR: return parse_literal_char(tokenizer);
-        case TOKEN_KIND_CONST_BOOL: return parse_literal_bool(tokenizer);
+        case TOKEN_KIND_CONST_CHAR:       return parse_literal_char(tokenizer);
+        case TOKEN_KIND_CONST_BOOL:       return parse_literal_bool(tokenizer);
         case TOKEN_KIND_CONST_NUMBER_DEC:
         case TOKEN_KIND_CONST_NUMBER_HEX:
         case TOKEN_KIND_CONST_NUMBER_BIN:
-        case TOKEN_KIND_CONST_NUMBER_OCT:
-            return parse_literal_numeric(tokenizer);
-        case TOKEN_KIND_KEYWORD_SIZEOF: {
+        case TOKEN_KIND_CONST_NUMBER_OCT: return parse_literal_numeric(tokenizer);
+        case TOKEN_KIND_KEYWORD_SIZEOF:   {
             source_location_t source_location = util_loc(tokenizer, util_consume(tokenizer, TOKEN_KIND_KEYWORD_SIZEOF));
             util_consume(tokenizer, TOKEN_KIND_PARENTHESES_LEFT);
             ast_type_t *type = util_parse_type(tokenizer);
@@ -257,7 +269,11 @@ static ast_node_t *parse_unary_post(tokenizer_t *tokenizer) {
         }
         if(util_try_consume(tokenizer, TOKEN_KIND_ARROW)) {
             token_t token_member = util_consume(tokenizer, TOKEN_KIND_IDENTIFIER);
-            value = ast_node_make_expr_subscript_member(ast_node_make_expr_unary(AST_NODE_UNARY_OPERATION_DEREF, value, source_location), util_text_make_from_token(tokenizer, token_member), source_location);
+            value = ast_node_make_expr_subscript_member(
+                ast_node_make_expr_unary(AST_NODE_UNARY_OPERATION_DEREF, value, source_location),
+                util_text_make_from_token(tokenizer, token_member),
+                source_location
+            );
             continue;
         }
         return value;
@@ -267,11 +283,11 @@ static ast_node_t *parse_unary_post(tokenizer_t *tokenizer) {
 static ast_node_t *parse_unary_pre(tokenizer_t *tokenizer) {
     ast_node_unary_operation_t operation;
     switch(tokenizer_peek(tokenizer).kind) {
-        case TOKEN_KIND_STAR: operation = AST_NODE_UNARY_OPERATION_DEREF; break;
-        case TOKEN_KIND_MINUS: operation = AST_NODE_UNARY_OPERATION_NEGATIVE; break;
-        case TOKEN_KIND_NOT: operation = AST_NODE_UNARY_OPERATION_NOT; break;
+        case TOKEN_KIND_STAR:      operation = AST_NODE_UNARY_OPERATION_DEREF; break;
+        case TOKEN_KIND_MINUS:     operation = AST_NODE_UNARY_OPERATION_NEGATIVE; break;
+        case TOKEN_KIND_NOT:       operation = AST_NODE_UNARY_OPERATION_NOT; break;
         case TOKEN_KIND_AMPERSAND: operation = AST_NODE_UNARY_OPERATION_REF; break;
-        default: return parse_unary_post(tokenizer);
+        default:                   return parse_unary_post(tokenizer);
     }
     token_t token_operator = tokenizer_advance(tokenizer);
     return ast_node_make_expr_unary(operation, parse_unary_pre(tokenizer), util_loc(tokenizer, token_operator));
@@ -321,13 +337,13 @@ static ast_node_t *parse_assignment(tokenizer_t *tokenizer) {
     ast_node_t *left = parse_logical_or(tokenizer);
     ast_node_binary_operation_t operation;
     switch(tokenizer_peek(tokenizer).kind) {
-        case TOKEN_KIND_EQUAL: operation = AST_NODE_BINARY_OPERATION_ASSIGN; break;
-        case TOKEN_KIND_PLUS_EQUAL: operation = AST_NODE_BINARY_OPERATION_ADDITION; break;
-        case TOKEN_KIND_MINUS_EQUAL: operation = AST_NODE_BINARY_OPERATION_SUBTRACTION; break;
-        case TOKEN_KIND_STAR_EQUAL: operation = AST_NODE_BINARY_OPERATION_MULTIPLICATION; break;
-        case TOKEN_KIND_SLASH_EQUAL: operation = AST_NODE_BINARY_OPERATION_DIVISION; break;
+        case TOKEN_KIND_EQUAL:            operation = AST_NODE_BINARY_OPERATION_ASSIGN; break;
+        case TOKEN_KIND_PLUS_EQUAL:       operation = AST_NODE_BINARY_OPERATION_ADDITION; break;
+        case TOKEN_KIND_MINUS_EQUAL:      operation = AST_NODE_BINARY_OPERATION_SUBTRACTION; break;
+        case TOKEN_KIND_STAR_EQUAL:       operation = AST_NODE_BINARY_OPERATION_MULTIPLICATION; break;
+        case TOKEN_KIND_SLASH_EQUAL:      operation = AST_NODE_BINARY_OPERATION_DIVISION; break;
         case TOKEN_KIND_PERCENTAGE_EQUAL: operation = AST_NODE_BINARY_OPERATION_MODULO; break;
-        default: return left;
+        default:                          return left;
     }
     token_t token_operation = tokenizer_advance(tokenizer);
     ast_node_t *right = parse_assignment(tokenizer);

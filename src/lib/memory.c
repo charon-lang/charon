@@ -2,6 +2,7 @@
 
 #include "lib/log.h"
 
+#include <stdint.h>
 #include <stdlib.h>
 #include <string.h>
 
@@ -42,6 +43,11 @@ memory_allocator_t *memory_active_allocator_get() {
 }
 
 void *memory_register_ptr(memory_allocator_t *allocator, void *ptr) {
+    for(size_t i = 0; i < allocator->entry_count; i++) {
+        if(allocator->entries[i] != ptr) continue;
+        log_fatal("double register of %p", ptr);
+    }
+
     allocator->entries = reallocarray(allocator->entries, ++allocator->entry_count, sizeof(void *));
     allocator->entries[allocator->entry_count - 1] = ptr;
     return ptr;

@@ -1,18 +1,18 @@
-#include "lib/source.h"
-#include "lib/memory.h"
-#include "lib/log.h"
 #include "ast/node.h"
+#include "codegen/codegen.h"
 #include "lexer/tokenizer.h"
+#include "lib/log.h"
+#include "lib/memory.h"
+#include "lib/source.h"
 #include "parser/parser.h"
 #include "pass/pass.h"
-#include "codegen/codegen.h"
 
-#include <stdlib.h>
-#include <strings.h>
-#include <string.h>
-#include <stdio.h>
-#include <sys/stat.h>
 #include <errno.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <strings.h>
+#include <sys/stat.h>
 
 #define SEMVER_PRE_RELEASE "alpha.4.1"
 #define SEMVER_MAJOR 1
@@ -42,7 +42,10 @@ static char *strdup_basename(const char *path) {
 }
 
 int main(int argc, const char *argv[]) {
-    enum { COMPILE, RUN } mode;
+    enum {
+        COMPILE,
+        RUN
+    } mode;
 
     if(argc < 2) log_fatal("missing subcommand");
 
@@ -50,9 +53,12 @@ int main(int argc, const char *argv[]) {
         printf("Charon %u.%u.%u%s\n", SEMVER_MAJOR, SEMVER_MINOR, SEMVER_PATCH, SEMVER_PRE_RELEASE == NULL ? "" : "-" SEMVER_PRE_RELEASE);
         printf("Built at " __DATE__ " " __TIME__ "\n");
         return EXIT_SUCCESS;
-    } else if(strcasecmp(argv[1], "compile") == 0) mode = COMPILE;
-    else if(strcasecmp(argv[1], "run") == 0) mode = RUN;
-    else log_fatal("invalid subcommand");
+    } else if(strcasecmp(argv[1], "compile") == 0)
+        mode = COMPILE;
+    else if(strcasecmp(argv[1], "run") == 0)
+        mode = RUN;
+    else
+        log_fatal("invalid subcommand");
 
     size_t source_count = 0;
     source_t **sources = NULL;
@@ -82,10 +88,22 @@ int main(int argc, const char *argv[]) {
             continue;
         }
 
-        if(strcmp(argv[i], "-O0") == 0) { optimization = CODEGEN_OPTIMIZATION_NONE; continue; }
-        if(strcmp(argv[i], "-O1") == 0) { optimization = CODEGEN_OPTIMIZATION_O1; continue; }
-        if(strcmp(argv[i], "-O2") == 0) { optimization = CODEGEN_OPTIMIZATION_O2; continue; }
-        if(strcmp(argv[i], "-O3") == 0) { optimization = CODEGEN_OPTIMIZATION_O3; continue; }
+        if(strcmp(argv[i], "-O0") == 0) {
+            optimization = CODEGEN_OPTIMIZATION_NONE;
+            continue;
+        }
+        if(strcmp(argv[i], "-O1") == 0) {
+            optimization = CODEGEN_OPTIMIZATION_O1;
+            continue;
+        }
+        if(strcmp(argv[i], "-O2") == 0) {
+            optimization = CODEGEN_OPTIMIZATION_O2;
+            continue;
+        }
+        if(strcmp(argv[i], "-O3") == 0) {
+            optimization = CODEGEN_OPTIMIZATION_O3;
+            continue;
+        }
 
         if(strncasecmp(argv[i], "--optimization=", 15) == 0) {
             char c = argv[i][15];
@@ -94,10 +112,10 @@ int main(int argc, const char *argv[]) {
                 case '1': optimization = CODEGEN_OPTIMIZATION_O1; break;
                 case '2': optimization = CODEGEN_OPTIMIZATION_O2; break;
                 case '3': optimization = CODEGEN_OPTIMIZATION_O3; break;
-                default: goto invalid_optimization;
+                default:  goto invalid_optimization;
             }
             if(argv[i][16] != '\0') {
-                invalid_optimization:
+            invalid_optimization:
                 log_warning("invalid optimization level '%s'", &argv[i][15]);
             }
             continue;
@@ -110,28 +128,45 @@ int main(int argc, const char *argv[]) {
 
         if(mode == COMPILE && strncasecmp(argv[i], "--code-model=", 13) == 0) {
             const char *left = &argv[i][13];
-            if(strcasecmp(left, "default") == 0) code_model = CODEGEN_CODE_MODEL_DEFAULT;
-            else if(strcasecmp(left, "kernel") == 0) code_model = CODEGEN_CODE_MODEL_KERNEL;
-            else if(strcasecmp(left, "tiny") == 0) code_model = CODEGEN_CODE_MODEL_TINY;
-            else if(strcasecmp(left, "small") == 0) code_model = CODEGEN_CODE_MODEL_SMALL;
-            else if(strcasecmp(left, "medium") == 0) code_model = CODEGEN_CODE_MODEL_MEDIUM;
-            else if(strcasecmp(left, "large") == 0) code_model = CODEGEN_CODE_MODEL_LARGE;
-            else log_warning("invalid code model '%s', ignoring", left);
+            if(strcasecmp(left, "default") == 0)
+                code_model = CODEGEN_CODE_MODEL_DEFAULT;
+            else if(strcasecmp(left, "kernel") == 0)
+                code_model = CODEGEN_CODE_MODEL_KERNEL;
+            else if(strcasecmp(left, "tiny") == 0)
+                code_model = CODEGEN_CODE_MODEL_TINY;
+            else if(strcasecmp(left, "small") == 0)
+                code_model = CODEGEN_CODE_MODEL_SMALL;
+            else if(strcasecmp(left, "medium") == 0)
+                code_model = CODEGEN_CODE_MODEL_MEDIUM;
+            else if(strcasecmp(left, "large") == 0)
+                code_model = CODEGEN_CODE_MODEL_LARGE;
+            else
+                log_warning("invalid code model '%s', ignoring", left);
             continue;
         }
 
         if(mode == COMPILE && strncasecmp(argv[i], "--reloc=", 8) == 0) {
             const char *left = &argv[i][8];
-            if(strcasecmp(left, "default") == 0) reloc_mode = CODEGEN_RELOCATION_DEFAULT;
-            else if(strcasecmp(left, "static") == 0) reloc_mode = CODEGEN_RELOCATION_STATIC;
-            else if(strcasecmp(left, "pic") == 0) reloc_mode = CODEGEN_RELOCATION_PIC;
-            else log_warning("invalid relocation mode '%s', ignoring", left);
+            if(strcasecmp(left, "default") == 0)
+                reloc_mode = CODEGEN_RELOCATION_DEFAULT;
+            else if(strcasecmp(left, "static") == 0)
+                reloc_mode = CODEGEN_RELOCATION_STATIC;
+            else if(strcasecmp(left, "pic") == 0)
+                reloc_mode = CODEGEN_RELOCATION_PIC;
+            else
+                log_warning("invalid relocation mode '%s', ignoring", left);
             continue;
         }
 
-        if(mode == COMPILE && strncasecmp(argv[i], "--dest=", 7) == 0) { dest_path = &argv[i][7]; continue; }
+        if(mode == COMPILE && strncasecmp(argv[i], "--dest=", 7) == 0) {
+            dest_path = &argv[i][7];
+            continue;
+        }
 
-        if(mode == COMPILE && strcasecmp(argv[i], "--emit-ir") == 0) { emit_ir = true; continue; }
+        if(mode == COMPILE && strcasecmp(argv[i], "--emit-ir") == 0) {
+            emit_ir = true;
+            continue;
+        }
 
         log_warning("unrecognized flag '%s'", argv[i]);
     }

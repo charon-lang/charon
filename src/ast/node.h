@@ -1,53 +1,61 @@
 #pragma once
 
-#include "lib/source.h"
-#include "ast/type.h"
 #include "ast/attribute.h"
+#include "ast/type.h"
+#include "lib/source.h"
 
+#include <assert.h>
 #include <stddef.h>
 #include <stdint.h>
-#include <assert.h>
 
 /* variables in body: `node`, `i` */
-#define AST_NODE_LIST_FOREACH(LIST, BODY) { ast_node_t *__node = (LIST)->first; for(size_t __i = 0; __i < ast_node_list_count(LIST); __i++, __node = __node->next) { assert(__node != NULL); { [[maybe_unused]] ast_node_t *node = __node; [[maybe_unused]] size_t i = __i; BODY; }; }; }
+#define AST_NODE_LIST_FOREACH(LIST, BODY)                                                    \
+    {                                                                                        \
+        ast_node_t *__node = (LIST)->first;                                                  \
+        for(size_t __i = 0; __i < ast_node_list_count(LIST); __i++, __node = __node->next) { \
+            assert(__node != NULL);                                                          \
+            {                                                                                \
+                [[maybe_unused]] ast_node_t *node = __node;                                  \
+                [[maybe_unused]] size_t i = __i;                                             \
+                BODY;                                                                        \
+            };                                                                               \
+        };                                                                                   \
+    }
 #define AST_NODE_LIST_INIT ((ast_node_list_t) { .count = 0, .first = NULL, .last = NULL })
 
-#define AST_CASE_TLC(BODY) \
-        case AST_NODE_TYPE_TLC_MODULE: \
-        case AST_NODE_TYPE_TLC_FUNCTION: \
-        case AST_NODE_TYPE_TLC_EXTERN: \
-        case AST_NODE_TYPE_TLC_TYPE_DEFINITION: \
-        case AST_NODE_TYPE_TLC_DECLARATION: \
-        case AST_NODE_TYPE_TLC_ENUMERATION: \
-            BODY; break;
+#define AST_CASE_TLC(BODY)                           \
+    case AST_NODE_TYPE_TLC_MODULE:                   \
+    case AST_NODE_TYPE_TLC_FUNCTION:                 \
+    case AST_NODE_TYPE_TLC_EXTERN:                   \
+    case AST_NODE_TYPE_TLC_TYPE_DEFINITION:          \
+    case AST_NODE_TYPE_TLC_DECLARATION:              \
+    case AST_NODE_TYPE_TLC_ENUMERATION:     BODY; break;
 
-#define AST_CASE_STMT(BODY) \
-        case AST_NODE_TYPE_STMT_BLOCK: \
-        case AST_NODE_TYPE_STMT_DECLARATION: \
-        case AST_NODE_TYPE_STMT_EXPRESSION: \
-        case AST_NODE_TYPE_STMT_RETURN: \
-        case AST_NODE_TYPE_STMT_IF: \
-        case AST_NODE_TYPE_STMT_WHILE: \
-        case AST_NODE_TYPE_STMT_CONTINUE: \
-        case AST_NODE_TYPE_STMT_BREAK: \
-        case AST_NODE_TYPE_STMT_FOR: \
-            BODY; break;
+#define AST_CASE_STMT(BODY)                   \
+    case AST_NODE_TYPE_STMT_BLOCK:            \
+    case AST_NODE_TYPE_STMT_DECLARATION:      \
+    case AST_NODE_TYPE_STMT_EXPRESSION:       \
+    case AST_NODE_TYPE_STMT_RETURN:           \
+    case AST_NODE_TYPE_STMT_IF:               \
+    case AST_NODE_TYPE_STMT_WHILE:            \
+    case AST_NODE_TYPE_STMT_CONTINUE:         \
+    case AST_NODE_TYPE_STMT_BREAK:            \
+    case AST_NODE_TYPE_STMT_FOR:         BODY; break;
 
-#define AST_CASE_EXPRESSION(BODY) \
-        case AST_NODE_TYPE_EXPR_LITERAL_NUMERIC: \
-        case AST_NODE_TYPE_EXPR_LITERAL_STRING: \
-        case AST_NODE_TYPE_EXPR_LITERAL_CHAR: \
-        case AST_NODE_TYPE_EXPR_LITERAL_BOOL: \
-        case AST_NODE_TYPE_EXPR_BINARY: \
-        case AST_NODE_TYPE_EXPR_UNARY: \
-        case AST_NODE_TYPE_EXPR_VARIABLE: \
-        case AST_NODE_TYPE_EXPR_TUPLE: \
-        case AST_NODE_TYPE_EXPR_CALL: \
-        case AST_NODE_TYPE_EXPR_CAST: \
-        case AST_NODE_TYPE_EXPR_SUBSCRIPT: \
-        case AST_NODE_TYPE_EXPR_SELECTOR: \
-        case AST_NODE_TYPE_EXPR_SIZEOF: \
-            BODY; break;
+#define AST_CASE_EXPRESSION(BODY)                \
+    case AST_NODE_TYPE_EXPR_LITERAL_NUMERIC:     \
+    case AST_NODE_TYPE_EXPR_LITERAL_STRING:      \
+    case AST_NODE_TYPE_EXPR_LITERAL_CHAR:        \
+    case AST_NODE_TYPE_EXPR_LITERAL_BOOL:        \
+    case AST_NODE_TYPE_EXPR_BINARY:              \
+    case AST_NODE_TYPE_EXPR_UNARY:               \
+    case AST_NODE_TYPE_EXPR_VARIABLE:            \
+    case AST_NODE_TYPE_EXPR_TUPLE:               \
+    case AST_NODE_TYPE_EXPR_CALL:                \
+    case AST_NODE_TYPE_EXPR_CAST:                \
+    case AST_NODE_TYPE_EXPR_SUBSCRIPT:           \
+    case AST_NODE_TYPE_EXPR_SELECTOR:            \
+    case AST_NODE_TYPE_EXPR_SIZEOF:          BODY; break;
 
 typedef enum {
     AST_NODE_TYPE_ROOT,
@@ -144,6 +152,8 @@ struct ast_node {
             const char **argument_names;
             ast_type_function_t *function_type;
             ast_node_t *statement; /* nullable */
+            size_t generic_parameter_count;
+            const char **generic_parameters;
         } tlc_function;
         struct {
             const char *name;
@@ -209,6 +219,8 @@ struct ast_node {
         } expr_unary;
         struct {
             const char *name;
+            size_t generic_parameter_count;
+            ast_type_t **generic_parameters;
         } expr_variable;
         struct {
             ast_node_t *function_reference;
@@ -247,7 +259,16 @@ void ast_node_list_append(ast_node_list_t *list, ast_node_t *node);
 ast_node_t *ast_node_make_root(ast_node_list_t tlcs, ast_attribute_list_t attributes, source_location_t source_location);
 
 ast_node_t *ast_node_make_tlc_module(const char *name, ast_node_list_t tlcs, ast_attribute_list_t attributes, source_location_t source_location);
-ast_node_t *ast_node_make_tlc_function(const char *name, ast_type_function_t *function_type, const char **argument_names, ast_node_t *statement, ast_attribute_list_t attributes, source_location_t source_location);
+ast_node_t *ast_node_make_tlc_function(
+    const char *name,
+    ast_type_function_t *function_type,
+    const char **argument_names,
+    ast_node_t *statement,
+    size_t generic_parameter_count,
+    const char **generic_parameters,
+    ast_attribute_list_t attributes,
+    source_location_t source_location
+);
 ast_node_t *ast_node_make_tlc_extern(const char *name, ast_type_function_t *function_type, ast_attribute_list_t attributes, source_location_t source_location);
 ast_node_t *ast_node_make_tlc_type_definition(const char *name, ast_type_t *type, size_t generic_parameter_count, const char **generic_parameters, ast_attribute_list_t attributes, source_location_t source_location);
 ast_node_t *ast_node_make_tlc_declaration(const char *name, ast_type_t *type, ast_node_t *initial, ast_attribute_list_t attributes, source_location_t source_location);
@@ -269,7 +290,7 @@ ast_node_t *ast_node_make_expr_literal_char(char value, source_location_t source
 ast_node_t *ast_node_make_expr_literal_bool(bool value, source_location_t source_location);
 ast_node_t *ast_node_make_expr_binary(ast_node_binary_operation_t operation, ast_node_t *left, ast_node_t *right, source_location_t source_location);
 ast_node_t *ast_node_make_expr_unary(ast_node_unary_operation_t operation, ast_node_t *operand, source_location_t source_location);
-ast_node_t *ast_node_make_expr_variable(const char *name, source_location_t source_location);
+ast_node_t *ast_node_make_expr_variable(const char *name, size_t generic_parameter_count, ast_type_t **generic_parameters, source_location_t source_location);
 ast_node_t *ast_node_make_expr_call(ast_node_t *function_reference, ast_node_list_t arguments, source_location_t source_location);
 ast_node_t *ast_node_make_expr_tuple(ast_node_list_t values, source_location_t source_location);
 ast_node_t *ast_node_make_expr_cast(ast_node_t *value, ast_type_t *type, source_location_t source_location);

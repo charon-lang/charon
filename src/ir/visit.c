@@ -76,7 +76,7 @@ static void visit_stmt(ir_unit_t *unit, ir_type_cache_t *type_cache, ir_module_t
 
 static void visit_namespace(ir_unit_t *unit, ir_type_cache_t *type_cache, ir_module_t *module, ir_namespace_t *namespace, visitor_t *visitor) {
     for(size_t i = 0; i < namespace->symbol_count; i++) {
-        ir_symbol_t *symbol = &namespace->symbols[i];
+        ir_symbol_t *symbol = namespace->symbols[i];
         switch(symbol->kind) {
             case IR_SYMBOL_KIND_MODULE:
                 visit_namespace(unit, type_cache, symbol->module, &symbol->module->namespace, visitor);

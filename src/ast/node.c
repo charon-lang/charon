@@ -35,12 +35,23 @@ ast_node_t *ast_node_make_tlc_module(const char *name, ast_node_list_t tlcs, ast
     return node;
 }
 
-ast_node_t *ast_node_make_tlc_function(const char *name, ast_type_function_t *function_type, const char **argument_names, ast_node_t *statement, ast_attribute_list_t attributes, source_location_t source_location) {
+ast_node_t *ast_node_make_tlc_function(
+    const char *name,
+    ast_type_function_t *function_type,
+    const char **argument_names,
+    ast_node_t *statement,
+    size_t generic_parameter_count,
+    const char **generic_parameters,
+    ast_attribute_list_t attributes,
+    source_location_t source_location
+) {
     ast_node_t *node = node_make(AST_NODE_TYPE_TLC_FUNCTION, attributes, source_location);
     node->tlc_function.name = name;
     node->tlc_function.function_type = function_type;
     node->tlc_function.argument_names = argument_names;
     node->tlc_function.statement = statement;
+    node->tlc_function.generic_parameter_count = generic_parameter_count;
+    node->tlc_function.generic_parameters = generic_parameters;
     return node;
 }
 
@@ -173,8 +184,10 @@ ast_node_t *ast_node_make_expr_unary(ast_node_unary_operation_t operation, ast_n
     return node;
 }
 
-ast_node_t *ast_node_make_expr_variable(const char *name, source_location_t source_location) {
+ast_node_t *ast_node_make_expr_variable(const char *name, size_t generic_parameter_count, ast_type_t **generic_parameters, source_location_t source_location) {
     ast_node_t *node = node_make(AST_NODE_TYPE_EXPR_VARIABLE, AST_ATTRIBUTE_LIST_INIT, source_location);
+    node->expr_variable.generic_parameter_count = generic_parameter_count;
+    node->expr_variable.generic_parameters = generic_parameters;
     node->expr_variable.name = name;
     return node;
 }

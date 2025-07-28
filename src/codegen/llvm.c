@@ -706,7 +706,7 @@ static void cg_global_variable(context_t *context, ir_variable_t *variable) {
 
 static void cg_namespace(context_t *context, ir_namespace_t *namespace) {
     for(size_t i = 0; i < namespace->symbol_count; i++) {
-        ir_symbol_t *symbol = &namespace->symbols[i];
+        ir_symbol_t *symbol = namespace->symbols[i];
         switch(symbol->kind) {
             case IR_SYMBOL_KIND_MODULE: cg_namespace(context, &symbol->module->namespace); break;
             case IR_SYMBOL_KIND_FUNCTION: cg_function(context, symbol->function); break;
@@ -718,7 +718,7 @@ static void cg_namespace(context_t *context, ir_namespace_t *namespace) {
 
 static void populate_namespace(context_t *context, ir_module_t *current_module, ir_namespace_t *namespace) {
     for(size_t i = 0; i < namespace->symbol_count; i++) {
-        ir_symbol_t *symbol = &namespace->symbols[i];
+        ir_symbol_t *symbol = namespace->symbols[i];
         switch(symbol->kind) {
             case IR_SYMBOL_KIND_MODULE: populate_namespace(context, symbol->module, &symbol->module->namespace); break;
             case IR_SYMBOL_KIND_FUNCTION:
