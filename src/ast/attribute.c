@@ -9,10 +9,11 @@ ast_attribute_t *ast_attribute_find(ast_attribute_list_t *list, const char *kind
         if(list->attributes[i].consumed) continue;
         if(strcasecmp(list->attributes[i].kind, kind) != 0) continue;
         if(list->attributes[i].argument_count != argument_type_count) continue;
-        for(size_t j = 0; j < argument_type_count; j++) if(list->attributes[i].arguments[j].type != argument_types[j]) goto cont;
+        for(size_t j = 0; j < argument_type_count; j++)
+            if(list->attributes[i].arguments[j].type != argument_types[j]) goto cont;
         list->attributes[i].consumed = true;
         return &list->attributes[i];
-        cont:
+    cont:
     }
     return NULL;
 }

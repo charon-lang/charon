@@ -1,16 +1,15 @@
 #include "codegen.h"
-
-#include "lib/diag.h"
 #include "lib/alloc.h"
+#include "lib/diag.h"
 #include "lib/log.h"
 
 #include <assert.h>
-#include <string.h>
-#include <llvm-c/Core.h>
 #include <llvm-c/Analysis.h>
+#include <llvm-c/Core.h>
+#include <llvm-c/ExecutionEngine.h>
 #include <llvm-c/TargetMachine.h>
 #include <llvm-c/Transforms/PassBuilder.h>
-#include <llvm-c/ExecutionEngine.h>
+#include <string.h>
 
 #define TYPE_BOOL ir_type_cache_get_integer(context->type_cache, 1, false, false)
 
@@ -50,7 +49,7 @@ static char *mangle_name(const char *name, ir_module_t *module) {
     char *mangled_name = alloc_strdup(name);
     while(module != NULL) {
         size_t name_length = strlen(mangled_name);
-        size_t module_name_length= strlen(module->name);
+        size_t module_name_length = strlen(module->name);
         char *new = alloc(module_name_length + 2 + name_length + 1);
         memcpy(new, module->name, module_name_length);
         memset(&new[module_name_length], ':', 2);
@@ -70,16 +69,16 @@ static LLVMTypeRef ir_type_to_llvm(context_t *context, ir_type_t *type) {
         case IR_TYPE_KIND_VOID: return LLVMVoidTypeInContext(context->llvm_context);
         case IR_TYPE_KIND_INTEGER:
             switch(type->integer.bit_size) {
-                case 1: return LLVMInt1TypeInContext(context->llvm_context);
-                case 8: return LLVMInt8TypeInContext(context->llvm_context);
+                case 1:  return LLVMInt1TypeInContext(context->llvm_context);
+                case 8:  return LLVMInt8TypeInContext(context->llvm_context);
                 case 16: return LLVMInt16TypeInContext(context->llvm_context);
                 case 32: return LLVMInt32TypeInContext(context->llvm_context);
                 case 64: return LLVMInt64TypeInContext(context->llvm_context);
                 default: assert(false);
             }
         case IR_TYPE_KIND_POINTER: return LLVMPointerTypeInContext(context->llvm_context, 0);
-        case IR_TYPE_KIND_ARRAY: return LLVMArrayType2(ir_type_to_llvm(context, type->array.type), type->array.size);
-        case IR_TYPE_KIND_TUPLE: {
+        case IR_TYPE_KIND_ARRAY:   return LLVMArrayType2(ir_type_to_llvm(context, type->array.type), type->array.size);
+        case IR_TYPE_KIND_TUPLE:   {
             LLVMTypeRef types[type->tuple.type_count];
             for(size_t i = 0; i < type->tuple.type_count; i++) types[i] = ir_type_to_llvm(context, type->tuple.types[i]);
             return LLVMStructTypeInContext(context->llvm_context, types, type->tuple.type_count, false);
@@ -90,7 +89,7 @@ static LLVMTypeRef ir_type_to_llvm(context_t *context, ir_type_t *type) {
             return LLVMStructTypeInContext(context->llvm_context, types, type->structure.member_count, type->structure.packed);
         }
         case IR_TYPE_KIND_FUNCTION_REFERENCE: return LLVMPointerTypeInContext(context->llvm_context, 0);
-        case IR_TYPE_KIND_ENUMERATION: return LLVMIntTypeInContext(context->llvm_context, type->enumeration.bit_size);
+        case IR_TYPE_KIND_ENUMERATION:        return LLVMIntTypeInContext(context->llvm_context, type->enumeration.bit_size);
     }
     assert(false);
 }
@@ -352,9 +351,14 @@ static value_t cg_expr_literal_bool(CG_EXPR_PARAMS) {
 
 static value_t cg_expr_binary(CG_EXPR_PARAMS) {
     switch(expr->binary.operation) {
-        enum { LOGICAL_AND, LOGICAL_OR } op;
+        enum {
+            LOGICAL_AND,
+            LOGICAL_OR
+        } op;
         case IR_BINARY_OPERATION_LOGICAL_AND: op = LOGICAL_AND; goto logical;
-        case IR_BINARY_OPERATION_LOGICAL_OR: op = LOGICAL_OR; goto logical;
+        case IR_BINARY_OPERATION_LOGICAL_OR:
+            op = LOGICAL_OR;
+            goto logical;
         logical: {
             assert(ir_type_eq(expr->type, TYPE_BOOL));
             assert(ir_type_eq(expr->binary.left->type, TYPE_BOOL));
@@ -398,61 +402,29 @@ static value_t cg_expr_binary(CG_EXPR_PARAMS) {
     LLVMValueRef left = resolve_ref(context, expr->binary.left->type, left_value);
 
     switch(expr->binary.operation) {
-        case IR_BINARY_OPERATION_EQUAL: return (value_t) {
-            .llvm_value = LLVMBuildICmp(context->llvm_builder, LLVMIntEQ, left, right, "expr.binary.eq")
-        };
-        case IR_BINARY_OPERATION_NOT_EQUAL: return (value_t) {
-            .llvm_value = LLVMBuildICmp(context->llvm_builder, LLVMIntNE, left, right, "expr.binary.ne")
-        };
-        default: break;
+        case IR_BINARY_OPERATION_EQUAL:     return (value_t) { .llvm_value = LLVMBuildICmp(context->llvm_builder, LLVMIntEQ, left, right, "expr.binary.eq") };
+        case IR_BINARY_OPERATION_NOT_EQUAL: return (value_t) { .llvm_value = LLVMBuildICmp(context->llvm_builder, LLVMIntNE, left, right, "expr.binary.ne") };
+        default:                            break;
     }
 
     ir_type_t *type = expr->binary.left->type;
     assert(type->kind == IR_TYPE_KIND_INTEGER);
     switch(expr->binary.operation) {
-        case IR_BINARY_OPERATION_ADDITION: return (value_t) {
-            .llvm_value = LLVMBuildAdd(context->llvm_builder, left, right, "expr.binary.add")
-        };
-        case IR_BINARY_OPERATION_SUBTRACTION: return (value_t) {
-            .llvm_value = LLVMBuildSub(context->llvm_builder, left, right, "expr.binary.sub")
-        };
-        case IR_BINARY_OPERATION_MULTIPLICATION: return (value_t) {
-            .llvm_value = LLVMBuildMul(context->llvm_builder, left, right, "expr.binary.mul")
-        };
-        case IR_BINARY_OPERATION_DIVISION: return (value_t) {
-            .llvm_value = type->integer.is_signed ? LLVMBuildSDiv(context->llvm_builder, left, right, "expr.binary.sdiv") : LLVMBuildUDiv(context->llvm_builder, left, right, "expr.binary.udiv")
-        };
-        case IR_BINARY_OPERATION_MODULO: return (value_t) {
-            .llvm_value = type->integer.is_signed ? LLVMBuildSRem(context->llvm_builder, left, right, "expr.binary.srem") : LLVMBuildURem(context->llvm_builder, left, right, "expr.binary.urem")
-        };
-        case IR_BINARY_OPERATION_GREATER: return (value_t) {
-            .llvm_value = LLVMBuildICmp(context->llvm_builder, type->integer.is_signed ? LLVMIntSGT : LLVMIntUGT, left, right, "expr.binary.gt")
-        };
-        case IR_BINARY_OPERATION_GREATER_EQUAL: return (value_t) {
-            .llvm_value = LLVMBuildICmp(context->llvm_builder, type->integer.is_signed ? LLVMIntSGE : LLVMIntUGE, left, right, "expr.binary.ge")
-        };
-        case IR_BINARY_OPERATION_LESS: return (value_t) {
-            .llvm_value = LLVMBuildICmp(context->llvm_builder, type->integer.is_signed ? LLVMIntSLT : LLVMIntULT, left, right, "expr.binary.lt")
-        };
-        case IR_BINARY_OPERATION_LESS_EQUAL: return (value_t) {
-            .llvm_value = LLVMBuildICmp(context->llvm_builder, type->integer.is_signed ? LLVMIntSLE : LLVMIntULE, left, right, "expr.binary.le")
-        };
-        case IR_BINARY_OPERATION_SHIFT_LEFT: return (value_t) {
-            .llvm_value = LLVMBuildShl(context->llvm_builder, left, right, "expr.binary.shl")
-        };
-        case IR_BINARY_OPERATION_SHIFT_RIGHT: return (value_t) {
-            .llvm_value = type->integer.is_signed ? LLVMBuildAShr(context->llvm_builder, left, right, "expr.binary.ashr") : LLVMBuildLShr(context->llvm_builder, left, right, "expr.binary.lshr")
-        };
-        case IR_BINARY_OPERATION_AND: return (value_t) {
-            .llvm_value = LLVMBuildAnd(context->llvm_builder, left, right, "expr.binary.and")
-        };
-        case IR_BINARY_OPERATION_OR: return (value_t) {
-            .llvm_value = LLVMBuildOr(context->llvm_builder, left, right, "expr.binary.or")
-        };
-        case IR_BINARY_OPERATION_XOR: return (value_t) {
-           .llvm_value = LLVMBuildXor(context->llvm_builder, left, right, "expr.binary.xor")
-        };
-        default: break;
+        case IR_BINARY_OPERATION_ADDITION:       return (value_t) { .llvm_value = LLVMBuildAdd(context->llvm_builder, left, right, "expr.binary.add") };
+        case IR_BINARY_OPERATION_SUBTRACTION:    return (value_t) { .llvm_value = LLVMBuildSub(context->llvm_builder, left, right, "expr.binary.sub") };
+        case IR_BINARY_OPERATION_MULTIPLICATION: return (value_t) { .llvm_value = LLVMBuildMul(context->llvm_builder, left, right, "expr.binary.mul") };
+        case IR_BINARY_OPERATION_DIVISION:       return (value_t) { .llvm_value = type->integer.is_signed ? LLVMBuildSDiv(context->llvm_builder, left, right, "expr.binary.sdiv") : LLVMBuildUDiv(context->llvm_builder, left, right, "expr.binary.udiv") };
+        case IR_BINARY_OPERATION_MODULO:         return (value_t) { .llvm_value = type->integer.is_signed ? LLVMBuildSRem(context->llvm_builder, left, right, "expr.binary.srem") : LLVMBuildURem(context->llvm_builder, left, right, "expr.binary.urem") };
+        case IR_BINARY_OPERATION_GREATER:        return (value_t) { .llvm_value = LLVMBuildICmp(context->llvm_builder, type->integer.is_signed ? LLVMIntSGT : LLVMIntUGT, left, right, "expr.binary.gt") };
+        case IR_BINARY_OPERATION_GREATER_EQUAL:  return (value_t) { .llvm_value = LLVMBuildICmp(context->llvm_builder, type->integer.is_signed ? LLVMIntSGE : LLVMIntUGE, left, right, "expr.binary.ge") };
+        case IR_BINARY_OPERATION_LESS:           return (value_t) { .llvm_value = LLVMBuildICmp(context->llvm_builder, type->integer.is_signed ? LLVMIntSLT : LLVMIntULT, left, right, "expr.binary.lt") };
+        case IR_BINARY_OPERATION_LESS_EQUAL:     return (value_t) { .llvm_value = LLVMBuildICmp(context->llvm_builder, type->integer.is_signed ? LLVMIntSLE : LLVMIntULE, left, right, "expr.binary.le") };
+        case IR_BINARY_OPERATION_SHIFT_LEFT:     return (value_t) { .llvm_value = LLVMBuildShl(context->llvm_builder, left, right, "expr.binary.shl") };
+        case IR_BINARY_OPERATION_SHIFT_RIGHT:    return (value_t) { .llvm_value = type->integer.is_signed ? LLVMBuildAShr(context->llvm_builder, left, right, "expr.binary.ashr") : LLVMBuildLShr(context->llvm_builder, left, right, "expr.binary.lshr") };
+        case IR_BINARY_OPERATION_AND:            return (value_t) { .llvm_value = LLVMBuildAnd(context->llvm_builder, left, right, "expr.binary.and") };
+        case IR_BINARY_OPERATION_OR:             return (value_t) { .llvm_value = LLVMBuildOr(context->llvm_builder, left, right, "expr.binary.or") };
+        case IR_BINARY_OPERATION_XOR:            return (value_t) { .llvm_value = LLVMBuildXor(context->llvm_builder, left, right, "expr.binary.xor") };
+        default:                                 break;
     }
     assert(false);
 }
@@ -466,18 +438,15 @@ static value_t cg_expr_unary(CG_EXPR_PARAMS) {
 
     LLVMValueRef operand = resolve_ref(context, expr->unary.operand->type, operand_value);
     switch(expr->unary.operation) {
-        case IR_UNARY_OPERATION_DEREF: return (value_t) { .is_ref = true, .llvm_value = operand };
-        case IR_UNARY_OPERATION_NOT: return (value_t) { .llvm_value = LLVMBuildICmp(context->llvm_builder, LLVMIntEQ, operand, LLVMConstInt(ir_type_to_llvm(context, expr->unary.operand->type), 0, false), "") };
+        case IR_UNARY_OPERATION_DEREF:    return (value_t) { .is_ref = true, .llvm_value = operand };
+        case IR_UNARY_OPERATION_NOT:      return (value_t) { .llvm_value = LLVMBuildICmp(context->llvm_builder, LLVMIntEQ, operand, LLVMConstInt(ir_type_to_llvm(context, expr->unary.operand->type), 0, false), "") };
         case IR_UNARY_OPERATION_NEGATIVE: return (value_t) { .llvm_value = LLVMBuildNeg(context->llvm_builder, operand, "") };
-        default: assert(false);
+        default:                          assert(false);
     }
 }
 
 static value_t cg_expr_variable(CG_EXPR_PARAMS) {
-    return (value_t) {
-        .is_ref = !expr->variable.is_function,
-        .llvm_value = expr->variable.is_function ? expr->variable.function->codegen_data : expr->variable.variable->codegen_data
-    };
+    return (value_t) { .is_ref = !expr->variable.is_function, .llvm_value = expr->variable.is_function ? expr->variable.function->codegen_data : expr->variable.variable->codegen_data };
 }
 
 static value_t cg_expr_call(CG_EXPR_PARAMS) {
@@ -524,9 +493,14 @@ static value_t cg_expr_cast(CG_EXPR_PARAMS) {
 
     if(type_from->kind == IR_TYPE_KIND_ARRAY && type_to->kind == IR_TYPE_KIND_POINTER && ir_type_eq(type_from->array.type, type_to->pointer.pointee)) {
         assert(value_from_ext.is_ref);
-        return (value_t) {
-            .llvm_value = LLVMBuildGEP2(context->llvm_builder, ir_type_to_llvm(context, type_from), value_from_ext.llvm_value, (LLVMValueRef[]) { LLVMConstInt(LLVMInt64TypeInContext(context->llvm_context), 0, false), LLVMConstInt(LLVMInt64TypeInContext(context->llvm_context), 0, false) }, 2, "cast.arraydecay")
-        };
+        return (value_t) { .llvm_value = LLVMBuildGEP2(
+                               context->llvm_builder,
+                               ir_type_to_llvm(context, type_from),
+                               value_from_ext.llvm_value,
+                               (LLVMValueRef[]) { LLVMConstInt(LLVMInt64TypeInContext(context->llvm_context), 0, false), LLVMConstInt(LLVMInt64TypeInContext(context->llvm_context), 0, false) },
+                               2,
+                               "cast.arraydecay"
+                           ) };
     }
 
     LLVMValueRef value_from = resolve_ref(context, expr->cast.value->type, value_from_ext);
@@ -570,25 +544,33 @@ static value_t cg_expr_subscript(CG_EXPR_PARAMS) {
 
             switch(expr->subscript.value->type->kind) {
                 case IR_TYPE_KIND_ARRAY:
-                    llvm_value = LLVMBuildGEP2(context->llvm_builder, ir_type_to_llvm(context, expr->subscript.value->type), value.llvm_value, (LLVMValueRef[]) { LLVMConstInt(LLVMInt64TypeInContext(context->llvm_context), 0, false), index }, 2, "expr.subscript");
+                    llvm_value = LLVMBuildGEP2(
+                        context->llvm_builder,
+                        ir_type_to_llvm(context, expr->subscript.value->type),
+                        value.llvm_value,
+                        (LLVMValueRef[]) { LLVMConstInt(LLVMInt64TypeInContext(context->llvm_context), 0, false), index },
+                        2,
+                        "expr.subscript"
+                    );
                     break;
-                case IR_TYPE_KIND_POINTER:
-                    llvm_value = LLVMBuildGEP2(context->llvm_builder, ir_type_to_llvm(context, expr->type), resolve_ref(context, expr->subscript.value->type, value), &index, 1, "expr.subscript");
-                    break;
-                default: diag_error(expr->source_location, LANG_E_INVALID_TYPE);
+                case IR_TYPE_KIND_POINTER: llvm_value = LLVMBuildGEP2(context->llvm_builder, ir_type_to_llvm(context, expr->type), resolve_ref(context, expr->subscript.value->type, value), &index, 1, "expr.subscript"); break;
+                default:                   diag_error(expr->source_location, LANG_E_INVALID_TYPE);
             }
             break;
         }
         case IR_SUBSCRIPT_KIND_INDEX_CONST: {
             switch(expr->subscript.value->type->kind) {
-                case IR_TYPE_KIND_TUPLE:
-                    llvm_value = LLVMBuildStructGEP2(context->llvm_builder, ir_type_to_llvm(context, expr->subscript.value->type), value.llvm_value, expr->subscript.index_const, "expr.subscript");
-                    break;
-                case IR_TYPE_KIND_ARRAY:
-                    llvm_value = LLVMBuildStructGEP2(context->llvm_builder, ir_type_to_llvm(context, expr->subscript.value->type), value.llvm_value, expr->subscript.index_const, "expr.subscript");
-                    break;
+                case IR_TYPE_KIND_TUPLE: llvm_value = LLVMBuildStructGEP2(context->llvm_builder, ir_type_to_llvm(context, expr->subscript.value->type), value.llvm_value, expr->subscript.index_const, "expr.subscript"); break;
+                case IR_TYPE_KIND_ARRAY: llvm_value = LLVMBuildStructGEP2(context->llvm_builder, ir_type_to_llvm(context, expr->subscript.value->type), value.llvm_value, expr->subscript.index_const, "expr.subscript"); break;
                 case IR_TYPE_KIND_POINTER:
-                    llvm_value = LLVMBuildGEP2(context->llvm_builder, ir_type_to_llvm(context, expr->type), resolve_ref(context, expr->subscript.value->type, value), (LLVMValueRef[]) { LLVMConstInt(LLVMInt64TypeInContext(context->llvm_context), expr->subscript.index_const, false) }, 1, "expr.subscript");
+                    llvm_value = LLVMBuildGEP2(
+                        context->llvm_builder,
+                        ir_type_to_llvm(context, expr->type),
+                        resolve_ref(context, expr->subscript.value->type, value),
+                        (LLVMValueRef[]) { LLVMConstInt(LLVMInt64TypeInContext(context->llvm_context), expr->subscript.index_const, false) },
+                        1,
+                        "expr.subscript"
+                    );
                     break;
                 default: diag_error(expr->source_location, LANG_E_INVALID_TYPE);
             }
@@ -602,7 +584,7 @@ static value_t cg_expr_subscript(CG_EXPR_PARAMS) {
                 goto brk;
             }
             diag_error(expr->source_location, LANG_E_UNKNOWN_MEMBER, expr->subscript.member);
-            brk:
+        brk:
             break;
         }
     }
@@ -626,15 +608,15 @@ static value_t cg_expr_enumeration_value(CG_EXPR_PARAMS) {
 
 static void cg_stmt(CG_STMT_PARAMS) {
     switch(stmt->kind) {
-        case IR_STMT_KIND_BLOCK: cg_stmt_block(context, stmt); break;
+        case IR_STMT_KIND_BLOCK:       cg_stmt_block(context, stmt); break;
         case IR_STMT_KIND_DECLARATION: cg_stmt_declaration(context, stmt); break;
-        case IR_STMT_KIND_EXPRESSION: cg_expr(context, stmt->expression.expression); break;
-        case IR_STMT_KIND_RETURN: cg_stmt_return(context, stmt); break;
-        case IR_STMT_KIND_IF: cg_stmt_if(context, stmt); break;
-        case IR_STMT_KIND_WHILE: cg_stmt_while(context, stmt); break;
-        case IR_STMT_KIND_CONTINUE: cg_stmt_continue(context, stmt); break;
-        case IR_STMT_KIND_BREAK: cg_stmt_break(context, stmt); break;
-        case IR_STMT_KIND_FOR: cg_stmt_for(context, stmt); break;
+        case IR_STMT_KIND_EXPRESSION:  cg_expr(context, stmt->expression.expression); break;
+        case IR_STMT_KIND_RETURN:      cg_stmt_return(context, stmt); break;
+        case IR_STMT_KIND_IF:          cg_stmt_if(context, stmt); break;
+        case IR_STMT_KIND_WHILE:       cg_stmt_while(context, stmt); break;
+        case IR_STMT_KIND_CONTINUE:    cg_stmt_continue(context, stmt); break;
+        case IR_STMT_KIND_BREAK:       cg_stmt_break(context, stmt); break;
+        case IR_STMT_KIND_FOR:         cg_stmt_for(context, stmt); break;
     }
 }
 
@@ -645,19 +627,19 @@ static LLVMValueRef cg_expr(CG_EXPR_PARAMS) {
 static value_t cg_expr_ext(CG_EXPR_PARAMS) {
     value_t value;
     switch(expr->kind) {
-        case IR_EXPR_KIND_LITERAL_NUMERIC: value = cg_expr_literal_numeric(context, expr); break;
-        case IR_EXPR_KIND_LITERAL_STRING: value = cg_expr_literal_string(context, expr); break;
-        case IR_EXPR_KIND_LITERAL_CHAR: value = cg_expr_literal_char(context, expr); break;
-        case IR_EXPR_KIND_LITERAL_BOOL: value = cg_expr_literal_bool(context, expr); break;
-        case IR_EXPR_KIND_BINARY: value = cg_expr_binary(context, expr); break;
-        case IR_EXPR_KIND_UNARY: value = cg_expr_unary(context, expr); break;
-        case IR_EXPR_KIND_VARIABLE: value = cg_expr_variable(context, expr); break;
-        case IR_EXPR_KIND_CALL: value = cg_expr_call(context, expr); break;
-        case IR_EXPR_KIND_TUPLE: value = cg_expr_tuple(context, expr); break;
-        case IR_EXPR_KIND_CAST: value = cg_expr_cast(context, expr); break;
-        case IR_EXPR_KIND_SUBSCRIPT: value = cg_expr_subscript(context, expr); break;
-        case IR_EXPR_KIND_SELECTOR: value = cg_expr_selector(context, expr); break;
-        case IR_EXPR_KIND_SIZEOF: value = cg_expr_sizeof(context, expr); break;
+        case IR_EXPR_KIND_LITERAL_NUMERIC:   value = cg_expr_literal_numeric(context, expr); break;
+        case IR_EXPR_KIND_LITERAL_STRING:    value = cg_expr_literal_string(context, expr); break;
+        case IR_EXPR_KIND_LITERAL_CHAR:      value = cg_expr_literal_char(context, expr); break;
+        case IR_EXPR_KIND_LITERAL_BOOL:      value = cg_expr_literal_bool(context, expr); break;
+        case IR_EXPR_KIND_BINARY:            value = cg_expr_binary(context, expr); break;
+        case IR_EXPR_KIND_UNARY:             value = cg_expr_unary(context, expr); break;
+        case IR_EXPR_KIND_VARIABLE:          value = cg_expr_variable(context, expr); break;
+        case IR_EXPR_KIND_CALL:              value = cg_expr_call(context, expr); break;
+        case IR_EXPR_KIND_TUPLE:             value = cg_expr_tuple(context, expr); break;
+        case IR_EXPR_KIND_CAST:              value = cg_expr_cast(context, expr); break;
+        case IR_EXPR_KIND_SUBSCRIPT:         value = cg_expr_subscript(context, expr); break;
+        case IR_EXPR_KIND_SELECTOR:          value = cg_expr_selector(context, expr); break;
+        case IR_EXPR_KIND_SIZEOF:            value = cg_expr_sizeof(context, expr); break;
         case IR_EXPR_KIND_ENUMERATION_VALUE: value = cg_expr_enumeration_value(context, expr); break;
     }
     return value;
@@ -708,9 +690,9 @@ static void cg_namespace(context_t *context, ir_namespace_t *namespace) {
     for(size_t i = 0; i < namespace->symbol_count; i++) {
         ir_symbol_t *symbol = namespace->symbols[i];
         switch(symbol->kind) {
-            case IR_SYMBOL_KIND_MODULE: cg_namespace(context, &symbol->module->namespace); break;
-            case IR_SYMBOL_KIND_FUNCTION: cg_function(context, symbol->function); break;
-            case IR_SYMBOL_KIND_VARIABLE: cg_global_variable(context, symbol->variable); break;
+            case IR_SYMBOL_KIND_MODULE:      cg_namespace(context, &symbol->module->namespace); break;
+            case IR_SYMBOL_KIND_FUNCTION:    cg_function(context, symbol->function); break;
+            case IR_SYMBOL_KIND_VARIABLE:    cg_global_variable(context, symbol->variable); break;
             case IR_SYMBOL_KIND_ENUMERATION: break;
         }
     }
@@ -739,26 +721,26 @@ codegen_context_t *codegen(ir_unit_t *unit, ir_type_cache_t *type_cache, codegen
     LLVMCodeModel llvm_code_model;
     switch(code_model) {
         case CODEGEN_CODE_MODEL_DEFAULT: llvm_code_model = LLVMCodeModelDefault; break;
-        case CODEGEN_CODE_MODEL_TINY: llvm_code_model = LLVMCodeModelTiny; break;
-        case CODEGEN_CODE_MODEL_SMALL: llvm_code_model = LLVMCodeModelSmall; break;
-        case CODEGEN_CODE_MODEL_MEDIUM: llvm_code_model = LLVMCodeModelMedium; break;
-        case CODEGEN_CODE_MODEL_LARGE: llvm_code_model = LLVMCodeModelLarge; break;
-        case CODEGEN_CODE_MODEL_KERNEL: llvm_code_model = LLVMCodeModelKernel; break;
+        case CODEGEN_CODE_MODEL_TINY:    llvm_code_model = LLVMCodeModelTiny; break;
+        case CODEGEN_CODE_MODEL_SMALL:   llvm_code_model = LLVMCodeModelSmall; break;
+        case CODEGEN_CODE_MODEL_MEDIUM:  llvm_code_model = LLVMCodeModelMedium; break;
+        case CODEGEN_CODE_MODEL_LARGE:   llvm_code_model = LLVMCodeModelLarge; break;
+        case CODEGEN_CODE_MODEL_KERNEL:  llvm_code_model = LLVMCodeModelKernel; break;
     }
 
     LLVMRelocMode llvm_reloc_model;
     switch(relocation_mode) {
         case CODEGEN_RELOCATION_DEFAULT: llvm_reloc_model = LLVMRelocDefault; break;
-        case CODEGEN_RELOCATION_STATIC: llvm_reloc_model = LLVMRelocStatic; break;
-        case CODEGEN_RELOCATION_PIC: llvm_reloc_model = LLVMRelocPIC; break;
+        case CODEGEN_RELOCATION_STATIC:  llvm_reloc_model = LLVMRelocStatic; break;
+        case CODEGEN_RELOCATION_PIC:     llvm_reloc_model = LLVMRelocPIC; break;
     }
 
     const char *passes = NULL;
     switch(optimization) {
         case CODEGEN_OPTIMIZATION_NONE: break;
-        case CODEGEN_OPTIMIZATION_O1: passes = "default<O1>"; break;
-        case CODEGEN_OPTIMIZATION_O2: passes = "default<O2>"; break;
-        case CODEGEN_OPTIMIZATION_O3: passes = "default<O3>"; break;
+        case CODEGEN_OPTIMIZATION_O1:   passes = "default<O1>"; break;
+        case CODEGEN_OPTIMIZATION_O2:   passes = "default<O2>"; break;
+        case CODEGEN_OPTIMIZATION_O3:   passes = "default<O3>"; break;
     }
 
     // OPTIMIZE: this is kind of lazy

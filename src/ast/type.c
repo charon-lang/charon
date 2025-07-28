@@ -2,16 +2,16 @@
 
 #include "lib/alloc.h"
 
-#define DEFINE_GET(NAME, TYPE) \
+#define DEFINE_GET(NAME, TYPE)                                         \
     ast_type_t *ast_type_get_##NAME(ast_attribute_list_t attributes) { \
-        static ast_type_t *type = NULL; \
-        if(type == NULL) type = TYPE; \
-        return type; \
+        static ast_type_t *type = NULL;                                \
+        if(type == NULL) type = TYPE;                                  \
+        return type;                                                   \
     }
 
-#define DEFINE_GET_ALIAS(NAME, TO) \
+#define DEFINE_GET_ALIAS(NAME, TO)                                     \
     ast_type_t *ast_type_get_##NAME(ast_attribute_list_t attributes) { \
-        return ast_type_get_##TO(attributes); \
+        return ast_type_get_##TO(attributes);                          \
     }
 
 static ast_type_t *make_type(ast_type_kind_t kind, ast_attribute_list_t attributes) {
@@ -24,8 +24,7 @@ static ast_type_t *make_type(ast_type_kind_t kind, ast_attribute_list_t attribut
 
 ast_type_t *ast_type_integer_make(size_t bit_size, bool is_signed, ast_attribute_list_t attributes) {
     ast_type_t *type = make_type(AST_TYPE_KIND_INTEGER, attributes);
-    type->integer.bit_size = bit_size,
-    type->integer.is_signed = is_signed;
+    type->integer.bit_size = bit_size, type->integer.is_signed = is_signed;
     return type;
 }
 

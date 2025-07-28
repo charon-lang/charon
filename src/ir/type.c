@@ -39,12 +39,8 @@ static void cache_add(ir_type_cache_t *cache, ir_type_t *type) {
 }
 
 bool ir_type_eq(ir_type_t *a, ir_type_t *b) {
-    if(
-        a->kind == IR_TYPE_KIND_INTEGER && b->kind == IR_TYPE_KIND_INTEGER
-        && a->integer.bit_size == b->integer.bit_size
-        && a->integer.is_signed == b->integer.is_signed
-        && a->integer.allow_coerce_pointer == b->integer.allow_coerce_pointer
-    ) return true;
+    if(a->kind == IR_TYPE_KIND_INTEGER && b->kind == IR_TYPE_KIND_INTEGER && a->integer.bit_size == b->integer.bit_size && a->integer.is_signed == b->integer.is_signed && a->integer.allow_coerce_pointer == b->integer.allow_coerce_pointer)
+        return true;
     return a == b;
 }
 
@@ -100,9 +96,10 @@ ir_type_t *ir_type_cache_get_tuple(ir_type_cache_t *cache, size_t type_count, ir
     for(size_t i = 0; i < cache->type_count; i++) {
         if(cache->types[i]->kind != IR_TYPE_KIND_TUPLE) continue;
         if(cache->types[i]->tuple.type_count != type_count) continue;
-        for(size_t j = 0; j < cache->types[i]->tuple.type_count; j++) if(!ir_type_eq(cache->types[i]->tuple.types[j], types[j])) goto cont;
+        for(size_t j = 0; j < cache->types[i]->tuple.type_count; j++)
+            if(!ir_type_eq(cache->types[i]->tuple.types[j], types[j])) goto cont;
         return cache->types[i];
-        cont:
+    cont:
     }
     ir_type_t *type = make_type(IR_TYPE_KIND_TUPLE);
     type->tuple.type_count = type_count;
@@ -135,7 +132,7 @@ ir_type_t *ir_type_cache_get_structure(ir_type_cache_t *cache, size_t member_cou
             if(!ir_type_eq(cache->types[i]->structure.members[j].type, members[j].type)) goto cont;
         }
         return cache->types[i];
-        cont:
+    cont:
     }
     ir_type_t *type = make_type(IR_TYPE_KIND_STRUCTURE);
     type->structure.packed = packed;
@@ -155,7 +152,7 @@ ir_type_t *ir_type_cache_get_function_reference(ir_type_cache_t *cache, ir_funct
             if(!ir_type_eq(cache->types[i]->function_reference.prototype.arguments[j], prototype.arguments[j])) goto cont;
         }
         return cache->types[i];
-        cont:
+    cont:
     }
     ir_type_t *type = make_type(IR_TYPE_KIND_FUNCTION_REFERENCE);
     type->function_reference.prototype = prototype;

@@ -2,8 +2,8 @@
 
 #include "lib/source.h"
 
-#include <stdint.h>
 #include <stddef.h>
+#include <stdint.h>
 
 #define AST_ATTRIBUTE_LIST_INIT ((ast_attribute_list_t) { .attribute_count = 0, .attributes = NULL })
 

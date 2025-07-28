@@ -5,9 +5,9 @@
 typedef enum {
     TOKEN_KIND_INTERNAL_NONE,
     TOKEN_KIND_INTERNAL_EOF,
-    #define TOKEN(ID, ...) TOKEN_KIND_##ID,
-    #include "tokens.def"
-    #undef TOKEN
+#define TOKEN(ID, ...) TOKEN_KIND_##ID,
+#include "tokens.def"
+#undef TOKEN
 } token_kind_t;
 
 typedef struct {
