@@ -11,9 +11,7 @@ typedef struct {
     token_t lookahead;
 } tokenizer_t;
 
-tokenizer_t *tokenizer_make(source_t *source);
-void tokenizer_free(tokenizer_t *tokenizer);
-
+tokenizer_t tokenizer_init(source_t *source);
 token_t tokenizer_peek(tokenizer_t *tokenizer);
 token_t tokenizer_advance(tokenizer_t *tokenizer);
 

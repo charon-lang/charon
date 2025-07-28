@@ -1,8 +1,5 @@
 package main
 
-// #cgo CFLAGS:-std=gnu23 -I/persistent/projects/charon-lang/charon/lib/include -I/persistent/projects/charon-lang/charon/lib/src
-// #cgo LDFLAGS:-L /nix/store/vvp8hlss3d5q6hn0cifq04jrpnp6bini-pcre2-10.44/lib -L /nix/store/136cbgnv6rrk8ynp1d8x9977plz14cf9-llvm-20.1.6-lib/lib$ -l pcre2-8 -l LLVM /persistent/projects/charon-lang/charon/build/lib/libcharon.a
-// #include <charon.h>
 // #include <stdlib.h>
 // #include <lib/source.h>
 // #include <lib/memory.h>

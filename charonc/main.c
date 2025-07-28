@@ -184,9 +184,8 @@ int main(int argc, const char *argv[]) {
     memory_allocator_t *ast_allocator = memory_allocator_make();
     memory_active_allocator_set(ast_allocator);
     for(size_t i = 0; i < source_count; i++) {
-        tokenizer_t *tokenizer = tokenizer_make(sources[i]);
-        ast_root_nodes[i] = parser_root(tokenizer);
-        tokenizer_free(tokenizer);
+        tokenizer_t tokenizer = tokenizer_init(sources[i]);
+        ast_root_nodes[i] = parser_root(&tokenizer);
     }
     memory_active_allocator_set(NULL);
 

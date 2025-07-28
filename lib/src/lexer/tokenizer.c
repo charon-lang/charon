@@ -3,11 +3,11 @@
 #include "lib/diag.h"
 #include "lib/log.h"
 
-#include <stddef.h>
-#include <string.h>
-#include <stdlib.h>
-#include <stdio.h>
 #include <pcre2.h>
+#include <stddef.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
 
 #define SPEC_SIZE (sizeof(g_uncompiled_spec) / sizeof(uncompiled_entry_t))
 
@@ -27,13 +27,13 @@ typedef struct {
 } uncompiled_entry_t;
 
 static uncompiled_entry_t g_uncompiled_spec[] = {
-    { .kind = TOKEN_KIND_INTERNAL_NONE, .pattern = "^\\s+" }, // Whitespace
-    { .kind = TOKEN_KIND_INTERNAL_NONE, .pattern = "^//.*" }, // Single line comment
+    { .kind = TOKEN_KIND_INTERNAL_NONE, .pattern = "^\\s+"               }, // Whitespace
+    { .kind = TOKEN_KIND_INTERNAL_NONE, .pattern = "^//.*"               }, // Single line comment
     { .kind = TOKEN_KIND_INTERNAL_NONE, .pattern = "^/\\*[\\s\\S]*?\\*/" }, // Multi line comment
-    { .kind = TOKEN_KIND_INTERNAL_NONE, .pattern = "^#.*" }, // Hashtag comment
-    #define TOKEN(ID, _, PATTERN) { .kind = TOKEN_KIND_##ID, .pattern = PATTERN },
-    #include "tokens.def"
-    #undef TOKEN
+    { .kind = TOKEN_KIND_INTERNAL_NONE, .pattern = "^#.*"                }, // Hashtag comment
+#define TOKEN(ID, _, PATTERN) { .kind = TOKEN_KIND_##ID, .pattern = PATTERN                                                                 },
+#include "tokens.def"
+#undef TOKEN
 };
 
 static bool g_spec_compiled = false;
@@ -90,18 +90,15 @@ static token_t next_token(tokenizer_t *tokenizer) {
     return (token_t) { .kind = match.kind, .offset = offset, .size = match.size };
 }
 
-tokenizer_t *tokenizer_make(source_t *source) {
+tokenizer_t tokenizer_init(source_t *source) {
     if(!g_spec_compiled) spec_compile();
 
-    tokenizer_t *tokenizer = malloc(sizeof(tokenizer_t));
-    tokenizer->source = source;
-    tokenizer->cursor = 0;
-    tokenizer->lookahead = next_token(tokenizer);
+    tokenizer_t tokenizer = {
+        .source = source,
+        .cursor = 0,
+    };
+    tokenizer.lookahead = next_token(&tokenizer);
     return tokenizer;
-}
-
-void tokenizer_free(tokenizer_t *tokenizer) {
-    free(tokenizer);
 }
 
 token_t tokenizer_peek(tokenizer_t *tokenizer) {

@@ -1,6 +1,6 @@
 #include "log.h"
 
-#include "charon.h"
+#include "charon/log.h"
 
 #include <stdarg.h>
 #include <stdio.h>
