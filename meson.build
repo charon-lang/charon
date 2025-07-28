@@ -9,3 +9,4 @@ add_project_arguments(
 
 subdir('lib')
 subdir('charonc')
+subdir('charonlsp')

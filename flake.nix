@@ -25,6 +25,7 @@
                     gdb
                     bear
                     valgrind
+                    go
                 ];
             };
 
