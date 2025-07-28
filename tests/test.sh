@@ -47,7 +47,7 @@ run_exec() {
         return
     fi
 
-    ./build/charon compile --emit-ir --dest=$TEST_PATH.ll -O0 $CHARON_FILE
+    ./build/charonc/charonc compile --emit-ir --dest=$TEST_PATH.ll -O0 $CHARON_FILE
     EXIT_CODE=$?
     if [ $EXIT_CODE -ne 0 ]; then
         print_result 0 $TEST_NAME "tester exited with $EXIT_CODE"

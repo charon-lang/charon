@@ -1,0 +1,11 @@
+extern fn printf(fmt: *u8, ...): i32;
+
+fn main() {
+    printf("%u\n", sum:<uint>(10, 10));
+    printf("%i\n", sum:<int>(-10 as int, 8 as int));
+    printf("%u\n", sum:<uint>(10, 4));
+}
+
+fn sum<T>(a: T, b: T): T {
+    return a + b;
+}
