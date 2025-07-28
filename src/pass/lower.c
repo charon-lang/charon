@@ -569,7 +569,11 @@ static ir_expr_t *lower_expr(pass_lower_context_t *context, ir_namespace_t *curr
 
             ir_symbol_t *symbol = ir_namespace_find_symbol(current_namespace, node->expr_variable.name);
             if(symbol == NULL) symbol = ir_namespace_find_symbol(&context->unit->root_namespace, node->expr_variable.name);
-            if(symbol == NULL) diag_error(node->source_location, LANG_E_UNKNOWN_VARIABLE, node->expr_variable.name);
+            if(symbol == NULL) {
+                generic_function_t *generic_fn = generics_namespace_find_generic_function(current_generics_namespace, node->expr_variable.name);
+                if(generic_fn != NULL) diag_error(node->source_location, LANG_E_GENERIC_CALL_MISSING_SPECIFIERS);
+                diag_error(node->source_location, LANG_E_UNKNOWN_VARIABLE, node->expr_variable.name);
+            }
             switch(symbol->kind) {
                 case IR_SYMBOL_KIND_FUNCTION:
                     expr->variable.is_function = true;
