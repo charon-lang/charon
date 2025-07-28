@@ -529,7 +529,7 @@ static ir_expr_t *lower_expr(pass_lower_context_t *context, ir_namespace_t *curr
 
                     ir_function_t *function = alloc(sizeof(ir_function_t));
                     function->name = alloc_strdup(node->expr_variable.name);
-                    function->link_name = NULL; // TODO
+                    function->link_name = NULL;
                     function->prototype = lower_function_type(context, current_namespace, current_generics_namespace, mappings, generic_fn->parameter_count, generic_fn->function_type, node->source_location);
                     function->is_extern = false;
                     function->codegen_data = NULL;

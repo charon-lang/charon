@@ -173,7 +173,8 @@ static ast_node_t *parse_identifier(tokenizer_t *tokenizer) {
             ast_node_t *value = parse_identifier(tokenizer);
             return ast_node_make_expr_selector(name, value, util_loc(tokenizer, token_name));
         }
-        case TOKEN_KIND_CARET_LEFT: {
+        case TOKEN_KIND_COLON: {
+            util_consume(tokenizer, TOKEN_KIND_COLON);
             util_consume(tokenizer, TOKEN_KIND_CARET_LEFT);
 
             size_t type_count = 0;
@@ -269,11 +270,7 @@ static ast_node_t *parse_unary_post(tokenizer_t *tokenizer) {
         }
         if(util_try_consume(tokenizer, TOKEN_KIND_ARROW)) {
             token_t token_member = util_consume(tokenizer, TOKEN_KIND_IDENTIFIER);
-            value = ast_node_make_expr_subscript_member(
-                ast_node_make_expr_unary(AST_NODE_UNARY_OPERATION_DEREF, value, source_location),
-                util_text_make_from_token(tokenizer, token_member),
-                source_location
-            );
+            value = ast_node_make_expr_subscript_member(ast_node_make_expr_unary(AST_NODE_UNARY_OPERATION_DEREF, value, source_location), util_text_make_from_token(tokenizer, token_member), source_location);
             continue;
         }
         return value;
