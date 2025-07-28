@@ -27,7 +27,6 @@ charon_lib = static_library(
     dependencies: [
         dependency('libpcre2-8'),
         dependency('llvm'),
-        dependency('libcjson')
     ],
     include_directories: [include_directories('src'), charon_lib_includes],
     c_args: [
