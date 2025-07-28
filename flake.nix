@@ -17,10 +17,10 @@
                     pkgconf
                     pcre2
                     cjson
-                    llvmPackages_18.libllvm
-                    lld_18
-                    clang_18
-                    clang-tools_18
+                    llvmPackages_20.libllvm
+                    llvmPackages_20.clang-tools
+                    lld_20
+                    clang_20
                     gnumake
                     gdb
                     bear
