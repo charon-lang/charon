@@ -739,6 +739,7 @@ static void populate_rest(pass_lower_context_t *context, ir_module_t *current_mo
             function->prototype = lower_function_type(context, current_namespace, current_generics_namespace, NULL, 0, node->tlc_function.function_type, node->source_location);
             function->is_extern = false;
             function->codegen_data = NULL;
+            function->source_location = node->source_location;
 
             ir_symbol_t *symbol = ir_namespace_add_symbol(current_namespace, IR_SYMBOL_KIND_FUNCTION);
             symbol->function = function;
@@ -755,6 +756,7 @@ static void populate_rest(pass_lower_context_t *context, ir_module_t *current_mo
             function->prototype = lower_function_type(context, current_namespace, current_generics_namespace, NULL, 0, node->tlc_extern.function_type, node->source_location);
             function->is_extern = true;
             function->codegen_data = NULL;
+            function->source_location = node->source_location;
 
             ir_symbol_t *symbol = ir_namespace_add_symbol(current_namespace, IR_SYMBOL_KIND_FUNCTION);
             symbol->function = function;

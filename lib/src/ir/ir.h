@@ -137,6 +137,7 @@ struct ir_function {
     ir_variable_t **arguments; // TODO: possible have some sort of stmt to contain the scope&args
     ir_scope_t *scope;
     void *codegen_data;
+    source_location_t source_location;
 };
 
 struct ir_enumeration {

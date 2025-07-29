@@ -671,7 +671,7 @@ static void cg_function(context_t *context, ir_function_t *function) {
     if(function->statement != NULL) cg_stmt(context, function->statement);
 
     if(!context->return_state.has_returned && !context->return_state.wont_return) {
-        if(context->return_state.type->kind != IR_TYPE_KIND_VOID) diag_error(function->statement->source_location, LANG_E_MISSING_RETURN);
+        if(context->return_state.type->kind != IR_TYPE_KIND_VOID) diag_error(function->source_location, LANG_E_MISSING_RETURN);
         LLVMBuildRetVoid(context->llvm_builder);
     }
 }
