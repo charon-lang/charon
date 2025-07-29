@@ -694,6 +694,8 @@ static void populate_rest(pass_lower_context_t *context, ir_module_t *current_mo
     switch(node->type) {
         case AST_NODE_TYPE_ROOT: AST_NODE_LIST_FOREACH(&node->root.tlcs, populate_rest(context, current_module, current_generics_namespace, node)); break;
 
+        case AST_NODE_TYPE_ERROR: assert(false);
+
         case AST_NODE_TYPE_TLC_MODULE: {
             ir_symbol_t *symbol = ir_namespace_find_symbol_of_kind(current_namespace, node->tlc_module.name, IR_SYMBOL_KIND_MODULE);
             assert(symbol != NULL);
@@ -795,6 +797,8 @@ static void populate_types_and_enums(pass_lower_context_t *context, ir_module_t 
     switch(node->type) {
         case AST_NODE_TYPE_ROOT: AST_NODE_LIST_FOREACH(&node->root.tlcs, populate_types_and_enums(context, current_module, current_generics_namespace, node)); break;
 
+        case AST_NODE_TYPE_ERROR: assert(false);
+
         case AST_NODE_TYPE_TLC_MODULE: {
             ir_symbol_t *symbol = ir_namespace_find_symbol_of_kind(current_namespace, node->tlc_module.name, IR_SYMBOL_KIND_MODULE);
             assert(symbol != NULL);
@@ -860,6 +864,8 @@ static void populate_modules(pass_lower_context_t *context, ir_module_t *current
 
     switch(node->type) {
         case AST_NODE_TYPE_ROOT: AST_NODE_LIST_FOREACH(&node->root.tlcs, populate_modules(context, current_module, current_generics_namespace, node)); break;
+
+        case AST_NODE_TYPE_ERROR: assert(false);
 
         case AST_NODE_TYPE_TLC_MODULE: {
             if(ir_namespace_exists_symbol(current_namespace, node->tlc_module.name) || generics_namespace_find_generic_function(current_generics_namespace, node->tlc_module.name) != NULL)

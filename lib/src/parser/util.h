@@ -1,9 +1,10 @@
 #pragma once
 
-#include "lexer/tokenizer.h"
-#include "lexer/token.h"
-#include "ast/type.h"
 #include "ast/attribute.h"
+#include "ast/type.h"
+#include "lexer/token.h"
+#include "lexer/tokenizer.h"
+#include "lib/diag.h"
 
 #include <stdint.h>
 

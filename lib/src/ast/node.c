@@ -1,5 +1,6 @@
 #include "node.h"
 
+#include "ast/attribute.h"
 #include "lib/alloc.h"
 
 static ast_node_t *node_make(ast_node_type_t type, ast_attribute_list_t attributes, source_location_t source_location) {
@@ -25,6 +26,15 @@ void ast_node_list_append(ast_node_list_t *list, ast_node_t *node) {
 ast_node_t *ast_node_make_root(ast_node_list_t tlcs, ast_attribute_list_t attributes, source_location_t source_location) {
     ast_node_t *node = node_make(AST_NODE_TYPE_ROOT, attributes, source_location);
     node->root.tlcs = tlcs;
+    return node;
+}
+
+ast_node_t *ast_node_make_error(diag_t *associated_diagnostic) {
+    ast_node_t *node = alloc(sizeof(ast_node_t));
+    node->type = AST_NODE_TYPE_ERROR;
+    node->attributes = AST_ATTRIBUTE_LIST_INIT;
+    node->associated_diagnostic = associated_diagnostic;
+    node->next = NULL;
     return node;
 }
 

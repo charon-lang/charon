@@ -1,13 +1,15 @@
 #include "util.h"
 
+#include "charon/diag.h"
 #include "constants.h"
-#include "lib/source.h"
-#include "lib/diag.h"
 #include "lib/alloc.h"
+#include "lib/context.h"
+#include "lib/diag.h"
+#include "lib/source.h"
 
-#include <string.h>
 #include <errno.h>
 #include <stdlib.h>
+#include <string.h>
 
 source_location_t util_loc(tokenizer_t *tokenizer, token_t token) {
     return (source_location_t) { .source = tokenizer->source, .offset = token.offset, .length = token.size };
@@ -24,7 +26,14 @@ bool util_try_consume(tokenizer_t *tokenizer, token_kind_t kind) {
 token_t util_consume(tokenizer_t *tokenizer, token_kind_t kind) {
     token_t token = tokenizer_advance(tokenizer);
     if(token.kind == kind) return token;
-    diag_error(util_loc(tokenizer, token), LANG_E_EXPECTED, token_kind_stringify(kind), token_kind_stringify(token.kind));
+    g_global_context->recovery.associated_diag = diag(
+        util_loc(tokenizer, token),
+        (diag_t) {
+            .type = DIAG_TYPE__EXPECTED,
+            .data.expected = { .expected = kind, .actual = token.kind }
+    }
+    );
+    context_recover_to_boundary();
 }
 
 char *util_text_make_from_token_inset(tokenizer_t *tokenizer, token_t token, size_t inset) {
@@ -49,14 +58,20 @@ uintmax_t util_number_make_from_token(tokenizer_t *tokenizer, token_t token) {
         case TOKEN_KIND_CONST_NUMBER_HEX: base = 16; break;
         case TOKEN_KIND_CONST_NUMBER_BIN: base = 2; break;
         case TOKEN_KIND_CONST_NUMBER_OCT: base = 8; break;
-        default: diag_error(util_loc(tokenizer, token), LANG_E_EXPECTED_NUMERIC_LITERAL, token_kind_stringify(token.kind));
+        default:                          {
+            g_global_context->recovery.associated_diag = diag(util_loc(tokenizer, token), (diag_t) { .type = DIAG_TYPE__EXPECTED_NUMERIC_LITERAL });
+            context_recover_to_boundary();
+        }
     }
     char *text = util_text_make_from_token(tokenizer, token);
     errno = 0;
     char *stripped = text;
     if(base != 10) stripped += 2;
     uintmax_t value = strtoull(stripped, NULL, base);
-    if(errno == ERANGE) diag_error(util_loc(tokenizer, token), LANG_E_TOO_LARGE_NUMERIC_LITERAL);
+    if(errno == ERANGE) {
+        g_global_context->recovery.associated_diag = diag(util_loc(tokenizer, token), (diag_t) { .type = DIAG_TYPE__TOO_LARGE_NUMERIC_CONSTANT });
+        context_recover_to_boundary();
+    }
     alloc_free(text);
     return value;
 }
@@ -123,7 +138,7 @@ ast_type_t *util_parse_type(tokenizer_t *tokenizer) {
     if(util_token_cmp(tokenizer, token_identifier, "char") == 0) return ast_type_integer_make(CONSTANTS_CHAR_SIZE, false, attributes);
     if(util_token_cmp(tokenizer, token_identifier, "paddr") == 0) return ast_type_integer_make(CONSTANTS_ADDRESS_SIZE, false, attributes);
     if(util_token_cmp(tokenizer, token_identifier, "vaddr") == 0) {
-        type_vaddr:
+    type_vaddr:
         ast_attribute_add(&attributes, "allow_coerce_pointer", NULL, 0, util_loc(tokenizer, token_identifier));
         return ast_type_integer_make(CONSTANTS_ADDRESS_SIZE, false, attributes);
     }
@@ -205,7 +220,10 @@ ast_attribute_list_t util_parse_ast_attributes(tokenizer_t *tokenizer) {
                         arguments[argument_count - 1] = (ast_attribute_argument_t) { .type = AST_ATTRIBUTE_ARGUMENT_TYPE_NUMBER, .value.number = value };
                         break;
                     }
-                    default: diag_error(util_loc(tokenizer, token), LANG_E_EXPECTED_ATTR_ARG, token_kind_stringify(token.kind));
+                    default: {
+                        diag(util_loc(tokenizer, token), (diag_t) { .type = DIAG_TYPE__EXPECTED_ATTRIBUTE_ARGUMENT });
+                        continue;
+                    }
                 }
             } while(util_try_consume(tokenizer, TOKEN_KIND_COMMA));
             util_consume(tokenizer, TOKEN_KIND_PARENTHESES_RIGHT);

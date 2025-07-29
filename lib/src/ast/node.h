@@ -2,6 +2,7 @@
 
 #include "ast/attribute.h"
 #include "ast/type.h"
+#include "lib/diag.h"
 #include "lib/source.h"
 
 #include <assert.h>
@@ -59,6 +60,8 @@
 
 typedef enum {
     AST_NODE_TYPE_ROOT,
+
+    AST_NODE_TYPE_ERROR,
 
     AST_NODE_TYPE_TLC_MODULE,
     AST_NODE_TYPE_TLC_FUNCTION,
@@ -136,8 +139,12 @@ typedef struct {
 
 struct ast_node {
     ast_node_type_t type;
-    source_location_t source_location;
     ast_attribute_list_t attributes;
+    union {
+        source_location_t source_location;
+        /* associated_diagnostic is used when type is error */
+        diag_t *associated_diagnostic;
+    };
     union {
         struct {
             ast_node_list_t tlcs;
@@ -257,6 +264,8 @@ size_t ast_node_list_count(ast_node_list_t *list);
 void ast_node_list_append(ast_node_list_t *list, ast_node_t *node);
 
 ast_node_t *ast_node_make_root(ast_node_list_t tlcs, ast_attribute_list_t attributes, source_location_t source_location);
+
+ast_node_t *ast_node_make_error(diag_t *associated_diagnostic);
 
 ast_node_t *ast_node_make_tlc_module(const char *name, ast_node_list_t tlcs, ast_attribute_list_t attributes, source_location_t source_location);
 ast_node_t *ast_node_make_tlc_function(

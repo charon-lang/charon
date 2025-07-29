@@ -1,7 +1,7 @@
 #include "token.h"
 
 static const char *g_token_kind_translations[] = {
-    "(internal_none)",
+    "(internal_ignore)",
     "(internal_eof)",
 #define TOKEN(ID, NAME, _) [TOKEN_KIND_##ID] = "`" NAME "`",
 #include "tokens.def"

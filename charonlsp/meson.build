@@ -17,6 +17,7 @@ go_target = custom_target('charonlsp',
     input: [
         'lsp.go',
         'bindings.go',
+        'document.go',
     ],
     command: ['go', 'build', '-C', meson.current_source_dir(), '-o', meson.current_build_dir() / '@OUTPUT@', '.'],
     env: cgo_env,

@@ -1,3 +1,5 @@
+#include "ast/node.h"
+#include "charon/diag.h"
 #include "lexer/token.h"
 #include "lib/alloc.h"
 #include "lib/diag.h"
@@ -48,7 +50,7 @@ static string_t helper_string_escape(source_location_t source_location, const ch
             i--;
         write_escape:
             uintmax_t value = strtoull(escape_sequence, NULL, 10);
-            if(errno == ERANGE || value > UINT8_MAX) diag_error(source_location, LANG_E_TOO_LARGE_ESCAPE_SEQUENCE);
+            if(errno == ERANGE || value > UINT8_MAX) diag(source_location, (diag_t) { .type = DIAG_TYPE__TOO_LARGE_ESCAPE_SEQUENCE });
             string_append_char(&dest, (char) value);
 
             escaped = false;
@@ -116,7 +118,11 @@ static ast_node_t *helper_binary_operation(tokenizer_t *tokenizer, ast_node_t *(
             case TOKEN_KIND_AMPERSAND:     operation = AST_NODE_BINARY_OPERATION_AND; break;
             case TOKEN_KIND_PIPE:          operation = AST_NODE_BINARY_OPERATION_OR; break;
             case TOKEN_KIND_CARET:         operation = AST_NODE_BINARY_OPERATION_XOR; break;
-            default:                       diag_error(util_loc(tokenizer, token_operation), LANG_E_EXPECTED_BINARY_OP, token_kind_stringify(token_operation.kind));
+            default:                       {
+                diag_t *diag_ref = diag(util_loc(tokenizer, token_operation), (diag_t) { .type = DIAG_TYPE__EXPECTED_BINARY_OPERATION });
+                va_end(list);
+                return ast_node_make_error(diag_ref);
+            }
         }
         left = ast_node_make_expr_binary(operation, left, func(tokenizer), util_loc(tokenizer, token_operation));
         va_end(list);
@@ -149,8 +155,8 @@ static ast_node_t *parse_literal_char(tokenizer_t *tokenizer) {
     token_t token_char = util_consume(tokenizer, TOKEN_KIND_CONST_CHAR);
     char *text = util_text_make_from_token_inset(tokenizer, token_char, 1);
     string_t value = helper_string_escape(util_loc(tokenizer, token_char), text, strlen(text));
-    if(value.data_length == 0) diag_error(util_loc(tokenizer, token_char), LANG_E_EMPTY_CHAR_LITERAL);
-    if(value.data_length - 1 > 1) diag_error(util_loc(tokenizer, token_char), LANG_E_TOO_LARGE_CHAR_LITERAL);
+    if(value.data_length - 1 == 0) diag(util_loc(tokenizer, token_char), (diag_t) { .type = DIAG_TYPE__EMPTY_CHAR_LITERAL });
+    if(value.data_length - 1 > 1) diag(util_loc(tokenizer, token_char), (diag_t) { .type = DIAG_TYPE__TOO_LARGE_CHAR_LITERAL });
     char value_char = value.data[0];
     alloc_free(value.data);
     alloc_free(text);
@@ -226,7 +232,7 @@ static ast_node_t *parse_primary(tokenizer_t *tokenizer) {
             util_consume(tokenizer, TOKEN_KIND_PARENTHESES_RIGHT);
             return ast_node_make_expr_sizeof(type, source_location);
         }
-        default: diag_error(util_loc(tokenizer, token), LANG_E_EXPECTED_PRIMARY, token_kind_stringify(token.kind));
+        default: return ast_node_make_error(diag(util_loc(tokenizer, token), (diag_t) { .type = DIAG_TYPE__EXPECTED_PRIMARY_EXPRESSION }));
     }
     __builtin_unreachable();
 }

@@ -3,7 +3,7 @@
 #include <stddef.h>
 
 typedef enum {
-    TOKEN_KIND_INTERNAL_NONE,
+    TOKEN_KIND_INTERNAL_IGNORE,
     TOKEN_KIND_INTERNAL_EOF,
 #define TOKEN(ID, ...) TOKEN_KIND_##ID,
 #include "tokens.def"

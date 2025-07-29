@@ -1,5 +1,6 @@
 #include "tokenizer.h"
 
+#include "lexer/token.h"
 #include "lib/diag.h"
 #include "lib/log.h"
 
@@ -27,10 +28,10 @@ typedef struct {
 } uncompiled_entry_t;
 
 static uncompiled_entry_t g_uncompiled_spec[] = {
-    { .kind = TOKEN_KIND_INTERNAL_NONE, .pattern = "^\\s+"               }, // Whitespace
-    { .kind = TOKEN_KIND_INTERNAL_NONE, .pattern = "^//.*"               }, // Single line comment
-    { .kind = TOKEN_KIND_INTERNAL_NONE, .pattern = "^/\\*[\\s\\S]*?\\*/" }, // Multi line comment
-    { .kind = TOKEN_KIND_INTERNAL_NONE, .pattern = "^#.*"                }, // Hashtag comment
+    { .kind = TOKEN_KIND_INTERNAL_IGNORE, .pattern = "^\\s+"               }, // Whitespace
+    { .kind = TOKEN_KIND_INTERNAL_IGNORE, .pattern = "^//.*"               }, // Single line comment
+    { .kind = TOKEN_KIND_INTERNAL_IGNORE, .pattern = "^/\\*[\\s\\S]*?\\*/" }, // Multi line comment
+    { .kind = TOKEN_KIND_INTERNAL_IGNORE, .pattern = "^#.*"                }, // Hashtag comment
 #define TOKEN(ID, _, PATTERN) { .kind = TOKEN_KIND_##ID, .pattern = PATTERN                                                                 },
 #include "tokens.def"
 #undef TOKEN
@@ -71,32 +72,36 @@ static spec_match_t spec_match(const char *string, size_t string_length) {
         return (spec_match_t) { .kind = g_spec[i].token_kind, .size = size };
     }
     pcre2_match_data_free(md);
-    return (spec_match_t) { .kind = TOKEN_KIND_INTERNAL_NONE, .size = 0 };
+    return (spec_match_t) { .kind = TOKEN_KIND_INTERNAL_IGNORE, .size = 0 };
 }
 
 static token_t next_token(tokenizer_t *tokenizer) {
-    if(tokenizer_is_eof(tokenizer)) return (token_t) { .kind = TOKEN_KIND_INTERNAL_EOF };
+    while(true) {
+        if(tokenizer_is_eof(tokenizer)) return (token_t) { .kind = TOKEN_KIND_INTERNAL_EOF };
 
-    size_t offset = tokenizer->cursor;
+        size_t offset = tokenizer->cursor;
 
-    const char *sub = tokenizer->source->data_buffer + offset;
-    size_t sub_length = tokenizer->source->data_buffer_size - offset;
-    spec_match_t match = spec_match(sub, sub_length);
-    tokenizer->cursor += match.size;
+        const char *sub = tokenizer->source->data_buffer + offset;
+        size_t sub_length = tokenizer->source->data_buffer_size - offset;
+        spec_match_t match = spec_match(sub, sub_length);
 
-    if(match.size == 0) diag_error((source_location_t) { .source = tokenizer->source, .offset = tokenizer->cursor, .length = 1 }, LANG_E_UNEXPECTED_SYMBOL, *sub);
-    if(match.kind == TOKEN_KIND_INTERNAL_NONE) return next_token(tokenizer);
+        if(match.size == 0) {
+            diag((source_location_t) { .source = tokenizer->source, .offset = tokenizer->cursor, .length = 1 }, (diag_t) { .type = DIAG_TYPE__UNEXPECTED_SYMBOL });
+            tokenizer->cursor++;
+            continue;
+        }
 
-    return (token_t) { .kind = match.kind, .offset = offset, .size = match.size };
+        tokenizer->cursor += match.size;
+        if(match.kind == TOKEN_KIND_INTERNAL_IGNORE) continue;
+
+        return (token_t) { .kind = match.kind, .offset = offset, .size = match.size };
+    }
 }
 
 tokenizer_t tokenizer_init(source_t *source) {
     if(!g_spec_compiled) spec_compile();
 
-    tokenizer_t tokenizer = {
-        .source = source,
-        .cursor = 0,
-    };
+    tokenizer_t tokenizer = { .source = source, .cursor = 0 };
     tokenizer.lookahead = next_token(&tokenizer);
     return tokenizer;
 }

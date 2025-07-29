@@ -1,9 +1,12 @@
 #include "diag.h"
 
+#include "lib/context.h"
+
+#include <assert.h>
+#include <stdarg.h>
+#include <stddef.h>
 #include <stdio.h>
 #include <stdlib.h>
-#include <stddef.h>
-#include <stdarg.h>
 
 #define INFO_LINE_COUNT 3
 
@@ -14,16 +17,14 @@ typedef struct {
 
 static const char *g_strings[] = {
     [LANG_MISSING] = "Missing language translation",
-    #define STRING(ID, VALUE) [LANG_##ID] = VALUE,
-    #include "lang_strings.def"
-    #undef STRING
+#define STRING(ID, VALUE) [LANG_##ID] = VALUE,
+#include "lang_strings.def"
+#undef STRING
 };
 
-static void diag(source_location_t *source_location, lang_t fmt, va_list list, char *type, FILE *fd) {
+static void print_diag(source_location_t *source_location, lang_t fmt, va_list list, char *type, FILE *fd) {
     size_t x = 0, y = 0;
-    line_t lines[INFO_LINE_COUNT] = {
-        { .present = true }
-    };
+    line_t lines[INFO_LINE_COUNT] = { { .present = true } };
 
     for(size_t i = 0; i < source_location->offset; i++) {
         x++;
@@ -31,7 +32,7 @@ static void diag(source_location_t *source_location, lang_t fmt, va_list list, c
         x = 0;
         y++;
         for(size_t j = INFO_LINE_COUNT - 1; j >= 1; j--) lines[j] = lines[j - 1];
-        lines[0] = (line_t) { .present = true, .offset = i + 1};
+        lines[0] = (line_t) { .present = true, .offset = i + 1 };
     }
     for(size_t i = 0; i < INFO_LINE_COUNT; i++) {
         if(!lines[i].present) continue;
@@ -55,7 +56,7 @@ static void diag(source_location_t *source_location, lang_t fmt, va_list list, c
 [[noreturn]] void diag_error(source_location_t source_location, lang_t fmt, ...) {
     va_list list;
     va_start(list, fmt);
-    diag(&source_location, fmt, list, "\e[91merror", stderr);
+    print_diag(&source_location, fmt, list, "\e[91merror", stderr);
     va_end(list);
     exit(EXIT_FAILURE);
 }
@@ -63,6 +64,34 @@ static void diag(source_location_t *source_location, lang_t fmt, va_list list, c
 void diag_warn(source_location_t source_location, lang_t fmt, ...) {
     va_list list;
     va_start(list, fmt);
-    diag(&source_location, fmt, list, "\e[93mwarn", stderr);
+    print_diag(&source_location, fmt, list, "\e[93mwarn", stderr);
     va_end(list);
+}
+
+char *charon_diag_tostring(charon_diag_t *diag) {
+    char *str = NULL;
+    switch(diag->type) {
+        case DIAG_TYPE__UNEXPECTED_SYMBOL:           asprintf(&str, "Unexpected Symbol"); break;
+        case DIAG_TYPE__EXPECTED:                    asprintf(&str, "expected `%s` got `%s`", token_kind_stringify(diag->data.expected.expected), token_kind_stringify(diag->data.expected.actual)); break;
+        case DIAG_TYPE__EXPECTED_BINARY_OPERATION:   asprintf(&str, "Expected binary operation"); break;
+        case DIAG_TYPE__EXPECTED_PRIMARY_EXPRESSION: asprintf(&str, "Expected primary expression"); break;
+        case DIAG_TYPE__EXPECTED_TLC:                asprintf(&str, "Expected top level construct"); break;
+        case DIAG_TYPE__EXPECTED_NUMERIC_LITERAL:    asprintf(&str, "Expected numeric literal"); break;
+        case DIAG_TYPE__EXPECTED_ATTRIBUTE_ARGUMENT: asprintf(&str, "Expected attribute argument"); break;
+        case DIAG_TYPE__EMPTY_CHAR_LITERAL:          asprintf(&str, "Character Literal is empty"); break;
+        case DIAG_TYPE__TOO_LARGE_CHAR_LITERAL:      asprintf(&str, "Character Literal exceeds maximum size"); break;
+        case DIAG_TYPE__TOO_LARGE_ESCAPE_SEQUENCE:   asprintf(&str, "Escape sequence exceeds maximum size"); break;
+        case DIAG_TYPE__TOO_LARGE_NUMERIC_CONSTANT:  asprintf(&str, "Numeric constant exceeds maximum value"); break;
+    }
+    return str;
+}
+
+diag_t *diag(source_location_t source_location, diag_t diag) {
+    assert(g_global_context != NULL);
+
+    diag_item_t *item = malloc(sizeof(diag_item_t));
+    item->location = source_location;
+    item->diagnostic = diag;
+    vector_diag_item_append(&g_global_context->diag_items, item);
+    return &item->diagnostic;
 }

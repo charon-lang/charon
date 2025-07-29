@@ -1,10 +1,6 @@
-#include "parser.h"
-
-#include "parser/util.h"
-#include "lexer/token.h"
 #include "lexer/tokenizer.h"
-
-#include <stdlib.h>
+#include "parser.h"
+#include "parser/util.h"
 
 ast_node_t *parser_root(tokenizer_t *tokenizer) {
     ast_node_list_t tlcs = AST_NODE_LIST_INIT;

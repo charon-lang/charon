@@ -22,13 +22,14 @@ func main() {
 	commonlog.Configure(2, nil)
 
 	handler = protocol.Handler{
-		Initialize:           initialize,
-		Initialized:          initialized,
-		Shutdown:             shutdown,
-		SetTrace:             setTrace,
-		TextDocumentDidOpen:  didOpen,
-		TextDocumentDidClose: didClose,
-		TextDocumentHover:    hover,
+		Initialize:            initialize,
+		Initialized:           initialized,
+		Shutdown:              shutdown,
+		SetTrace:              setTrace,
+		TextDocumentDidOpen:   didOpen,
+		TextDocumentDidClose:  didClose,
+		TextDocumentDidChange: didChange,
+		TextDocumentHover:     hover,
 	}
 
 	server := server.NewServer(&handler, LANG_NAME, false)
@@ -39,6 +40,8 @@ func main() {
 func initialize(context *glsp.Context, params *protocol.InitializeParams) (any, error) {
 	capabilities := handler.CreateServerCapabilities()
 	capabilities.HoverProvider = true
+	capabilities.CodeActionProvider = true
+	capabilities.TextDocumentSync = 1
 
 	return protocol.InitializeResult{
 		Capabilities: capabilities,
@@ -63,21 +66,13 @@ func setTrace(context *glsp.Context, params *protocol.SetTraceParams) error {
 	return nil
 }
 
-var docs map[protocol.DocumentUri]*AstNode = make(map[protocol.DocumentUri]*AstNode, 0)
-
 func didOpen(context *glsp.Context, params *protocol.DidOpenTextDocumentParams) error {
-	source := sourceMake(params.TextDocument.URI, params.TextDocument.Text)
-	defer sourceFree(source)
+	processDocument(context, params.TextDocument.URI, params.TextDocument.Text)
+	return nil
+}
 
-	tokenizer := tokenizerMake(source)
-	defer tokenizerFree(tokenizer)
-
-	allocator := memoryAllocatorMake()
-	defer memoryAllocatorFree(allocator)
-	memoryAllocatorSetActive(allocator)
-
-	docs[params.TextDocument.URI] = parseRoot(tokenizer)
-
+func didChange(context *glsp.Context, params *protocol.DidChangeTextDocumentParams) error {
+	processDocument(context, params.TextDocument.URI, params.ContentChanges[0].(protocol.TextDocumentContentChangeEventWhole).Text)
 	return nil
 }
 

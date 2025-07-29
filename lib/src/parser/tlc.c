@@ -1,4 +1,7 @@
+#include "ast/node.h"
+#include "lexer/tokenizer.h"
 #include "lib/alloc.h"
+#include "lib/context.h"
 #include "lib/diag.h"
 #include "parser.h"
 #include "parser/util.h"
@@ -50,7 +53,7 @@ static ast_node_t *parse_function(tokenizer_t *tokenizer, ast_attribute_list_t a
     const char **argument_names = NULL;
     ast_type_function_t *function_type = util_parse_function_type(tokenizer, &argument_names);
 
-    return ast_node_make_tlc_function(name, function_type, argument_names, parser_stmt(tokenizer), parameter_count, parameters, attributes, source_location);
+    return ast_node_make_tlc_function(name, function_type, argument_names, parser_top_stmt(tokenizer), parameter_count, parameters, attributes, source_location);
 }
 
 static ast_node_t *parse_extern(tokenizer_t *tokenizer, ast_attribute_list_t attributes) {
@@ -94,16 +97,38 @@ static ast_node_t *parse_enum(tokenizer_t *tokenizer, ast_attribute_list_t attri
 }
 
 ast_node_t *parser_tlc(tokenizer_t *tokenizer) {
+    context_recovery_boundary_t *boundary = context_recover_boundary_push();
+    if(setjmp(boundary->jmpbuf) != 0) goto recover;
+
+    ast_node_t *node = NULL;
     ast_attribute_list_t attributes = util_parse_ast_attributes(tokenizer);
     token_t token = tokenizer_peek(tokenizer);
     switch(token.kind) {
-        case TOKEN_KIND_KEYWORD_MODULE:   return parse_module(tokenizer, attributes);
-        case TOKEN_KIND_KEYWORD_FUNCTION: return parse_function(tokenizer, attributes);
-        case TOKEN_KIND_KEYWORD_EXTERN:   return parse_extern(tokenizer, attributes);
-        case TOKEN_KIND_KEYWORD_TYPE:     return parse_type(tokenizer, attributes);
-        case TOKEN_KIND_KEYWORD_LET:      return parse_declaration(tokenizer, attributes);
-        case TOKEN_KIND_KEYWORD_ENUM:     return parse_enum(tokenizer, attributes);
-        default:                          diag_error(util_loc(tokenizer, token), LANG_E_EXPECTED_TLC, token_kind_stringify(token.kind));
+        case TOKEN_KIND_KEYWORD_MODULE:   node = parse_module(tokenizer, attributes); break;
+        case TOKEN_KIND_KEYWORD_FUNCTION: node = parse_function(tokenizer, attributes); break;
+        case TOKEN_KIND_KEYWORD_EXTERN:   node = parse_extern(tokenizer, attributes); break;
+        case TOKEN_KIND_KEYWORD_TYPE:     node = parse_type(tokenizer, attributes); break;
+        case TOKEN_KIND_KEYWORD_LET:      node = parse_declaration(tokenizer, attributes); break;
+        case TOKEN_KIND_KEYWORD_ENUM:     node = parse_enum(tokenizer, attributes); break;
+        default:                          g_global_context->recovery.associated_diag = diag(util_loc(tokenizer, token), (diag_t) { .type = DIAG_TYPE__EXPECTED_TLC }); goto recover;
     }
-    __builtin_unreachable();
+    context_recover_boundary_pop();
+    return node;
+
+recover:
+    while(!tokenizer_is_eof(tokenizer)) {
+        switch(tokenizer_peek(tokenizer).kind) {
+            case TOKEN_KIND_AT:
+            case TOKEN_KIND_KEYWORD_MODULE:
+            case TOKEN_KIND_KEYWORD_FUNCTION:
+            case TOKEN_KIND_KEYWORD_EXTERN:
+            case TOKEN_KIND_KEYWORD_TYPE:
+            case TOKEN_KIND_KEYWORD_LET:
+            case TOKEN_KIND_KEYWORD_ENUM:     break;
+            default:                          tokenizer_advance(tokenizer); continue;
+        }
+        break;
+    }
+    context_recover_boundary_pop();
+    return ast_node_make_error(g_global_context->recovery.associated_diag);
 }

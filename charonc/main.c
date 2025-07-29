@@ -1,9 +1,12 @@
 #include "ast/node.h"
 #include "codegen/codegen.h"
+#include "diagnostic.h"
 #include "lexer/tokenizer.h"
+#include "lib/context.h"
 #include "lib/log.h"
 #include "lib/memory.h"
 #include "lib/source.h"
+#include "lib/vector.h"
 #include "parser/parser.h"
 #include "pass/pass.h"
 
@@ -179,6 +182,8 @@ int main(int argc, const char *argv[]) {
 
     if(mode == RUN && optimization == CODEGEN_OPTIMIZATION_NONE) log_warning("run mode is unstable with zero optimizations");
 
+    context_global_initialize();
+
     /* Parse: Source -> Tokens -> AST */
     ast_node_t *ast_root_nodes[source_count];
     memory_allocator_t *ast_allocator = memory_allocator_make();
@@ -188,6 +193,13 @@ int main(int argc, const char *argv[]) {
         ast_root_nodes[i] = parser_root(&tokenizer);
     }
     memory_active_allocator_set(NULL);
+
+    if(VECTOR_SIZE(&g_global_context->diag_items) > 0) {
+        VECTOR_FOREACH(&g_global_context->diag_items, i, item) diagnostic_print(&item->location, item->diagnostic);
+        memory_allocator_free(ast_allocator);
+        context_global_finish();
+        return EXIT_FAILURE;
+    }
 
     /* Lower: AST -> IR */
     memory_allocator_t *ir_allocator = memory_allocator_make();
@@ -226,6 +238,8 @@ int main(int argc, const char *argv[]) {
     codegen_dispose_context(cg_context);
     memory_active_allocator_set(NULL);
     memory_allocator_free(ir_allocator);
+
+    context_global_finish();
 
     return ret;
 }

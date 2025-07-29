@@ -23,7 +23,7 @@ TOKEN(CONST_NUMBER_OCT, "number",   "^0o[0-7]+"         )
 TOKEN(CONST_NUMBER_DEC, "number",   "^\\d+"             )
 TOKEN(CONST_STRING,     "string",   "^\"[^\"\\n]*\""    )
 TOKEN(CONST_STRING_RAW, "string",   "^''(?:.|\\n)*?''"  )
-TOKEN(CONST_CHAR,       "char",     "^'[^']+'"          )
+TOKEN(CONST_CHAR,       "char",     "^'[^']*'"          )
 TOKEN(CONST_BOOL,       "bool",     "^(?:true|false)"   )
 
 // Identifier

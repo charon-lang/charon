@@ -15,6 +15,7 @@ charon_lib = static_library(
         'src/ir/visit.c',
         'src/lexer/token.c',
         'src/lexer/tokenizer.c',
+        'src/lib/context.c',
         'src/lib/diag.c',
         'src/lib/log.c',
         'src/lib/memory.c',
