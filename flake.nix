@@ -33,17 +33,28 @@
                 name = "charon";
                 src = self;
 
-                nativeBuildInputs = with pkgs; [ clang_18 clang-tools_18 ];
-                buildInputs = with pkgs; [ pcre2 llvmPackages_18.libllvm ];
+                nativeBuildInputs = with pkgs; [ meson ninja pkgconf clang_20 llvmPackages_20.clang-tools go ];
+                buildInputs = with pkgs; [ pcre2 llvmPackages_20.libllvm ];
+
+                configurePhase = ''
+                    runHook preConfigure
+                    meson setup build --native-file native.ini
+                    runHook postConfigure
+                '';
+
+                buildPhase = ''
+                    ninja -C build lib/libcharon.a charonc/charonc
+                '';
 
                 installPhase = ''
-                    mkdir -p $out/bin
-                    cp charon $out/bin/
+                    mkdir -p $out/bin $out/lib
+                    cp build/lib/libcharon.a $out/lib/
+                    cp build/charonc/charonc $out/bin/
                 '';
 
                 meta = {
                     description = "Based programming language.";
-                    homepage = https://git.thenest.dev/wux/charon;
+                    homepage = "https://github.com/charon-lang/charon";
                     maintainers = with lib.maintainers; [ wux ];
                 };
             };
