@@ -16,7 +16,6 @@
                     ninja
                     pkgconf
                     pcre2
-                    cjson
                     llvmPackages_20.libllvm
                     llvmPackages_20.clang-tools
                     lld_20
