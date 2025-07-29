@@ -1,6 +1,7 @@
 package main
 
 import (
+	"runtime"
 	"unsafe"
 
 	"github.com/tliron/glsp"
@@ -10,6 +11,7 @@ import (
 var docs map[protocol.DocumentUri]*AstNode = make(map[protocol.DocumentUri]*AstNode, 0)
 
 func processDocument(context *glsp.Context, uri protocol.DocumentUri, data string) {
+	runtime.LockOSThread()
 	globalContextInitialize()
 
 	source := sourceMake(uri, data)
@@ -65,4 +67,5 @@ func processDocument(context *glsp.Context, uri protocol.DocumentUri, data strin
 	})
 
 	globalContextFinish()
+	runtime.UnlockOSThread()
 }
