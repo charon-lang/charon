@@ -17,6 +17,7 @@ package main
 import "C"
 import "unsafe"
 
+type MemoryAllocator C.memory_allocator_t
 type AstNode C.ast_node_t
 type SourceLocation C.source_location_t
 

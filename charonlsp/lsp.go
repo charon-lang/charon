@@ -77,7 +77,7 @@ func didChange(context *glsp.Context, params *protocol.DidChangeTextDocumentPara
 }
 
 func didClose(context *glsp.Context, params *protocol.DidCloseTextDocumentParams) error {
-	delete(docs, params.TextDocument.URI)
+	closeDocument(params.TextDocument.URI)
 	return nil
 }
 
