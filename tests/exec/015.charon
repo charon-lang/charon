@@ -1,8 +1,8 @@
 extern fn printf(fmt: *char, ...): i32;
 
 type Test struct {
-    a: uint;
-    b: uint;
+    a: uint,
+    b: uint
 }
 
 fn main(): uint {

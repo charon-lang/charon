@@ -1,4 +1,5 @@
 #include "ast/node.h"
+#include "charon/diag.h"
 #include "lexer/tokenizer.h"
 #include "lib/alloc.h"
 #include "lib/context.h"
@@ -27,12 +28,20 @@ static ast_node_t *parse_type(tokenizer_t *tokenizer, ast_attribute_list_t attri
 static ast_node_t *parse_module(tokenizer_t *tokenizer, ast_attribute_list_t attributes) {
     source_location_t source_location = util_loc(tokenizer, util_consume(tokenizer, TOKEN_KIND_KEYWORD_MODULE));
     token_t token_identifier = util_consume(tokenizer, TOKEN_KIND_IDENTIFIER);
+    const char *module_name = util_text_make_from_token(tokenizer, token_identifier);
 
     ast_node_list_t tlcs = AST_NODE_LIST_INIT;
     util_consume(tokenizer, TOKEN_KIND_BRACE_LEFT);
-    while(!util_try_consume(tokenizer, TOKEN_KIND_BRACE_RIGHT)) ast_node_list_append(&tlcs, parser_tlc(tokenizer));
+    while(!util_try_consume(tokenizer, TOKEN_KIND_BRACE_RIGHT)) {
+        if(tokenizer_is_eof(tokenizer)) {
+            diag_t *diag_ref = diag(util_loc(tokenizer, tokenizer_peek(tokenizer)), (diag_t) { .type = DIAG_TYPE__UNFINISHED_MODULE, .data.unfinished_module_name = module_name });
+            return ast_node_make_error(diag_ref);
+        }
 
-    return ast_node_make_tlc_module(util_text_make_from_token(tokenizer, token_identifier), tlcs, attributes, source_location);
+        ast_node_list_append(&tlcs, parser_tlc(tokenizer));
+    }
+
+    return ast_node_make_tlc_module(module_name, tlcs, attributes, source_location);
 }
 
 static ast_node_t *parse_function(tokenizer_t *tokenizer, ast_attribute_list_t attributes) {
@@ -74,7 +83,6 @@ static ast_node_t *parse_declaration(tokenizer_t *tokenizer, ast_attribute_list_
     ast_type_t *type = util_parse_type(tokenizer);
     ast_node_t *initial = NULL;
     if(util_try_consume(tokenizer, TOKEN_KIND_EQUAL)) initial = parser_expr(tokenizer);
-    util_consume(tokenizer, TOKEN_KIND_SEMI_COLON);
     return ast_node_make_tlc_declaration(util_text_make_from_token(tokenizer, token_name), type, initial, attributes, source_location);
 }
 

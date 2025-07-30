@@ -2,6 +2,7 @@
 
 #include "charon/diag.h"
 #include "constants.h"
+#include "lexer/token.h"
 #include "lib/alloc.h"
 #include "lib/context.h"
 #include "lib/diag.h"
@@ -84,14 +85,17 @@ ast_type_t *util_parse_type(tokenizer_t *tokenizer) {
 
         size_t member_count = 0;
         ast_type_structure_member_t *members = NULL;
-        while(!util_try_consume(tokenizer, TOKEN_KIND_BRACE_RIGHT)) {
-            token_t token_identifier = util_consume(tokenizer, TOKEN_KIND_IDENTIFIER);
-            util_consume(tokenizer, TOKEN_KIND_COLON);
-            ast_type_t *type = util_parse_type(tokenizer);
-            util_consume(tokenizer, TOKEN_KIND_SEMI_COLON);
+        if(!util_try_consume(tokenizer, TOKEN_KIND_BRACE_RIGHT)) {
+            do {
+                token_t token_identifier = util_consume(tokenizer, TOKEN_KIND_IDENTIFIER);
+                util_consume(tokenizer, TOKEN_KIND_COLON);
+                ast_type_t *type = util_parse_type(tokenizer);
 
-            members = alloc_array(members, ++member_count, sizeof(ast_type_structure_member_t));
-            members[member_count - 1] = (ast_type_structure_member_t) { .type = type, .name = util_text_make_from_token(tokenizer, token_identifier) };
+                members = alloc_array(members, ++member_count, sizeof(ast_type_structure_member_t));
+                members[member_count - 1] = (ast_type_structure_member_t) { .type = type, .name = util_text_make_from_token(tokenizer, token_identifier) };
+            } while(util_try_consume(tokenizer, TOKEN_KIND_COMMA));
+
+            util_consume(tokenizer, TOKEN_KIND_BRACE_RIGHT);
         }
         return ast_type_structure_make(member_count, members, attributes);
     }

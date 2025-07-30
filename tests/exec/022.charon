@@ -9,7 +9,6 @@ fn y(): bool {
 }
 
 fn main(): uint {
-
     let xx = x();
     let yy = y();
 

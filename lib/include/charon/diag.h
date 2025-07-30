@@ -5,6 +5,8 @@
 typedef enum charon_diag_type {
     DIAG_TYPE__UNEXPECTED_SYMBOL,
 
+    DIAG_TYPE__UNFINISHED_MODULE,
+
     DIAG_TYPE__EXPECTED,
     DIAG_TYPE__EXPECTED_BINARY_OPERATION,
     DIAG_TYPE__EXPECTED_PRIMARY_EXPRESSION,
@@ -26,6 +28,7 @@ typedef struct charon_diag {
             token_kind_t expected;
             token_kind_t actual;
         } expected;
+        const char *unfinished_module_name;
     } data;
 } charon_diag_t;
 

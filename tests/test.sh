@@ -66,8 +66,6 @@ run_exec() {
     rm -f $TEST_PATH.ll
 }
 
-make clean charon
-
 case $MODE in
     all)
         echo "| Running Execution Tests"

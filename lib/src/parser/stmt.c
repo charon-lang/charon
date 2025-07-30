@@ -79,7 +79,7 @@ static ast_node_t *parse_for(tokenizer_t *tokenizer, ast_attribute_list_t attrib
 static ast_node_t *parse_block(tokenizer_t *tokenizer, ast_attribute_list_t attributes) {
     source_location_t source_location = util_loc(tokenizer, util_consume(tokenizer, TOKEN_KIND_BRACE_LEFT));
     ast_node_list_t statements = AST_NODE_LIST_INIT;
-    while(!util_try_consume(tokenizer, TOKEN_KIND_BRACE_RIGHT)) {
+    while(!tokenizer_is_eof(tokenizer) && !util_try_consume(tokenizer, TOKEN_KIND_BRACE_RIGHT)) {
         context_recovery_boundary_t *boundary = context_recover_boundary_push();
         if(setjmp(boundary->jmpbuf) != 0) {
             context_recover_boundary_pop();

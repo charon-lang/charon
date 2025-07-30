@@ -77,7 +77,7 @@ static spec_match_t spec_match(const char *string, size_t string_length) {
 
 static token_t next_token(tokenizer_t *tokenizer) {
     while(true) {
-        if(tokenizer_is_eof(tokenizer)) return (token_t) { .kind = TOKEN_KIND_INTERNAL_EOF };
+        if(tokenizer_is_eof(tokenizer)) return (token_t) { .kind = TOKEN_KIND_INTERNAL_EOF, .size = 0, .offset = tokenizer->source->data_buffer_size };
 
         size_t offset = tokenizer->cursor;
 

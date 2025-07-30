@@ -1,5 +1,6 @@
 #include "diag.h"
 
+#include "charon/diag.h"
 #include "lib/context.h"
 
 #include <assert.h>
@@ -71,17 +72,18 @@ void diag_warn(source_location_t source_location, lang_t fmt, ...) {
 char *charon_diag_tostring(charon_diag_t *diag) {
     char *str = NULL;
     switch(diag->type) {
-        case DIAG_TYPE__UNEXPECTED_SYMBOL:           asprintf(&str, "Unexpected Symbol"); break;
+        case DIAG_TYPE__UNEXPECTED_SYMBOL:           asprintf(&str, "unexpected symbol"); break;
+        case DIAG_TYPE__UNFINISHED_MODULE:           asprintf(&str, "unexpected end of module `%s`", diag->data.unfinished_module_name); break;
         case DIAG_TYPE__EXPECTED:                    asprintf(&str, "expected `%s` got `%s`", token_kind_stringify(diag->data.expected.expected), token_kind_stringify(diag->data.expected.actual)); break;
-        case DIAG_TYPE__EXPECTED_BINARY_OPERATION:   asprintf(&str, "Expected binary operation"); break;
-        case DIAG_TYPE__EXPECTED_PRIMARY_EXPRESSION: asprintf(&str, "Expected primary expression"); break;
-        case DIAG_TYPE__EXPECTED_TLC:                asprintf(&str, "Expected top level construct"); break;
-        case DIAG_TYPE__EXPECTED_NUMERIC_LITERAL:    asprintf(&str, "Expected numeric literal"); break;
-        case DIAG_TYPE__EXPECTED_ATTRIBUTE_ARGUMENT: asprintf(&str, "Expected attribute argument"); break;
-        case DIAG_TYPE__EMPTY_CHAR_LITERAL:          asprintf(&str, "Character Literal is empty"); break;
-        case DIAG_TYPE__TOO_LARGE_CHAR_LITERAL:      asprintf(&str, "Character Literal exceeds maximum size"); break;
-        case DIAG_TYPE__TOO_LARGE_ESCAPE_SEQUENCE:   asprintf(&str, "Escape sequence exceeds maximum size"); break;
-        case DIAG_TYPE__TOO_LARGE_NUMERIC_CONSTANT:  asprintf(&str, "Numeric constant exceeds maximum value"); break;
+        case DIAG_TYPE__EXPECTED_BINARY_OPERATION:   asprintf(&str, "expected binary operation"); break;
+        case DIAG_TYPE__EXPECTED_PRIMARY_EXPRESSION: asprintf(&str, "expected primary expression"); break;
+        case DIAG_TYPE__EXPECTED_TLC:                asprintf(&str, "expected top level construct"); break;
+        case DIAG_TYPE__EXPECTED_NUMERIC_LITERAL:    asprintf(&str, "expected numeric literal"); break;
+        case DIAG_TYPE__EXPECTED_ATTRIBUTE_ARGUMENT: asprintf(&str, "expected attribute argument"); break;
+        case DIAG_TYPE__EMPTY_CHAR_LITERAL:          asprintf(&str, "character literal is empty"); break;
+        case DIAG_TYPE__TOO_LARGE_CHAR_LITERAL:      asprintf(&str, "character literal exceeds maximum size"); break;
+        case DIAG_TYPE__TOO_LARGE_ESCAPE_SEQUENCE:   asprintf(&str, "escape sequence exceeds maximum size"); break;
+        case DIAG_TYPE__TOO_LARGE_NUMERIC_CONSTANT:  asprintf(&str, "numeric constant exceeds maximum value"); break;
     }
     return str;
 }

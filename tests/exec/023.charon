@@ -4,8 +4,8 @@ module A {
             extern fn printf(fmt: *char, ...): i32;
 
             type X struct {
-                a: uint;
-                b: uint;
+                a: uint,
+                b: uint
             }
         }
     }
