@@ -48,6 +48,7 @@
     case AST_NODE_TYPE_EXPR_LITERAL_STRING:      \
     case AST_NODE_TYPE_EXPR_LITERAL_CHAR:        \
     case AST_NODE_TYPE_EXPR_LITERAL_BOOL:        \
+    case AST_NODE_TYPE_EXPR_LITERAL_STRUCT:      \
     case AST_NODE_TYPE_EXPR_BINARY:              \
     case AST_NODE_TYPE_EXPR_UNARY:               \
     case AST_NODE_TYPE_EXPR_VARIABLE:            \
@@ -84,6 +85,7 @@ typedef enum {
     AST_NODE_TYPE_EXPR_LITERAL_STRING,
     AST_NODE_TYPE_EXPR_LITERAL_CHAR,
     AST_NODE_TYPE_EXPR_LITERAL_BOOL,
+    AST_NODE_TYPE_EXPR_LITERAL_STRUCT,
     AST_NODE_TYPE_EXPR_BINARY,
     AST_NODE_TYPE_EXPR_UNARY,
     AST_NODE_TYPE_EXPR_VARIABLE,
@@ -136,6 +138,12 @@ typedef struct {
     size_t count;
     ast_node_t *first, *last;
 } ast_node_list_t;
+
+typedef struct {
+    const char *name;
+    ast_node_t *value;
+    source_location_t source_location;
+} ast_node_struct_literal_member_t;
 
 struct ast_node {
     ast_node_type_t type;
@@ -215,6 +223,11 @@ struct ast_node {
             const char *string_value;
             char char_value;
             bool bool_value;
+            struct {
+                const char *type_name;
+                size_t member_count;
+                ast_node_struct_literal_member_t *members;
+            } struct_value;
         } expr_literal;
         struct {
             ast_node_binary_operation_t operation;
@@ -297,6 +310,7 @@ ast_node_t *ast_node_make_expr_literal_numeric(uintmax_t value, source_location_
 ast_node_t *ast_node_make_expr_literal_string(const char *value, source_location_t source_location);
 ast_node_t *ast_node_make_expr_literal_char(char value, source_location_t source_location);
 ast_node_t *ast_node_make_expr_literal_bool(bool value, source_location_t source_location);
+ast_node_t *ast_node_make_expr_literal_struct(const char *type_name, size_t member_count, ast_node_struct_literal_member_t *members, source_location_t source_location);
 ast_node_t *ast_node_make_expr_binary(ast_node_binary_operation_t operation, ast_node_t *left, ast_node_t *right, source_location_t source_location);
 ast_node_t *ast_node_make_expr_unary(ast_node_unary_operation_t operation, ast_node_t *operand, source_location_t source_location);
 ast_node_t *ast_node_make_expr_variable(const char *name, size_t generic_parameter_count, ast_type_t **generic_parameters, source_location_t source_location);

@@ -1,6 +1,9 @@
 #include "visit.h"
 
+#include "ir/ir.h"
+
 #include <assert.h>
+#include <stddef.h>
 
 #define NULLABLE(FN, V, ...)                         \
     if((V) != NULL) FN(V __VA_OPT__(, ) __VA_ARGS__)
@@ -15,6 +18,14 @@ static void visit_expr(ir_unit_t *unit, ir_type_cache_t *type_cache, ir_module_t
         case IR_EXPR_KIND_LITERAL_STRING:  break;
         case IR_EXPR_KIND_LITERAL_CHAR:    break;
         case IR_EXPR_KIND_LITERAL_BOOL:    break;
+        case IR_EXPR_KIND_LITERAL_STRUCT:
+            assert(expr->literal.struct_value.type->kind == IR_TYPE_KIND_STRUCTURE);
+            for(size_t i = 0; i < expr->literal.struct_value.type->structure.member_count; i++) {
+                ir_literal_struct_member_t *member = expr->literal.struct_value.members[i];
+                if(member == NULL) continue;
+                VISIT_EXPR(member->value);
+            }
+            break;
         case IR_EXPR_KIND_BINARY:
             VISIT_EXPR(expr->binary.left);
             VISIT_EXPR(expr->binary.right);

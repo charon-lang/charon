@@ -8,6 +8,7 @@
 
 #include <errno.h>
 #include <stdarg.h>
+#include <stddef.h>
 #include <stdlib.h>
 #include <string.h>
 
@@ -192,6 +193,25 @@ static ast_node_t *parse_identifier(tokenizer_t *tokenizer) {
 
             util_consume(tokenizer, TOKEN_KIND_CARET_RIGHT);
             return ast_node_make_expr_variable(name, type_count, types, util_loc(tokenizer, token_name));
+        }
+        case TOKEN_KIND_BRACE_LEFT: {
+            util_consume(tokenizer, TOKEN_KIND_BRACE_LEFT);
+
+            size_t member_count = 0;
+            ast_node_struct_literal_member_t *members = NULL;
+            if(!util_try_consume(tokenizer, TOKEN_KIND_BRACE_RIGHT)) {
+                do {
+                    token_t token_name = util_consume(tokenizer, TOKEN_KIND_IDENTIFIER);
+                    util_consume(tokenizer, TOKEN_KIND_EQUAL);
+                    ast_node_t *member_value = parser_expr(tokenizer);
+
+                    members = alloc_array(members, ++member_count, sizeof(ast_node_struct_literal_member_t));
+                    members[member_count - 1] = (ast_node_struct_literal_member_t) { .name = util_text_make_from_token(tokenizer, token_name), .value = member_value, .source_location = util_loc(tokenizer, token_name) };
+                } while(util_try_consume(tokenizer, TOKEN_KIND_COMMA));
+                util_consume(tokenizer, TOKEN_KIND_BRACE_RIGHT);
+            }
+
+            return ast_node_make_expr_literal_struct(name, member_count, members, util_loc(tokenizer, token_name));
         }
         default: return ast_node_make_expr_variable(name, 0, NULL, util_loc(tokenizer, token_name));
     }

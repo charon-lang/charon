@@ -449,9 +449,42 @@ static ir_expr_t *lower_expr(pass_lower_context_t *context, ir_namespace_t *curr
         }
         case AST_NODE_TYPE_EXPR_LITERAL_BOOL: {
             expr->kind = IR_EXPR_KIND_LITERAL_BOOL;
-            expr->type = NULL;
             expr->is_const = true;
             expr->literal.bool_value = node->expr_literal.bool_value;
+            break;
+        }
+        case AST_NODE_TYPE_EXPR_LITERAL_STRUCT: {
+            expr->kind = IR_EXPR_KIND_LITERAL_STRUCT;
+            expr->is_const = true;
+
+            ir_type_declaration_t *declaration = ir_namespace_find_type(current_namespace, node->expr_literal.struct_value.type_name);
+            if(declaration == NULL) diag_error(node->source_location, LANG_E_UNKNOWN_TYPE, node->expr_literal.struct_value.type_name);
+            if(declaration->type->kind != IR_TYPE_KIND_STRUCTURE) diag_error(node->source_location, LANG_E_EXPECTED_STRUCT_TYPE);
+
+            ir_literal_struct_member_t **members = alloc_array(NULL, declaration->type->structure.member_count, sizeof(ir_literal_struct_member_t *));
+            for(size_t i = 0; i < declaration->type->structure.member_count; i++) members[i] = NULL;
+
+            for(size_t i = 0; i < node->expr_literal.struct_value.member_count; i++) {
+                ast_node_struct_literal_member_t *member = &node->expr_literal.struct_value.members[i];
+
+                bool member_found = false;
+                for(size_t j = 0; j < declaration->type->structure.member_count; j++) {
+                    if(strcmp(member->name, declaration->type->structure.members[j].name) != 0) continue;
+                    if(members[j] != NULL) diag_error(member->source_location, LANG_E_DUPLICATE_MEMBER, member->name);
+
+                    member_found = true;
+                    members[j] = alloc(sizeof(ir_literal_struct_member_t));
+                    members[j]->source_location = member->source_location;
+                    members[j]->value = lower_expr(context, current_namespace, scope, current_generics_namespace, generic_mappings, generic_mapping_count, member->value);
+
+                    if(!members[i]->value->is_const) expr->is_const = false;
+                    break;
+                }
+                if(!member_found) diag_error(member->source_location, LANG_E_UNKNOWN_MEMBER, member->name);
+            }
+
+            expr->literal.struct_value.type = declaration->type;
+            expr->literal.struct_value.members = members;
             break;
         }
         case AST_NODE_TYPE_EXPR_BINARY: {

@@ -1,11 +1,13 @@
-#include "pass.h"
-
 #include "constants.h"
+#include "ir/ir.h"
+#include "ir/visit.h"
 #include "lib/alloc.h"
 #include "lib/diag.h"
-#include "ir/visit.h"
+#include "pass.h"
 
 #include <assert.h>
+#include <stddef.h>
+#include <string.h>
 
 #define TYPE_BOOL ir_type_cache_get_integer(type_cache, 1, false, false)
 #define TYPE_CHAR ir_type_cache_get_integer(type_cache, CONSTANTS_CHAR_SIZE, false, false)
@@ -55,7 +57,7 @@ static void visitor_global_variable(ir_unit_t *unit, ir_type_cache_t *type_cache
     if(variable->initial_value != NULL && !try_coerce(&variable->initial_value, variable->type)) diag_error(variable->initial_value->source_location, LANG_E_DECL_TYPES_MISMATCH);
 }
 
-static void visitor_stmt(ir_unit_t *unit, ir_type_cache_t *type_cache, ir_module_t *module, ir_function_t *fn,  ir_scope_t *scope, ir_stmt_t *stmt) {
+static void visitor_stmt(ir_unit_t *unit, ir_type_cache_t *type_cache, ir_module_t *module, ir_function_t *fn, ir_scope_t *scope, ir_stmt_t *stmt) {
     switch(stmt->kind) {
         case IR_STMT_KIND_DECLARATION: {
             ir_type_t *type = stmt->declaration.variable->type;
@@ -91,9 +93,21 @@ static void visitor_stmt(ir_unit_t *unit, ir_type_cache_t *type_cache, ir_module
 static void visitor_expr(ir_unit_t *unit, ir_type_cache_t *type_cache, ir_module_t *module, ir_function_t *fn, ir_scope_t *scope, ir_expr_t *expr) {
     switch(expr->kind) {
         case IR_EXPR_KIND_LITERAL_NUMERIC: expr->type = ir_type_cache_get_integer(type_cache, CONSTANTS_INT_SIZE, false, false); break;
-        case IR_EXPR_KIND_LITERAL_STRING: expr->type = ir_type_cache_get_array(type_cache, TYPE_CHAR, strlen(expr->literal.string_value) + 1); break;
-        case IR_EXPR_KIND_LITERAL_CHAR: expr->type = TYPE_CHAR; break;
-        case IR_EXPR_KIND_LITERAL_BOOL: expr->type = TYPE_BOOL; break;
+        case IR_EXPR_KIND_LITERAL_STRING:  expr->type = ir_type_cache_get_array(type_cache, TYPE_CHAR, strlen(expr->literal.string_value) + 1); break;
+        case IR_EXPR_KIND_LITERAL_CHAR:    expr->type = TYPE_CHAR; break;
+        case IR_EXPR_KIND_LITERAL_BOOL:    expr->type = TYPE_BOOL; break;
+        case IR_EXPR_KIND_LITERAL_STRUCT:  {
+            expr->type = expr->literal.struct_value.type;
+
+            for(size_t i = 0; i < expr->type->structure.member_count; i++) {
+                ir_literal_struct_member_t *member = expr->literal.struct_value.members[i];
+                if(member == NULL) continue;
+
+                ir_type_t *member_type = expr->type->structure.members[i].type;
+                if(!try_coerce(&member->value, member_type)) diag_error(member->source_location, LANG_E_CONFLICTING_TYPES);
+            }
+            break;
+        }
         case IR_EXPR_KIND_BINARY: {
             if(expr->binary.operation == IR_BINARY_OPERATION_LOGICAL_AND || expr->binary.operation == IR_BINARY_OPERATION_LOGICAL_OR) {
                 if(!try_coerce(&expr->binary.left, TYPE_BOOL)) diag_error(expr->binary.left->source_location, LANG_E_NOT_BOOL);
@@ -132,16 +146,12 @@ static void visitor_expr(ir_unit_t *unit, ir_type_cache_t *type_cache, ir_module
                 case IR_BINARY_OPERATION_SHIFT_RIGHT:
                 case IR_BINARY_OPERATION_AND:
                 case IR_BINARY_OPERATION_OR:
-                case IR_BINARY_OPERATION_XOR:
-                    expr->type = type;
-                    break;
+                case IR_BINARY_OPERATION_XOR:         expr->type = type; break;
 
                 case IR_BINARY_OPERATION_GREATER:
                 case IR_BINARY_OPERATION_GREATER_EQUAL:
                 case IR_BINARY_OPERATION_LESS:
-                case IR_BINARY_OPERATION_LESS_EQUAL:
-                    expr->type = TYPE_BOOL;
-                    break;
+                case IR_BINARY_OPERATION_LESS_EQUAL:    expr->type = TYPE_BOOL; break;
 
                 default: assert(false);
             }
@@ -161,9 +171,7 @@ static void visitor_expr(ir_unit_t *unit, ir_type_cache_t *type_cache, ir_module
                     if(expr->unary.operand->type->kind != IR_TYPE_KIND_INTEGER) diag_error(expr->source_location, LANG_E_NOT_NUMERIC);
                     expr->type = expr->unary.operand->type;
                     break;
-                case IR_UNARY_OPERATION_REF:
-                    expr->type = ir_type_cache_get_pointer(type_cache, expr->unary.operand->type);
-                    break;
+                case IR_UNARY_OPERATION_REF: expr->type = ir_type_cache_get_pointer(type_cache, expr->unary.operand->type); break;
             }
             break;
         }
@@ -199,16 +207,16 @@ static void visitor_expr(ir_unit_t *unit, ir_type_cache_t *type_cache, ir_module
             expr->type = ir_type_cache_get_tuple(type_cache, VECTOR_SIZE(&expr->tuple.values), types);
             break;
         }
-        case IR_EXPR_KIND_CAST: expr->type = expr->cast.type; break;
+        case IR_EXPR_KIND_CAST:      expr->type = expr->cast.type; break;
         case IR_EXPR_KIND_SUBSCRIPT: {
             switch(expr->subscript.kind) {
                 case IR_SUBSCRIPT_KIND_INDEX: {
                     if(expr->subscript.index->type->kind != IR_TYPE_KIND_INTEGER) diag_error(expr->source_location, LANG_E_INVALID_TYPE);
 
                     switch(expr->subscript.value->type->kind) {
-                        case IR_TYPE_KIND_ARRAY: expr->type = expr->subscript.value->type->array.type; break;
+                        case IR_TYPE_KIND_ARRAY:   expr->type = expr->subscript.value->type->array.type; break;
                         case IR_TYPE_KIND_POINTER: expr->type = expr->subscript.value->type->pointer.pointee; break;
-                        default: diag_error(expr->source_location, LANG_E_INVALID_TYPE);
+                        default:                   diag_error(expr->source_location, LANG_E_INVALID_TYPE);
                     }
                     break;
                 }
@@ -223,7 +231,7 @@ static void visitor_expr(ir_unit_t *unit, ir_type_cache_t *type_cache, ir_module
                             expr->type = expr->subscript.value->type->array.type;
                             break;
                         case IR_TYPE_KIND_POINTER: expr->type = expr->subscript.value->type->pointer.pointee; break;
-                        default: diag_error(expr->source_location, LANG_E_INVALID_TYPE);
+                        default:                   diag_error(expr->source_location, LANG_E_INVALID_TYPE);
                     }
                     break;
                 }
@@ -243,18 +251,16 @@ static void visitor_expr(ir_unit_t *unit, ir_type_cache_t *type_cache, ir_module
             break;
         }
         case IR_EXPR_KIND_SELECTOR: expr->type = expr->selector.value->type; break;
-        case IR_EXPR_KIND_SIZEOF: expr->type = ir_type_cache_get_integer(type_cache, 64, false, false); break;
-        case IR_EXPR_KIND_ENUMERATION_VALUE: expr->type = expr->enumeration_value.enumeration->type; break;
+        case IR_EXPR_KIND_SIZEOF:   expr->type = ir_type_cache_get_integer(type_cache, 64, false, false); break;
+        case IR_EXPR_KIND_ENUMERATION_VALUE:
+            expr->type = expr->enumeration_value.enumeration->type;
+            break;
         brk:
     }
     assert(expr->type != NULL);
 }
 
 void pass_eval_types(ir_unit_t *unit, ir_type_cache_t *type_cache) {
-    visitor_t visitor = {
-        .global_variable = visitor_global_variable,
-        .stmt = visitor_stmt,
-        .expr = visitor_expr
-    };
+    visitor_t visitor = { .global_variable = visitor_global_variable, .stmt = visitor_stmt, .expr = visitor_expr };
     visit(unit, type_cache, &visitor);
 }

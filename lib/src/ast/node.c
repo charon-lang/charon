@@ -179,6 +179,14 @@ ast_node_t *ast_node_make_expr_literal_bool(bool value, source_location_t source
     return node;
 }
 
+ast_node_t *ast_node_make_expr_literal_struct(const char *type_name, size_t member_count, ast_node_struct_literal_member_t *members, source_location_t source_location) {
+    ast_node_t *node = node_make(AST_NODE_TYPE_EXPR_LITERAL_STRUCT, AST_ATTRIBUTE_LIST_INIT, source_location);
+    node->expr_literal.struct_value.type_name = type_name;
+    node->expr_literal.struct_value.member_count = member_count;
+    node->expr_literal.struct_value.members = members;
+    return node;
+}
+
 ast_node_t *ast_node_make_expr_binary(ast_node_binary_operation_t operation, ast_node_t *left, ast_node_t *right, source_location_t source_location) {
     ast_node_t *node = node_make(AST_NODE_TYPE_EXPR_BINARY, AST_ATTRIBUTE_LIST_INIT, source_location);
     node->expr_binary.operation = operation;

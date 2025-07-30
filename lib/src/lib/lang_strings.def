@@ -7,6 +7,7 @@ STRING(E_EXPECTED_PRIMARY, "expected primary, got `%s`")
 STRING(E_EXPECTED_TLC, "expected top level construct, got `%s`")
 STRING(E_EXPECTED_NUMERIC_LITERAL, "expected numeric literal, got `%s`")
 STRING(E_EXPECTED_ATTR_ARG, "expected attribute argument, got `%s`")
+STRING(E_EXPECTED_STRUCT_TYPE, "expected a struct type")
 
 STRING(E_UNKNOWN_MODULE, "unknown module `%s`")
 STRING(E_UNKNOWN_GENERIC, "unknown generic `%s`")

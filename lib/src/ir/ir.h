@@ -21,6 +21,7 @@ typedef struct ir_type_cache ir_type_cache_t;
 typedef struct ir_type ir_type_t;
 typedef struct ir_type_structure_member ir_type_structure_member_t;
 typedef struct ir_unit ir_unit_t;
+typedef struct ir_literal_struct_member ir_literal_struct_member_t;
 typedef struct ir_expr ir_expr_t;
 typedef struct ir_stmt ir_stmt_t;
 
@@ -62,6 +63,7 @@ typedef enum {
     IR_EXPR_KIND_LITERAL_STRING,
     IR_EXPR_KIND_LITERAL_CHAR,
     IR_EXPR_KIND_LITERAL_BOOL,
+    IR_EXPR_KIND_LITERAL_STRUCT,
     IR_EXPR_KIND_BINARY,
     IR_EXPR_KIND_UNARY,
     IR_EXPR_KIND_VARIABLE,
@@ -264,6 +266,11 @@ struct ir_stmt {
     };
 };
 
+struct ir_literal_struct_member {
+    ir_expr_t *value;
+    source_location_t source_location;
+};
+
 struct ir_expr {
     source_location_t source_location;
     ir_expr_kind_t kind;
@@ -275,6 +282,10 @@ struct ir_expr {
             const char *string_value;
             char char_value;
             bool bool_value;
+            struct {
+                ir_type_t *type;
+                ir_literal_struct_member_t **members;
+            } struct_value;
         } literal;
         struct {
             ir_binary_operation_t operation;

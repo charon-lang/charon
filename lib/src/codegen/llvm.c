@@ -1,7 +1,10 @@
 #include "codegen.h"
+#include "ir/ir.h"
 #include "lib/alloc.h"
 #include "lib/diag.h"
 #include "lib/log.h"
+
+#include "llvm-c/Types.h"
 
 #include <assert.h>
 #include <llvm-c/Analysis.h>
@@ -9,6 +12,7 @@
 #include <llvm-c/ExecutionEngine.h>
 #include <llvm-c/TargetMachine.h>
 #include <llvm-c/Transforms/PassBuilder.h>
+#include <stddef.h>
 #include <string.h>
 
 #define TYPE_BOOL ir_type_cache_get_integer(context->type_cache, 1, false, false)
@@ -349,6 +353,29 @@ static value_t cg_expr_literal_bool(CG_EXPR_PARAMS) {
     return (value_t) { .llvm_value = LLVMConstInt(ir_type_to_llvm(context, expr->type), expr->literal.bool_value, expr->type->integer.is_signed) };
 }
 
+static value_t cg_expr_literal_struct(CG_EXPR_PARAMS) {
+    assert(expr->type->kind == IR_TYPE_KIND_STRUCTURE);
+
+    size_t member_count = expr->type->structure.member_count;
+    LLVMValueRef members[member_count];
+    for(size_t i = 0; i < member_count; i++) {
+        ir_literal_struct_member_t *member = expr->literal.struct_value.members[i];
+        if(member == NULL) {
+            members[i] = LLVMConstNull(ir_type_to_llvm(context, expr->type->structure.members[i].type));
+            continue;
+        }
+        members[i] = cg_expr(context, expr->literal.struct_value.members[i]->value);
+    }
+
+    if(expr->is_const) return (value_t) { .llvm_value = LLVMConstStructInContext(context->llvm_context, members, member_count, expr->type->structure.packed) };
+
+    LLVMValueRef value = LLVMGetUndef(ir_type_to_llvm(context, expr->type));
+    for(size_t i = 0; i < member_count; i++) {
+        value = LLVMBuildInsertValue(context->llvm_builder, value, members[i], i, expr->type->structure.members[i].name);
+    }
+    return (value_t) { .llvm_value = value };
+}
+
 static value_t cg_expr_binary(CG_EXPR_PARAMS) {
     switch(expr->binary.operation) {
         enum {
@@ -631,6 +658,7 @@ static value_t cg_expr_ext(CG_EXPR_PARAMS) {
         case IR_EXPR_KIND_LITERAL_STRING:    value = cg_expr_literal_string(context, expr); break;
         case IR_EXPR_KIND_LITERAL_CHAR:      value = cg_expr_literal_char(context, expr); break;
         case IR_EXPR_KIND_LITERAL_BOOL:      value = cg_expr_literal_bool(context, expr); break;
+        case IR_EXPR_KIND_LITERAL_STRUCT:    value = cg_expr_literal_struct(context, expr); break;
         case IR_EXPR_KIND_BINARY:            value = cg_expr_binary(context, expr); break;
         case IR_EXPR_KIND_UNARY:             value = cg_expr_unary(context, expr); break;
         case IR_EXPR_KIND_VARIABLE:          value = cg_expr_variable(context, expr); break;
@@ -770,7 +798,10 @@ codegen_context_t *codegen(ir_unit_t *unit, ir_type_cache_t *type_cache, codegen
     populate_namespace(&context, NULL, &unit->root_namespace);
     cg_namespace(&context, &unit->root_namespace);
 
-    if(LLVMVerifyModule(context.llvm_module, LLVMReturnStatusAction, &error_message)) log_fatal("failed to verify module (%s)", error_message);
+    if(LLVMVerifyModule(context.llvm_module, LLVMReturnStatusAction, &error_message)) {
+        if(LLVMPrintModuleToFile(context.llvm_module, "charonc.errordump.ll", &error_message)) log_fatal("emit failed (%s)\n", error_message);
+        log_fatal("failed to verify module (%s)", error_message);
+    }
     LLVMDisposeMessage(error_message);
 
     if(passes != NULL) {
