@@ -6,7 +6,6 @@
 #include "lib/diag.h"
 #include "lib/lang.h"
 #include "lib/memory.h"
-#include "pass.h"
 
 #include <assert.h>
 #include <stddef.h>
@@ -60,16 +59,16 @@ typedef struct {
     ir_type_t *type;
 } generic_mapping_t;
 
-struct pass_lower_context {
+typedef struct {
     memory_allocator_t *work_allocator;
     ir_unit_t *unit;
     ir_type_cache_t *type_cache;
     generics_namespace_t *generics_namespace;
-};
+} lower_context_t;
 
-static ir_type_t *lower_type(pass_lower_context_t *context, ir_namespace_t *current_namespace, generics_namespace_t *namespace, generic_mapping_t *generic_mappings, size_t generic_mapping_count, ast_type_t *type, source_location_t source_location);
-static ir_expr_t *lower_expr(pass_lower_context_t *context, ir_namespace_t *current_namespace, ir_scope_t *scope, generics_namespace_t *namespace, generic_mapping_t *generic_mappings, size_t generic_mapping_count, ast_node_t *node);
-static ir_stmt_t *lower_stmt(pass_lower_context_t *context, ir_namespace_t *current_namespace, ir_scope_t *scope, generics_namespace_t *namespace, generic_mapping_t *generic_mappings, size_t generic_mapping_count, ast_node_t *node);
+static ir_type_t *lower_type(lower_context_t *context, ir_namespace_t *current_namespace, generics_namespace_t *namespace, generic_mapping_t *generic_mappings, size_t generic_mapping_count, ast_type_t *type, source_location_t source_location);
+static ir_expr_t *lower_expr(lower_context_t *context, ir_namespace_t *current_namespace, ir_scope_t *scope, generics_namespace_t *namespace, generic_mapping_t *generic_mappings, size_t generic_mapping_count, ast_node_t *node);
+static ir_stmt_t *lower_stmt(lower_context_t *context, ir_namespace_t *current_namespace, ir_scope_t *scope, generics_namespace_t *namespace, generic_mapping_t *generic_mappings, size_t generic_mapping_count, ast_node_t *node);
 
 static generics_namespace_t *generics_namespace_find_child(generics_namespace_t *namespace, const char *name) {
     for(size_t i = 0; i < namespace->child_count; i++) {
@@ -79,7 +78,7 @@ static generics_namespace_t *generics_namespace_find_child(generics_namespace_t 
     return NULL;
 }
 
-static generics_namespace_t *generics_namespace_make(pass_lower_context_t *context, const char *name, generics_namespace_t *parent) {
+static generics_namespace_t *generics_namespace_make(lower_context_t *context, const char *name, generics_namespace_t *parent) {
     generics_namespace_t *namespace = memory_allocate(context->work_allocator, sizeof(generics_namespace_t));
     namespace->child_count = 0;
     namespace->children = NULL;
@@ -95,13 +94,13 @@ static generics_namespace_t *generics_namespace_make(pass_lower_context_t *conte
     return namespace;
 }
 
-static void generics_namespace_add_type(pass_lower_context_t *context, generics_namespace_t *namespace, const char *name, generic_type_t type) {
+static void generics_namespace_add_type(lower_context_t *context, generics_namespace_t *namespace, const char *name, generic_type_t type) {
     namespace->generic_types = memory_allocate_array(context->work_allocator, namespace->generic_types, ++namespace->generic_type_count, sizeof(typeof(namespace->generic_types[0])));
     namespace->generic_types[namespace->generic_type_count - 1].name = name;
     namespace->generic_types[namespace->generic_type_count - 1].generic_type = type;
 }
 
-static void generics_namespace_add_function(pass_lower_context_t *context, generics_namespace_t *namespace, const char *name, generic_function_t fn) {
+static void generics_namespace_add_function(lower_context_t *context, generics_namespace_t *namespace, const char *name, generic_function_t fn) {
     namespace->generic_functions = memory_allocate_array(context->work_allocator, namespace->generic_functions, ++namespace->generic_function_count, sizeof(typeof(namespace->generic_functions[0])));
     namespace->generic_functions[namespace->generic_function_count - 1].name = name;
     namespace->generic_functions[namespace->generic_function_count - 1].generic_fn = fn;
@@ -123,7 +122,7 @@ static generic_function_t *generics_namespace_find_generic_function(generics_nam
     return NULL;
 }
 
-static generic_function_variant_t *generic_function_add_variant(pass_lower_context_t *context, generic_function_t *generic_function, ir_function_t *function, ir_type_t **generic_parameters) {
+static generic_function_variant_t *generic_function_add_variant(lower_context_t *context, generic_function_t *generic_function, ir_function_t *function, ir_type_t **generic_parameters) {
     generic_function->variants = memory_allocate_array(context->work_allocator, generic_function->variants, ++generic_function->variant_count, sizeof(typeof(generic_function->variants[0])));
     generic_function->variants[generic_function->variant_count - 1].function = function;
     generic_function->variants[generic_function->variant_count - 1].generic_parameters = generic_parameters;
@@ -142,7 +141,7 @@ static generic_function_variant_t *generic_function_find_variant(generic_functio
 }
 
 static ir_function_prototype_t lower_function_type(
-    pass_lower_context_t *context,
+    lower_context_t *context,
     ir_namespace_t *current_namespace,
     generics_namespace_t *current_generics_namespace,
     generic_mapping_t *generic_mappings,
@@ -158,15 +157,8 @@ static ir_function_prototype_t lower_function_type(
                                        .varargs = function_type->varargs };
 }
 
-static ir_type_t *lower_type(
-    pass_lower_context_t *context,
-    ir_namespace_t *current_namespace,
-    generics_namespace_t *current_generics_namespace,
-    generic_mapping_t *generic_mappings,
-    size_t generic_mapping_count,
-    ast_type_t *type,
-    source_location_t source_location
-) {
+static ir_type_t *
+    lower_type(lower_context_t *context, ir_namespace_t *current_namespace, generics_namespace_t *current_generics_namespace, generic_mapping_t *generic_mappings, size_t generic_mapping_count, ast_type_t *type, source_location_t source_location) {
     if(type->is_reference) {
         if(type->reference.module_count == 0) { // TODO: why is this here
             for(size_t i = 0; i < generic_mapping_count; i++) {
@@ -255,7 +247,7 @@ static ir_type_t *lower_type(
 }
 
 static void generate_lowered_fn(
-    pass_lower_context_t *context,
+    lower_context_t *context,
     ir_namespace_t *current_namespace,
     ir_scope_t *scope,
     generics_namespace_t *current_generics_namespace,
@@ -284,7 +276,7 @@ static void generate_lowered_fn(
     symbol->function->statement = stmt == NULL ? NULL : lower_stmt(context, current_namespace, new_scope, current_generics_namespace, generic_mappings, generic_mapping_count, stmt);
 }
 
-static void lower_tlc(pass_lower_context_t *context, ir_namespace_t *current_namespace, ir_scope_t *scope, generics_namespace_t *current_generics_namespace, ast_node_t *node) {
+static void lower_tlc(lower_context_t *context, ir_namespace_t *current_namespace, ir_scope_t *scope, generics_namespace_t *current_generics_namespace, ast_node_t *node) {
     assert(node != NULL);
 
     switch(node->type) {
@@ -337,7 +329,7 @@ static void lower_tlc(pass_lower_context_t *context, ir_namespace_t *current_nam
     }
 }
 
-static ir_stmt_t *lower_stmt(pass_lower_context_t *context, ir_namespace_t *current_namespace, ir_scope_t *scope, generics_namespace_t *current_generics_namespace, generic_mapping_t *generic_mappings, size_t generic_mapping_count, ast_node_t *node) {
+static ir_stmt_t *lower_stmt(lower_context_t *context, ir_namespace_t *current_namespace, ir_scope_t *scope, generics_namespace_t *current_generics_namespace, generic_mapping_t *generic_mappings, size_t generic_mapping_count, ast_node_t *node) {
     assert(node != NULL);
 
     ir_stmt_t *stmt = alloc(sizeof(ir_stmt_t));
@@ -455,7 +447,7 @@ static ir_stmt_t *lower_stmt(pass_lower_context_t *context, ir_namespace_t *curr
     return stmt;
 }
 
-static ir_expr_t *lower_expr(pass_lower_context_t *context, ir_namespace_t *current_namespace, ir_scope_t *scope, generics_namespace_t *current_generics_namespace, generic_mapping_t *generic_mappings, size_t generic_mapping_count, ast_node_t *node) {
+static ir_expr_t *lower_expr(lower_context_t *context, ir_namespace_t *current_namespace, ir_scope_t *scope, generics_namespace_t *current_generics_namespace, generic_mapping_t *generic_mappings, size_t generic_mapping_count, ast_node_t *node) {
     assert(node != NULL);
 
     ir_expr_t *expr = alloc(sizeof(ir_expr_t));
@@ -756,7 +748,7 @@ static ir_expr_t *lower_expr(pass_lower_context_t *context, ir_namespace_t *curr
     return expr;
 }
 
-static void populate_rest(pass_lower_context_t *context, ir_module_t *current_module, generics_namespace_t *current_generics_namespace, ast_node_t *node) {
+static void populate_rest(lower_context_t *context, ir_module_t *current_module, generics_namespace_t *current_generics_namespace, ast_node_t *node) {
     ir_namespace_t *current_namespace = current_module != NULL ? &current_module->namespace : &context->unit->root_namespace;
 
     switch(node->type) {
@@ -861,7 +853,7 @@ static void populate_rest(pass_lower_context_t *context, ir_module_t *current_mo
     }
 }
 
-static void populate_types_and_enums(pass_lower_context_t *context, ir_module_t *current_module, generics_namespace_t *current_generics_namespace, ast_node_t *node) {
+static void populate_types_and_enums(lower_context_t *context, ir_module_t *current_module, generics_namespace_t *current_generics_namespace, ast_node_t *node) {
     ir_namespace_t *current_namespace = current_module != NULL ? &current_module->namespace : &context->unit->root_namespace;
 
     switch(node->type) {
@@ -929,7 +921,7 @@ static void populate_types_and_enums(pass_lower_context_t *context, ir_module_t 
     }
 }
 
-static void populate_modules(pass_lower_context_t *context, ir_module_t *current_module, generics_namespace_t *current_generics_namespace, ast_node_t *node) {
+static void populate_modules(lower_context_t *context, ir_module_t *current_module, generics_namespace_t *current_generics_namespace, ast_node_t *node) {
     ir_namespace_t *current_namespace = current_module != NULL ? &current_module->namespace : &context->unit->root_namespace;
 
     switch(node->type) {
@@ -965,31 +957,19 @@ static void populate_modules(pass_lower_context_t *context, ir_module_t *current
     }
 }
 
-pass_lower_context_t *pass_lower_context_make(memory_allocator_t *work_allocator, ir_unit_t *unit, ir_type_cache_t *type_cache) {
-    pass_lower_context_t *context = memory_allocate(work_allocator, sizeof(pass_lower_context_t));
-    context->work_allocator = work_allocator;
-    context->unit = unit;
-    context->type_cache = type_cache;
-    context->generics_namespace = generics_namespace_make(context, NULL, NULL);
-    return context;
-}
+void lower_to_ir(memory_allocator_t *work_allocator, ir_unit_t *unit, ir_type_cache_t *type_cache, ast_node_list_t *root_nodes) {
+    lower_context_t context = {
+        .work_allocator = work_allocator,
+        .unit = unit,
+        .type_cache = type_cache,
+    };
+    context.generics_namespace = generics_namespace_make(&context, NULL, NULL);
 
-void pass_lower_populate_final(pass_lower_context_t *context, ast_node_t *root_node) {
-    assert(root_node->type == AST_NODE_TYPE_ROOT);
-    populate_rest(context, NULL, context->generics_namespace, root_node);
-}
-
-void pass_lower_populate_types(pass_lower_context_t *context, ast_node_t *root_node) {
-    assert(root_node->type == AST_NODE_TYPE_ROOT);
-    populate_types_and_enums(context, NULL, context->generics_namespace, root_node);
-}
-
-void pass_lower_populate_modules(pass_lower_context_t *context, ast_node_t *root_node) {
-    assert(root_node->type == AST_NODE_TYPE_ROOT);
-    populate_modules(context, NULL, context->generics_namespace, root_node);
-}
-
-void pass_lower(pass_lower_context_t *context, ast_node_t *root_node) {
-    assert(root_node->type == AST_NODE_TYPE_ROOT);
-    lower_tlc(context, &context->unit->root_namespace, NULL, context->generics_namespace, root_node);
+    AST_NODE_LIST_FOREACH(root_nodes, {
+        assert(node->type == AST_NODE_TYPE_ROOT);
+        populate_modules(&context, NULL, context.generics_namespace, node);
+    });
+    AST_NODE_LIST_FOREACH(root_nodes, populate_types_and_enums(&context, NULL, context.generics_namespace, node));
+    AST_NODE_LIST_FOREACH(root_nodes, populate_rest(&context, NULL, context.generics_namespace, node));
+    AST_NODE_LIST_FOREACH(root_nodes, lower_tlc(&context, &context.unit->root_namespace, NULL, context.generics_namespace, node));
 }

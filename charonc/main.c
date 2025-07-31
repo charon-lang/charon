@@ -7,6 +7,7 @@
 #include "lib/memory.h"
 #include "lib/source.h"
 #include "lib/vector.h"
+#include "lower/lower.h"
 #include "parser/parser.h"
 #include "pass/pass.h"
 
@@ -185,12 +186,12 @@ int main(int argc, const char *argv[]) {
     context_global_initialize();
 
     /* Parse: Source -> Tokens -> AST */
-    ast_node_t *ast_root_nodes[source_count];
+    ast_node_list_t ast_root_nodes = AST_NODE_LIST_INIT;
     memory_allocator_t *ast_allocator = memory_allocator_make();
     memory_active_allocator_set(ast_allocator);
     for(size_t i = 0; i < source_count; i++) {
         tokenizer_t tokenizer = tokenizer_init(sources[i]);
-        ast_root_nodes[i] = parser_root(&tokenizer);
+        ast_node_list_append(&ast_root_nodes, parser_root(&tokenizer));
     }
     memory_active_allocator_set(NULL);
 
@@ -209,11 +210,7 @@ int main(int argc, const char *argv[]) {
     ir_unit_t unit = { .root_namespace = IR_NAMESPACE_INIT };
     ir_type_cache_t *type_cache = ir_type_cache_make();
 
-    pass_lower_context_t *lower_context = pass_lower_context_make(work_allocator, &unit, type_cache);
-    for(size_t i = 0; i < source_count; i++) pass_lower_populate_modules(lower_context, ast_root_nodes[i]);
-    for(size_t i = 0; i < source_count; i++) pass_lower_populate_types(lower_context, ast_root_nodes[i]);
-    for(size_t i = 0; i < source_count; i++) pass_lower_populate_final(lower_context, ast_root_nodes[i]);
-    for(size_t i = 0; i < source_count; i++) pass_lower(lower_context, ast_root_nodes[i]);
+    lower_to_ir(work_allocator, &unit, type_cache, &ast_root_nodes);
 
     memory_allocator_free(work_allocator);
     memory_allocator_free(ast_allocator);
