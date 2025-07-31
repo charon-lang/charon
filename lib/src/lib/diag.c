@@ -75,6 +75,7 @@ char *charon_diag_tostring(charon_diag_t *diag) {
         case DIAG_TYPE__UNEXPECTED_SYMBOL:           asprintf(&str, "unexpected symbol"); break;
         case DIAG_TYPE__UNFINISHED_MODULE:           asprintf(&str, "unexpected end of module `%s`", diag->data.unfinished_module_name); break;
         case DIAG_TYPE__EXPECTED:                    asprintf(&str, "expected `%s` got `%s`", token_kind_stringify(diag->data.expected.expected), token_kind_stringify(diag->data.expected.actual)); break;
+        case DIAG_TYPE__EXPECTED_STATEMENT:          asprintf(&str, "expected statement"); break;
         case DIAG_TYPE__EXPECTED_BINARY_OPERATION:   asprintf(&str, "expected binary operation"); break;
         case DIAG_TYPE__EXPECTED_PRIMARY_EXPRESSION: asprintf(&str, "expected primary expression"); break;
         case DIAG_TYPE__EXPECTED_TLC:                asprintf(&str, "expected top level construct"); break;
@@ -84,6 +85,7 @@ char *charon_diag_tostring(charon_diag_t *diag) {
         case DIAG_TYPE__TOO_LARGE_CHAR_LITERAL:      asprintf(&str, "character literal exceeds maximum size"); break;
         case DIAG_TYPE__TOO_LARGE_ESCAPE_SEQUENCE:   asprintf(&str, "escape sequence exceeds maximum size"); break;
         case DIAG_TYPE__TOO_LARGE_NUMERIC_CONSTANT:  asprintf(&str, "numeric constant exceeds maximum value"); break;
+        case DIAG_TYPE__DUPLICATE_DEFAULT:           asprintf(&str, "duplicate definition of default"); break;
     }
     return str;
 }

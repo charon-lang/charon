@@ -20,6 +20,7 @@ typedef struct ir_type_declaration ir_type_declaration_t;
 typedef struct ir_type_cache ir_type_cache_t;
 typedef struct ir_type ir_type_t;
 typedef struct ir_type_structure_member ir_type_structure_member_t;
+typedef struct ir_switch_case ir_switch_case_t;
 typedef struct ir_unit ir_unit_t;
 typedef struct ir_literal_struct_member ir_literal_struct_member_t;
 typedef struct ir_expr ir_expr_t;
@@ -55,7 +56,8 @@ typedef enum {
     IR_STMT_KIND_WHILE,
     IR_STMT_KIND_CONTINUE,
     IR_STMT_KIND_BREAK,
-    IR_STMT_KIND_FOR
+    IR_STMT_KIND_FOR,
+    IR_STMT_KIND_SWITCH
 } ir_stmt_kind_t;
 
 typedef enum {
@@ -222,6 +224,12 @@ struct ir_type_structure_member {
     const char *name;
 };
 
+struct ir_switch_case {
+    ir_expr_t *value;
+    ir_scope_t *body_scope;
+    ir_stmt_t *body;
+};
+
 struct ir_type_cache {
     ir_type_t **types;
     size_t type_count;
@@ -263,6 +271,13 @@ struct ir_stmt {
             ir_expr_t *expr_after; /* nullable */
             ir_stmt_t *body; /* nullable */
         } _for;
+        struct {
+            ir_expr_t *value;
+            size_t case_count;
+            ir_switch_case_t *cases;
+            ir_stmt_t *default_body; /* nullable */
+            ir_scope_t *default_body_scope; /* nullable */
+        } _switch;
     };
 };
 

@@ -73,6 +73,14 @@ static void visit_stmt(ir_unit_t *unit, ir_type_cache_t *type_cache, ir_module_t
             NULLABLE(VISIT_EXPR_EXT, stmt->_for.expr_after, module, fn, stmt->_for.scope);
             NULLABLE(VISIT_STMT_EXT, stmt->_for.body, module, fn, stmt->_for.scope);
             break;
+        case IR_STMT_KIND_SWITCH:
+            VISIT_EXPR(stmt->_switch.value);
+            VISIT_STMT_EXT(stmt->_switch.default_body, module, fn, stmt->_switch.default_body_scope);
+            for(size_t i = 0; i < stmt->_switch.case_count; i++) {
+                VISIT_EXPR(stmt->_switch.cases[i].value);
+                VISIT_STMT_EXT(stmt->_switch.cases[i].body, module, fn, stmt->_switch.cases[i].body_scope);
+            }
+            break;
     }
 
     if(visitor->stmt != NULL) visitor->stmt(unit, type_cache, module, fn, scope, stmt);

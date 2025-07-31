@@ -8,6 +8,7 @@ STRING(E_EXPECTED_TLC, "expected top level construct, got `%s`")
 STRING(E_EXPECTED_NUMERIC_LITERAL, "expected numeric literal, got `%s`")
 STRING(E_EXPECTED_ATTR_ARG, "expected attribute argument, got `%s`")
 STRING(E_EXPECTED_STRUCT_TYPE, "expected a struct type")
+STRING(E_EXPECTED_INTEGER, "expected integer")
 
 STRING(E_UNKNOWN_MODULE, "unknown module `%s`")
 STRING(E_UNKNOWN_GENERIC, "unknown generic `%s`")
@@ -60,3 +61,4 @@ STRING(E_DECL_TYPES_MISMATCH, "declarations initial value does not match its exp
 STRING(E_CONFLICTING_TYPES, "conflicting types")
 STRING(E_NOT_IN_LOOP, "not inside of a loop")
 STRING(E_REF_NOT_VAR, "references can only be made to variables")
+STRING(E_DUPLICATE_CASE, "duplicate case value")

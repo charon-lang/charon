@@ -327,6 +327,53 @@ static void cg_stmt_for(CG_STMT_PARAMS) {
     }
 }
 
+static void cg_stmt_switch(CG_STMT_PARAMS) {
+    LLVMValueRef llvm_func = LLVMGetBasicBlockParent(LLVMGetInsertBlock(context->llvm_builder));
+
+    LLVMBasicBlockRef bb_end = LLVMAppendBasicBlockInContext(context->llvm_context, llvm_func, "switch.end");
+    LLVMBasicBlockRef bb_else = stmt->_switch.default_body == NULL ? bb_end : LLVMInsertBasicBlock(bb_end, "switch.default");
+
+    LLVMValueRef switch_value = LLVMBuildSwitch(context->llvm_builder, cg_expr(context, stmt->_switch.value), bb_else, stmt->_switch.case_count);
+
+    if(stmt->_switch.default_body != NULL) {
+        LLVMPositionBuilderAtEnd(context->llvm_builder, bb_else);
+
+        cg_stmt(context, stmt->_switch.default_body);
+        LLVMBuildBr(context->llvm_builder, bb_end);
+    }
+
+    union {
+        unsigned long long u;
+        long long s;
+    } cached_values[stmt->_switch.case_count];
+
+    for(size_t i = 0; i < stmt->_switch.case_count; i++) {
+        LLVMBasicBlockRef bb_case = LLVMInsertBasicBlock(bb_end, "switch.case");
+
+        LLVMValueRef value = cg_expr(context, stmt->_switch.cases[i].value);
+        assert(stmt->_switch.value->type->kind == IR_TYPE_KIND_INTEGER);
+        if(stmt->_switch.value->type->integer.is_signed) {
+            cached_values[i].s = LLVMConstIntGetSExtValue(value);
+        } else {
+            cached_values[i].u = LLVMConstIntGetZExtValue(value);
+        }
+
+        for(size_t j = 0; j < i; j++) {
+            if(cached_values[i].u != cached_values[j].u) continue;
+            diag_error(stmt->_switch.cases[i].value->source_location, LANG_E_DUPLICATE_CASE);
+        }
+
+        LLVMAddCase(switch_value, value, bb_case);
+
+        LLVMPositionBuilderAtEnd(context->llvm_builder, bb_case);
+
+        cg_stmt(context, stmt->_switch.cases[i].body);
+        LLVMBuildBr(context->llvm_builder, bb_end);
+    }
+
+    LLVMPositionBuilderAtEnd(context->llvm_builder, bb_end);
+}
+
 // Expressions
 
 static value_t cg_expr_literal_numeric(CG_EXPR_PARAMS) {
@@ -644,6 +691,7 @@ static void cg_stmt(CG_STMT_PARAMS) {
         case IR_STMT_KIND_CONTINUE:    cg_stmt_continue(context, stmt); break;
         case IR_STMT_KIND_BREAK:       cg_stmt_break(context, stmt); break;
         case IR_STMT_KIND_FOR:         cg_stmt_for(context, stmt); break;
+        case IR_STMT_KIND_SWITCH:      cg_stmt_switch(context, stmt); break;
     }
 }
 

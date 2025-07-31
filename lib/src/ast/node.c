@@ -155,6 +155,15 @@ ast_node_t *ast_node_make_stmt_for(ast_node_t *declaration, ast_node_t *conditio
     return node;
 }
 
+ast_node_t *ast_node_make_stmt_switch(ast_node_t *value, size_t case_count, ast_node_switch_case_t *cases, ast_node_t *default_body, ast_attribute_list_t attributes, source_location_t source_location) {
+    ast_node_t *node = node_make(AST_NODE_TYPE_STMT_SWITCH, attributes, source_location);
+    node->stmt_switch.value = value;
+    node->stmt_switch.case_count = case_count;
+    node->stmt_switch.cases = cases;
+    node->stmt_switch.default_body = default_body;
+    return node;
+}
+
 ast_node_t *ast_node_make_expr_literal_numeric(uintmax_t value, source_location_t source_location) {
     ast_node_t *node = node_make(AST_NODE_TYPE_EXPR_LITERAL_NUMERIC, AST_ATTRIBUTE_LIST_INIT, source_location);
     node->expr_literal.numeric_value = value;

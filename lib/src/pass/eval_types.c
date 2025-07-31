@@ -3,6 +3,7 @@
 #include "ir/visit.h"
 #include "lib/alloc.h"
 #include "lib/diag.h"
+#include "lib/lang.h"
 #include "pass.h"
 
 #include <assert.h>
@@ -84,6 +85,16 @@ static void visitor_stmt(ir_unit_t *unit, ir_type_cache_t *type_cache, ir_module
         }
         case IR_STMT_KIND_FOR: {
             if(stmt->_for.condition != NULL && !try_coerce(&stmt->_for.condition, TYPE_BOOL)) diag_error(stmt->_for.condition->source_location, LANG_E_NOT_BOOL);
+            break;
+        }
+        case IR_STMT_KIND_SWITCH: {
+            ir_type_t *switch_type = stmt->_switch.value->type;
+            if(switch_type->kind != IR_TYPE_KIND_INTEGER) diag_error(stmt->_switch.value->source_location, LANG_E_EXPECTED_INTEGER);
+
+            for(size_t i = 0; i < stmt->_switch.case_count; i++) {
+                ir_switch_case_t *current_case = &stmt->_switch.cases[i];
+                if(!try_coerce(&current_case->value, switch_type)) diag_error(current_case->value->source_location, LANG_E_INVALID_TYPE);
+            }
             break;
         }
         default: break;

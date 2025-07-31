@@ -32,16 +32,17 @@
     case AST_NODE_TYPE_TLC_DECLARATION:              \
     case AST_NODE_TYPE_TLC_ENUMERATION:     BODY; break;
 
-#define AST_CASE_STMT(BODY)                   \
-    case AST_NODE_TYPE_STMT_BLOCK:            \
-    case AST_NODE_TYPE_STMT_DECLARATION:      \
-    case AST_NODE_TYPE_STMT_EXPRESSION:       \
-    case AST_NODE_TYPE_STMT_RETURN:           \
-    case AST_NODE_TYPE_STMT_IF:               \
-    case AST_NODE_TYPE_STMT_WHILE:            \
-    case AST_NODE_TYPE_STMT_CONTINUE:         \
-    case AST_NODE_TYPE_STMT_BREAK:            \
-    case AST_NODE_TYPE_STMT_FOR:         BODY; break;
+#define AST_CASE_STMT(BODY)                      \
+    case AST_NODE_TYPE_STMT_BLOCK:               \
+    case AST_NODE_TYPE_STMT_DECLARATION:         \
+    case AST_NODE_TYPE_STMT_EXPRESSION:          \
+    case AST_NODE_TYPE_STMT_RETURN:              \
+    case AST_NODE_TYPE_STMT_IF:                  \
+    case AST_NODE_TYPE_STMT_WHILE:               \
+    case AST_NODE_TYPE_STMT_CONTINUE:            \
+    case AST_NODE_TYPE_STMT_BREAK:               \
+    case AST_NODE_TYPE_STMT_FOR:                 \
+    case AST_NODE_TYPE_STMT_SWITCH:      BODY; break;
 
 #define AST_CASE_EXPRESSION(BODY)                \
     case AST_NODE_TYPE_EXPR_LITERAL_NUMERIC:     \
@@ -80,6 +81,7 @@ typedef enum {
     AST_NODE_TYPE_STMT_CONTINUE,
     AST_NODE_TYPE_STMT_BREAK,
     AST_NODE_TYPE_STMT_FOR,
+    AST_NODE_TYPE_STMT_SWITCH,
 
     AST_NODE_TYPE_EXPR_LITERAL_NUMERIC,
     AST_NODE_TYPE_EXPR_LITERAL_STRING,
@@ -144,6 +146,11 @@ typedef struct {
     ast_node_t *value;
     source_location_t source_location;
 } ast_node_struct_literal_member_t;
+
+typedef struct {
+    ast_node_t *value;
+    ast_node_t *body;
+} ast_node_switch_case_t;
 
 struct ast_node {
     ast_node_type_t type;
@@ -217,6 +224,12 @@ struct ast_node {
             ast_node_t *declaration, *condition, *expr_after; /* nullable */
             ast_node_t *body; /* nullable */
         } stmt_for;
+        struct {
+            ast_node_t *value;
+            size_t case_count;
+            ast_node_switch_case_t *cases;
+            ast_node_t *default_body; /* nullable */
+        } stmt_switch;
 
         union {
             uintmax_t numeric_value;
@@ -305,6 +318,7 @@ ast_node_t *ast_node_make_stmt_while(ast_node_t *condition, ast_node_t *body, as
 ast_node_t *ast_node_make_stmt_continue(ast_attribute_list_t attributes, source_location_t source_location);
 ast_node_t *ast_node_make_stmt_break(ast_attribute_list_t attributes, source_location_t source_location);
 ast_node_t *ast_node_make_stmt_for(ast_node_t *declaration, ast_node_t *condition, ast_node_t *expr_after, ast_node_t *body, ast_attribute_list_t attributes, source_location_t source_location);
+ast_node_t *ast_node_make_stmt_switch(ast_node_t *value, size_t case_count, ast_node_switch_case_t *cases, ast_node_t *default_body, ast_attribute_list_t attributes, source_location_t source_location);
 
 ast_node_t *ast_node_make_expr_literal_numeric(uintmax_t value, source_location_t source_location);
 ast_node_t *ast_node_make_expr_literal_string(const char *value, source_location_t source_location);

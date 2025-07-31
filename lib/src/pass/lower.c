@@ -4,6 +4,7 @@
 #include "ir/ir.h"
 #include "lib/alloc.h"
 #include "lib/diag.h"
+#include "lib/lang.h"
 #include "lib/memory.h"
 #include "pass.h"
 
@@ -409,6 +410,40 @@ static ir_stmt_t *lower_stmt(pass_lower_context_t *context, ir_namespace_t *curr
             stmt->_for.condition = node->stmt_for.condition == NULL ? NULL : lower_expr(context, current_namespace, new_scope, current_generics_namespace, generic_mappings, generic_mapping_count, node->stmt_for.condition);
             stmt->_for.expr_after = node->stmt_for.expr_after == NULL ? NULL : lower_expr(context, current_namespace, new_scope, current_generics_namespace, generic_mappings, generic_mapping_count, node->stmt_for.expr_after);
             stmt->_for.body = node->stmt_for.body == NULL ? NULL : lower_stmt(context, current_namespace, new_scope, current_generics_namespace, generic_mappings, generic_mapping_count, node->stmt_for.body);
+            break;
+        }
+        case AST_NODE_TYPE_STMT_SWITCH: {
+            stmt->kind = IR_STMT_KIND_SWITCH;
+            stmt->_switch.value = lower_expr(context, current_namespace, scope, current_generics_namespace, generic_mappings, generic_mapping_count, node->stmt_switch.value);
+
+            stmt->_switch.default_body = NULL;
+            stmt->_switch.default_body_scope = NULL;
+            if(node->stmt_switch.default_body != NULL) {
+                ir_scope_t *new_scope = alloc(sizeof(ir_scope_t));
+                new_scope->parent = scope;
+                new_scope->variable_count = 0;
+                new_scope->variables = NULL;
+
+                stmt->_switch.default_body = lower_stmt(context, current_namespace, new_scope, current_generics_namespace, generic_mappings, generic_mapping_count, node->stmt_switch.default_body);
+                stmt->_switch.default_body_scope = new_scope;
+            }
+
+            stmt->_switch.case_count = node->stmt_switch.case_count;
+            stmt->_switch.cases = alloc_array(NULL, node->stmt_switch.case_count, sizeof(ir_switch_case_t));
+            for(size_t i = 0; i < node->stmt_switch.case_count; i++) {
+                ir_switch_case_t *current_case = &stmt->_switch.cases[i];
+
+                ir_scope_t *new_scope = alloc(sizeof(ir_scope_t));
+                new_scope->parent = scope;
+                new_scope->variable_count = 0;
+                new_scope->variables = NULL;
+
+                current_case->body_scope = new_scope;
+                current_case->value = lower_expr(context, current_namespace, scope, current_generics_namespace, generic_mappings, generic_mapping_count, node->stmt_switch.cases[i].value);
+                current_case->body = lower_stmt(context, current_namespace, new_scope, current_generics_namespace, generic_mappings, generic_mapping_count, node->stmt_switch.cases[i].body);
+
+                if(!current_case->value->is_const) diag_error(current_case->value->source_location, LANG_E_NOT_CONSTANT);
+            }
             break;
         }
         default: assert(false);
