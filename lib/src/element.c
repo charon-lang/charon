@@ -1,10 +1,10 @@
-#include "charon/element.h"
+#include "element.h"
 
+#include "charon/element.h"
+#include "charon/memory.h"
 #include "charon/token.h"
-#include "common/memory.h"
 
 #include <assert.h>
-#include <stdio.h>
 #include <string.h>
 
 #define INTERNED_NODE_BUCKET_COUNT 8096
@@ -12,11 +12,11 @@
 
 typedef struct interned_element {
     struct interned_element *next;
-    charon_element_t element;
+    charon_element_inner_t element;
 } interned_element_t;
 
 struct charon_element_cache {
-    memory_allocator_t *allocator;
+    charon_memory_allocator_t *allocator;
     interned_element_t *token_buckets[INTERNED_TOKEN_BUCKET_COUNT];
     interned_element_t *node_buckets[INTERNED_NODE_BUCKET_COUNT];
 };
@@ -36,7 +36,7 @@ static uint64_t hash_token(charon_token_kind_t kind, const char *text) {
     return h;
 }
 
-static uint64_t hash_node(charon_node_kind_t kind, charon_element_t *children[], size_t child_count) {
+static uint64_t hash_node(charon_node_kind_t kind, charon_element_inner_t *children[], size_t child_count) {
     const uint64_t p = 0x100000001b3ULL;
 
     uint64_t h = 0xcbf29ce484222325ULL;
@@ -54,9 +54,8 @@ static uint64_t hash_node(charon_node_kind_t kind, charon_element_t *children[],
     return h;
 }
 
-charon_element_cache_t *charon_element_cache_make() {
-    memory_allocator_t *allocator = memory_allocator_make();
-    charon_element_cache_t *cache = memory_allocate(allocator, sizeof(charon_element_cache_t));
+charon_element_cache_t *charon_element_cache_make(charon_memory_allocator_t *allocator) {
+    charon_element_cache_t *cache = charon_memory_allocate(allocator, sizeof(charon_element_cache_t));
     cache->allocator = allocator;
     for(size_t i = 0; i < INTERNED_TOKEN_BUCKET_COUNT; i++) cache->token_buckets[i] = nullptr;
     for(size_t i = 0; i < INTERNED_NODE_BUCKET_COUNT; i++) cache->node_buckets[i] = nullptr;
@@ -64,10 +63,10 @@ charon_element_cache_t *charon_element_cache_make() {
 }
 
 void charon_element_cache_destroy(charon_element_cache_t *cache) {
-    memory_allocator_free(cache->allocator);
+    // TODO:
 }
 
-charon_element_t *charon_element_make_token(charon_element_cache_t *cache, charon_token_kind_t kind, const char *text) {
+charon_element_inner_t *charon_element_inner_make_token(charon_element_cache_t *cache, charon_token_kind_t kind, const char *text) {
     uint64_t hash = hash_token(kind, text);
     size_t index = hash % INTERNED_TOKEN_BUCKET_COUNT;
 
@@ -81,12 +80,12 @@ charon_element_t *charon_element_make_token(charon_element_cache_t *cache, charo
         return &interned_element->element;
     }
 
-    interned_element_t *interned_element = memory_allocate(cache->allocator, sizeof(interned_element_t));
+    interned_element_t *interned_element = charon_memory_allocate(cache->allocator, sizeof(interned_element_t));
     interned_element->element.type = CHARON_ELEMENT_TYPE_TOKEN;
     interned_element->element.hash = hash;
     interned_element->element.length = text == nullptr ? 0 : strlen(text);
     interned_element->element.token.kind = kind;
-    interned_element->element.token.text = text == nullptr ? nullptr : memory_strdup(cache->allocator, text);
+    interned_element->element.token.text = text == nullptr ? nullptr : charon_memory_strdup(cache->allocator, text);
 
     interned_element->next = cache->token_buckets[index];
     cache->token_buckets[index] = interned_element;
@@ -94,7 +93,7 @@ charon_element_t *charon_element_make_token(charon_element_cache_t *cache, charo
     return &interned_element->element;
 }
 
-charon_element_t *charon_element_make_node(charon_element_cache_t *cache, charon_node_kind_t kind, charon_element_t *children[], size_t child_count) {
+charon_element_inner_t *charon_element_inner_make_node(charon_element_cache_t *cache, charon_node_kind_t kind, charon_element_inner_t *children[], size_t child_count) {
     uint64_t hash = hash_node(kind, children, child_count);
     size_t index = hash % INTERNED_NODE_BUCKET_COUNT;
 
@@ -104,12 +103,11 @@ charon_element_t *charon_element_make_node(charon_element_cache_t *cache, charon
         for(size_t i = 0; i < interned_element->element.node.child_count; i++) {
             if(interned_element->element.node.children[i] != children[i]) goto skip;
         }
-        printf("found interned node\n");
         return &interned_element->element;
     skip:
     }
 
-    interned_element_t *interned_element = memory_allocate(cache->allocator, sizeof(interned_element_t) + child_count * sizeof(charon_element_t *));
+    interned_element_t *interned_element = charon_memory_allocate(cache->allocator, sizeof(interned_element_t) + child_count * sizeof(charon_element_inner_t *));
     interned_element->element.type = CHARON_ELEMENT_TYPE_NODE;
     interned_element->element.hash = hash;
     interned_element->element.length = 0;
@@ -124,4 +122,12 @@ charon_element_t *charon_element_make_node(charon_element_cache_t *cache, charon
     cache->node_buckets[index] = interned_element;
 
     return &interned_element->element;
+}
+
+charon_element_t *charon_element_root(charon_memory_allocator_t *allocator, charon_element_inner_t *inner_root) {
+    charon_element_t *element = charon_memory_allocate(allocator, sizeof(charon_element_t));
+    element->parent = NULL;
+    element->offset = 0;
+    element->inner = inner_root;
+    return element;
 }

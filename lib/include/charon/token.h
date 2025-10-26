@@ -8,10 +8,5 @@ typedef enum charon_token_kind {
 #undef TOKEN
 } charon_token_kind_t;
 
-typedef struct charon_token {
-    charon_token_kind_t kind;
-    const char *text;
-} charon_token_t;
-
 const char *charon_token_kind_tostring(charon_token_kind_t kind);
 bool charon_token_kind_has_content(charon_token_kind_t kind);
