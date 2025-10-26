@@ -13,10 +13,5 @@ typedef struct charon_token {
     const char *text;
 } charon_token_t;
 
-typedef struct charon_token_cache charon_token_cache_t;
-
-charon_token_cache_t *charon_token_cache_make();
-void charon_token_cache_destroy(charon_token_cache_t *cache);
-
 const char *charon_token_kind_tostring(charon_token_kind_t kind);
 bool charon_token_kind_has_content(charon_token_kind_t kind);

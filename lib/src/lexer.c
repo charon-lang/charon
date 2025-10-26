@@ -1,9 +1,9 @@
 #include "charon/lexer.h"
 
+#include "charon/element.h"
 #include "charon/token.h"
 #include "common/fatal.h"
 #include "source.h"
-#include "token.h"
 
 #include <assert.h>
 #include <pcre2.h>
@@ -28,9 +28,9 @@ typedef struct {
 } uncompiled_entry_t;
 
 struct charon_lexer {
-    charon_token_cache_t *token_cache;
+    charon_element_cache_t *cache;
     charon_source_t *source;
-    charon_token_t *lookahead;
+    charon_element_t *lookahead;
     size_t cursor;
 };
 
@@ -78,9 +78,9 @@ static spec_match_t spec_match(const char *string, size_t string_length) {
     return (spec_match_t) { .kind = CHARON_TOKEN_KIND_UNKNOWN, .size = 0 };
 }
 
-static charon_token_t *next_token(charon_lexer_t *lexer) {
+static charon_element_t *next_token(charon_lexer_t *lexer) {
     while(true) {
-        if(charon_lexer_is_eof(lexer)) return token_make(lexer->token_cache, CHARON_TOKEN_KIND_EOF, nullptr);
+        if(charon_lexer_is_eof(lexer)) return charon_element_make_token(lexer->cache, CHARON_TOKEN_KIND_EOF, nullptr);
 
         size_t offset = lexer->cursor;
 
@@ -103,20 +103,20 @@ static charon_token_t *next_token(charon_lexer_t *lexer) {
             strncpy(text, &lexer->source->text[offset], match.size);
             text[match.size] = '\0';
         }
-        charon_token_t *tok = token_make(lexer->token_cache, match.kind, text);
+        charon_element_t *el = charon_element_make_token(lexer->cache, match.kind, text);
         if(text != nullptr) free(text);
-        return tok;
+        return el;
     }
 }
 
-charon_lexer_t *charon_lexer_make(charon_token_cache_t *token_cache, charon_source_t *source) {
-    assert(token_cache != nullptr);
+charon_lexer_t *charon_lexer_make(charon_element_cache_t *cache, charon_source_t *source) {
+    assert(cache != nullptr);
     assert(source != nullptr);
 
     if(!g_spec_compiled) spec_compile();
 
     charon_lexer_t *lexer = malloc(sizeof(charon_lexer_t));
-    lexer->token_cache = token_cache;
+    lexer->cache = cache;
     lexer->source = source;
     lexer->cursor = 0;
     lexer->lookahead = next_token(lexer);
@@ -129,14 +129,14 @@ void charon_lexer_destroy(charon_lexer_t *lexer) {
     free(lexer);
 }
 
-charon_token_t *charon_lexer_peek(charon_lexer_t *lexer) {
+charon_element_t *charon_lexer_peek(charon_lexer_t *lexer) {
     return lexer->lookahead;
 }
 
-charon_token_t *charon_lexer_advance(charon_lexer_t *lexer) {
-    charon_token_t *token = charon_lexer_peek(lexer);
+charon_element_t *charon_lexer_advance(charon_lexer_t *lexer) {
+    charon_element_t *el = charon_lexer_peek(lexer);
     lexer->lookahead = next_token(lexer);
-    return token;
+    return el;
 }
 
 bool charon_lexer_is_eof(charon_lexer_t *lexer) {
