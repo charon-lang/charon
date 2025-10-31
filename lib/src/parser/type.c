@@ -1,8 +1,10 @@
 #include "charon/element.h"
 #include "charon/node.h"
-#include "common/fatal.h"
-#include "parser.h"
+#include "charon/parser.h"
+#include "charon/token.h"
 #include "parser/collector.h"
+#include "parser/parse.h"
+#include "parser/parser.h"
 
 charon_element_inner_t *parse_type(charon_parser_t *parser) {
     collector_t collector = COLLECTOR_INIT;
@@ -45,8 +47,7 @@ charon_element_inner_t *parse_type(charon_parser_t *parser) {
 
     // Function reference type
     if(parser_consume_try(parser, &collector, CHARON_TOKEN_KIND_KEYWORD_FUNCTION)) {
-        // CALL(function_type);
-        fatal("unimplemented");
+        collector_push(&collector, parse_type_function(parser));
         return parser_build(parser, CHARON_NODE_KIND_TYPE_FUNCTION_REF, &collector);
     }
 
@@ -64,4 +65,23 @@ charon_element_inner_t *parse_type(charon_parser_t *parser) {
     }
 
     return parser_build(parser, CHARON_NODE_KIND_TYPE_REFERENCE, &collector);
+}
+
+charon_element_inner_t *parse_type_function(charon_parser_t *parser) {
+    collector_t collector = COLLECTOR_INIT;
+    parser_consume(parser, &collector, CHARON_TOKEN_KIND_PNCT_PARENTHESES_LEFT);
+    if(!parser_consume_try(parser, &collector, CHARON_TOKEN_KIND_PNCT_PARENTHESES_RIGHT)) {
+        do {
+            if(parser_consume_try(parser, &collector, CHARON_TOKEN_KIND_PNCT_TRIPLE_PERIOD)) break;
+
+            parser_consume(parser, &collector, CHARON_TOKEN_KIND_IDENTIFIER);
+            parser_consume(parser, &collector, CHARON_TOKEN_KIND_PNCT_COLON);
+            collector_push(&collector, parse_type(parser));
+        } while(parser_consume_try(parser, &collector, CHARON_TOKEN_KIND_PNCT_COMMA));
+        parser_consume(parser, &collector, CHARON_TOKEN_KIND_PNCT_PARENTHESES_RIGHT);
+    }
+
+    if(parser_consume_try(parser, &collector, CHARON_TOKEN_KIND_PNCT_COLON)) collector_push(&collector, parse_type(parser));
+
+    return parser_build(parser, CHARON_NODE_KIND_TYPE_FUNCTION, &collector);
 }

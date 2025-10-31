@@ -7,6 +7,7 @@ NODE(TYPE_STRUCT, "Structure Type")
 NODE(TYPE_TUPLE, "Tuple Type")
 NODE(TYPE_ARRAY, "Array Type")
 NODE(TYPE_POINTER, "Pointer Type")
+NODE(TYPE_FUNCTION, "Function Type")
 NODE(TYPE_FUNCTION_REF, "Function Reference Type")
 
 // TLC
@@ -18,6 +19,7 @@ NODE(TLC_TYPE_DEFINITION, "Type Definition")
 NODE(TLC_ENUMERATION, "Enumeration")
 
 // Statement
+NODE(STMT_EMPTY, "Empty Statement")
 NODE(STMT_BLOCK, "Block")
 NODE(STMT_DECLARATION, "Declaration")
 NODE(STMT_EXPRESSION, "Expression")

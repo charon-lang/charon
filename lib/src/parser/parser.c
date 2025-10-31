@@ -29,6 +29,18 @@ charon_element_inner_t *charon_parser_parse_expr(charon_parser_t *parser) {
     return parse_expr(parser);
 }
 
+charon_element_inner_t *charon_parser_parse_stmt(charon_parser_t *parser) {
+    return parse_stmt(parser);
+}
+
+charon_element_inner_t *charon_parser_parse_tlc(charon_parser_t *parser) {
+    return parse_tlc(parser);
+}
+
+charon_element_inner_t *charon_parser_parse_root(charon_parser_t *parser) {
+    return parse_root(parser);
+}
+
 charon_token_kind_t parser_peek(charon_parser_t *parser) {
     return charon_element_inner_token_kind(charon_lexer_peek(parser->lexer));
 }
