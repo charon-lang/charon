@@ -208,8 +208,11 @@ static charon_element_inner_t *parse_unary_pre(charon_parser_t *parser) {
         case CHARON_TOKEN_KIND_PNCT_STAR:
         case CHARON_TOKEN_KIND_PNCT_MINUS:
         case CHARON_TOKEN_KIND_PNCT_NOT:
-        case CHARON_TOKEN_KIND_PNCT_AMPERSAND: parser_consume_any(parser, &collector); break;
-        default:                               return parse_unary_post(parser);
+        case CHARON_TOKEN_KIND_PNCT_AMPERSAND:
+            parser_consume_any(parser, &collector);
+            collector_push(&collector, parse_unary_pre(parser));
+            break;
+        default: return parse_unary_post(parser);
     }
     return parser_build(parser, CHARON_NODE_KIND_EXPR_UNARY, &collector);
 }
