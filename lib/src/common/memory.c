@@ -1,6 +1,6 @@
 #include "charon/memory.h"
 
-#include "fatal.h"
+#include "common/fatal.h"
 
 #include <assert.h>
 #include <stdio.h>

@@ -12,14 +12,3 @@ const char *charon_token_kind_tostring(charon_token_kind_t kind) {
     };
     return translations[kind];
 }
-
-bool charon_token_kind_has_content(charon_token_kind_t kind) {
-    static bool has_content[] = {
-        [CHARON_TOKEN_KIND_EOF] = false,
-        [CHARON_TOKEN_KIND_UNKNOWN] = false,
-#define TOKEN(ID, _1, _2, HAS_CONTENT, ...) [CHARON_TOKEN_KIND_##ID] = HAS_CONTENT,
-#include "charon/tokens.def"
-#undef TOKEN
-    };
-    return has_content[kind];
-}

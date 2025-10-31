@@ -6,12 +6,16 @@ charon_lib_includes = include_directories('include')
 charon_lib = static_library(
     'charon',
     files(
-        'src/memory.c',
+        'src/common/memory.c',
+        'src/parser/expression.c',
+        'src/parser/parser.c',
+        'src/parser/type.c',
         'src/element.c',
         'src/lexer.c',
         'src/node.c',
         'src/source.c',
         'src/token.c',
+        'src/trivia.c',
     ),
     dependencies: [dependency_pcre, dependency_llvm],
     include_directories: [include_directories('src'), charon_lib_includes],

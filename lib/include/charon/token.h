@@ -9,4 +9,3 @@ typedef enum charon_token_kind {
 } charon_token_kind_t;
 
 const char *charon_token_kind_tostring(charon_token_kind_t kind);
-bool charon_token_kind_has_content(charon_token_kind_t kind);

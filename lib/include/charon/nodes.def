@@ -1,2 +1,48 @@
-// Nodes
 NODE(ROOT, "Root")
+NODE(ERROR, "Error")
+
+// Type
+NODE(TYPE_REFERENCE, "Type Reference")
+NODE(TYPE_STRUCT, "Structure Type")
+NODE(TYPE_TUPLE, "Tuple Type")
+NODE(TYPE_ARRAY, "Array Type")
+NODE(TYPE_POINTER, "Pointer Type")
+NODE(TYPE_FUNCTION_REF, "Function Reference Type")
+
+// TLC
+NODE(TLC_MODULE, "Module")
+NODE(TLC_FUNCTION, "Function")
+NODE(TLC_EXTERN, "Extern")
+NODE(TLC_DECLARATION, "Global Declaration")
+NODE(TLC_TYPE_DEFINITION, "Type Definition")
+NODE(TLC_ENUMERATION, "Enumeration")
+
+// Statement
+NODE(STMT_BLOCK, "Block")
+NODE(STMT_DECLARATION, "Declaration")
+NODE(STMT_EXPRESSION, "Expression")
+NODE(STMT_RETURN, "Return")
+NODE(STMT_IF, "If")
+NODE(STMT_WHILE, "While")
+NODE(STMT_CONTINUE, "Continue")
+NODE(STMT_BREAK, "Break")
+NODE(STMT_FOR, "For")
+NODE(STMT_SWITCH, "Switch")
+
+// Expression
+NODE(EXPR_LITERAL_NUMERIC, "Literal Number")
+NODE(EXPR_LITERAL_STRING, "Literal String")
+NODE(EXPR_LITERAL_CHAR, "Literal Character")
+NODE(EXPR_LITERAL_BOOL, "Literal Boolean")
+NODE(EXPR_LITERAL_STRUCT, "Literal Struct")
+NODE(EXPR_BINARY, "Binary Expression")
+NODE(EXPR_UNARY, "Unary Expression")
+NODE(EXPR_VARIABLE, "Variable")
+NODE(EXPR_CALL, "Function Call")
+NODE(EXPR_TUPLE, "Tuple")
+NODE(EXPR_CAST, "Cast")
+NODE(EXPR_SUBSCRIPT, "Subscript")
+NODE(EXPR_SUBSCRIPT_DEREF, "Subscript Dereference")
+NODE(EXPR_SELECTOR, "Selector")
+NODE(EXPR_SIZEOF, "Sizeof")
+NODE(EXPR_PARENTHESES, "Parentheses Wrapped Expression")

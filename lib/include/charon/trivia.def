@@ -1,0 +1,5 @@
+TRIVIA(WHITESPACE,          "whitespace",   "^[ \\t]+")
+TRIVIA(NEWLINE,             "newline",      "^\\r?\\n")
+TRIVIA(LINE_COMMENT,        "comment",      "^//.*")
+TRIVIA(MULTI_COMMENT,       "comment",      "^/\\*[\\s\\S]*?\\*/")
+TRIVIA(HASHTAG_COMMENT,     "comment",      "^#.*")
