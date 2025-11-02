@@ -1,11 +1,9 @@
 #include "charon/lexer.h"
 
 #include "charon/element.h"
-#include "charon/source.h"
 #include "charon/token.h"
 #include "charon/trivia.h"
 #include "common/fatal.h"
-#include "source.h"
 
 #include <assert.h>
 #include <pcre2.h>
@@ -39,8 +37,10 @@ typedef struct {
 } spec_match_t;
 
 struct charon_lexer {
-    charon_source_t *source;
     charon_element_cache_t *cache;
+
+    const char *text;
+    size_t text_length;
 
     size_t cursor;
     bool is_eof;
@@ -99,21 +99,21 @@ static spec_match_t spec_match(const char *string, size_t string_length) {
 }
 
 static spec_match_t next_match(charon_lexer_t *lexer, spec_match_t *match) {
-    const char *sub = lexer->source->text + lexer->cursor;
-    size_t sub_length = lexer->source->text_length - lexer->cursor;
+    const char *sub = lexer->text + lexer->cursor;
+    size_t sub_length = lexer->text_length - lexer->cursor;
     return spec_match(sub, sub_length);
 }
 
 static char *lexer_extract(charon_lexer_t *lexer, size_t length) {
     char *str = malloc(length + 1);
-    memcpy(str, &lexer->source->text[lexer->cursor], length);
+    memcpy(str, &lexer->text[lexer->cursor], length);
     str[length] = '\0';
     lexer->cursor += length;
     return str;
 }
 
 static bool is_eof(charon_lexer_t *lexer) {
-    return lexer->cursor >= lexer->source->text_length;
+    return lexer->cursor >= lexer->text_length;
 }
 
 static charon_element_inner_t *next(charon_lexer_t *lexer) {
@@ -190,15 +190,15 @@ exit:
     return element;
 }
 
-charon_lexer_t *charon_lexer_make(charon_element_cache_t *element_cache, charon_source_t *source) {
+charon_lexer_t *charon_lexer_make(charon_element_cache_t *element_cache, const char *text, size_t text_length) {
     assert(element_cache != nullptr);
-    assert(source != nullptr);
 
     if(!g_spec_compiled) spec_compile();
 
     charon_lexer_t *lexer = malloc(sizeof(charon_lexer_t));
     lexer->cache = element_cache;
-    lexer->source = source;
+    lexer->text = text;
+    lexer->text_length = text_length;
     lexer->cursor = 0;
     lexer->is_eof = false;
     lexer->cached_trivia = nullptr;
