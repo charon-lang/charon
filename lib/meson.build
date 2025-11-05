@@ -18,6 +18,7 @@ charon_lib = static_library(
         'src/node.c',
         'src/token.c',
         'src/trivia.c',
+        'src/util.c',
     ),
     dependencies: [dependency_pcre, dependency_llvm],
     include_directories: [include_directories('src'), charon_lib_includes],

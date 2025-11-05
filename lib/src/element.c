@@ -52,7 +52,7 @@ static uint64_t hash_trivia(charon_trivia_kind_t kind, const char *text) {
     return h;
 }
 
-static uint64_t hash_token(charon_token_kind_t kind, const char *text, charon_element_inner_t *trivia[], size_t trivia_count) {
+static uint64_t hash_token(charon_token_kind_t kind, const char *text, const charon_element_inner_t *trivia[], size_t trivia_count) {
     const uint64_t p = 0x100000001b3ULL;
 
     uint64_t h = 0xcbf29ce484222325ULL;
@@ -72,7 +72,7 @@ static uint64_t hash_token(charon_token_kind_t kind, const char *text, charon_el
     return h;
 }
 
-static uint64_t hash_node(charon_node_kind_t kind, charon_element_inner_t *children[], size_t child_count) {
+static uint64_t hash_node(charon_node_kind_t kind, const charon_element_inner_t *children[], size_t child_count) {
     const uint64_t p = 0x100000001b3ULL;
 
     uint64_t h = 0xcbf29ce484222325ULL;
@@ -90,15 +90,16 @@ static uint64_t hash_node(charon_node_kind_t kind, charon_element_inner_t *child
     return h;
 }
 
-static charon_element_t *get_token_trivia(charon_memory_allocator_t *allocator, charon_element_t *element, size_t index) {
-    assert(element->inner->type == CHARON_ELEMENT_TYPE_TOKEN);
-    assert(index < element->inner->token.leading_trivia_count + element->inner->token.trailing_trivia_count);
+static const charon_element_inner_t *token_trivia(const charon_element_inner_t *inner_element, size_t index) {
+    assert(inner_element->type == CHARON_ELEMENT_TYPE_TOKEN);
+    assert(index < inner_element->token.leading_trivia_count + inner_element->token.trailing_trivia_count);
+    return inner_element->token.trivia[index];
+}
 
-    charon_element_inner_t *inner_element = element->inner->token.trivia[index];
-
+static charon_element_t *token_trivia_wrap(charon_memory_allocator_t *allocator, charon_element_t *element, size_t index) {
     charon_element_t *trivia = charon_memory_allocate(allocator, sizeof(charon_element_t));
     trivia->parent = element;
-    trivia->inner = inner_element;
+    trivia->inner = token_trivia(element->inner, index);
     trivia->offset = element->offset;
     if(index >= element->inner->token.leading_trivia_count) trivia->offset += element->inner->length - (element->inner->token.leading_trivia_length + element->inner->token.trailing_trivia_length);
     for(size_t i = 0; i < index; i++) trivia->offset += element->inner->token.trivia[i]->length;
@@ -122,7 +123,7 @@ void charon_element_cache_destroy(charon_element_cache_t *cache) {
     charon_memory_free(cache->allocator, cache);
 }
 
-charon_element_inner_t *charon_element_inner_make_trivia(charon_element_cache_t *cache, charon_trivia_kind_t kind, const char *text) {
+const charon_element_inner_t *charon_element_inner_make_trivia(charon_element_cache_t *cache, charon_trivia_kind_t kind, const char *text) {
     uint64_t hash = hash_trivia(kind, text);
     size_t index = hash % INTERNED_TRIVIA_BUCKET_COUNT;
 
@@ -149,7 +150,7 @@ charon_element_inner_t *charon_element_inner_make_trivia(charon_element_cache_t 
     return &interned_element->element;
 }
 
-charon_element_inner_t *charon_element_inner_make_token(charon_element_cache_t *cache, charon_token_kind_t kind, const char *text, size_t leading_trivia_count, size_t trailing_trivia_count, charon_element_inner_t *trivia[]) {
+const charon_element_inner_t *charon_element_inner_make_token(charon_element_cache_t *cache, charon_token_kind_t kind, const char *text, size_t leading_trivia_count, size_t trailing_trivia_count, const charon_element_inner_t *trivia[]) {
     uint64_t hash = hash_token(kind, text, trivia, leading_trivia_count + trailing_trivia_count);
     size_t index = hash % INTERNED_TOKEN_BUCKET_COUNT;
 
@@ -197,7 +198,7 @@ charon_element_inner_t *charon_element_inner_make_token(charon_element_cache_t *
     return &interned_element->element;
 }
 
-charon_element_inner_t *charon_element_inner_make_node(charon_element_cache_t *cache, charon_node_kind_t kind, charon_element_inner_t *children[], size_t child_count) {
+const charon_element_inner_t *charon_element_inner_make_node(charon_element_cache_t *cache, charon_node_kind_t kind, const charon_element_inner_t *children[], size_t child_count) {
     uint64_t hash = hash_node(kind, children, child_count);
     size_t index = hash % INTERNED_NODE_BUCKET_COUNT;
 
@@ -228,7 +229,7 @@ charon_element_inner_t *charon_element_inner_make_node(charon_element_cache_t *c
     return &interned_element->element;
 }
 
-charon_element_t *charon_element_root(charon_memory_allocator_t *allocator, charon_element_inner_t *inner_root) {
+charon_element_t *charon_element_wrap_root(charon_memory_allocator_t *allocator, const charon_element_inner_t *inner_root) {
     charon_element_t *element = charon_memory_allocate(allocator, sizeof(charon_element_t));
     element->parent = NULL;
     element->offset = 0;
@@ -236,132 +237,96 @@ charon_element_t *charon_element_root(charon_memory_allocator_t *allocator, char
     return element;
 }
 
-charon_element_type_t charon_element_type(charon_element_t *element) {
-    return element->inner->type;
-}
-
-size_t charon_element_offset(charon_element_t *element) {
-    return element->offset;
-}
-
-size_t charon_element_length(charon_element_t *element) {
-    return element->inner->length;
-}
-
-
-const char *charon_element_inner_trivia_text(const charon_element_inner_t *inner_element) {
-    assert(inner_element->type == CHARON_ELEMENT_TYPE_TRIVIA);
-    return inner_element->trivia.text;
-}
-
-charon_trivia_kind_t charon_element_inner_trivia_kind(const charon_element_inner_t *inner_element) {
-    assert(inner_element->type == CHARON_ELEMENT_TYPE_TRIVIA);
-    return inner_element->trivia.kind;
-}
-
-const char *charon_element_inner_token_text(const charon_element_inner_t *inner_element) {
-    assert(inner_element->type == CHARON_ELEMENT_TYPE_TOKEN);
-    return inner_element->token.text;
-}
-
-charon_token_kind_t charon_element_inner_token_kind(const charon_element_inner_t *inner_element) {
-    assert(inner_element->type == CHARON_ELEMENT_TYPE_TOKEN);
-    return inner_element->token.kind;
-}
-
-size_t charon_element_inner_token_leading_trivia_count(const charon_element_inner_t *inner_element) {
-    assert(inner_element->type == CHARON_ELEMENT_TYPE_TOKEN);
-    return inner_element->token.leading_trivia_count;
-}
-
-size_t charon_element_inner_token_trailing_trivia_count(const charon_element_inner_t *inner_element) {
-    assert(inner_element->type == CHARON_ELEMENT_TYPE_TOKEN);
-    return inner_element->token.trailing_trivia_count;
-}
-
-size_t charon_element_inner_token_leading_trivia_length(const charon_element_inner_t *inner_element) {
-    assert(inner_element->type == CHARON_ELEMENT_TYPE_TOKEN);
-    return inner_element->token.leading_trivia_length;
-}
-
-size_t charon_element_inner_token_trailing_trivia_length(const charon_element_inner_t *inner_element) {
-    assert(inner_element->type == CHARON_ELEMENT_TYPE_TOKEN);
-    return inner_element->token.trailing_trivia_length;
-}
-
-charon_node_kind_t charon_element_inner_node_kind(const charon_element_inner_t *inner_element) {
-    assert(inner_element->type == CHARON_ELEMENT_TYPE_NODE);
-    return inner_element->node.kind;
-}
-
-size_t charon_element_inner_node_child_count(const charon_element_inner_t *inner_element) {
-    assert(inner_element->type == CHARON_ELEMENT_TYPE_NODE);
-    return inner_element->node.child_count;
-}
-
-const char *charon_element_trivia_text(charon_element_t *element) {
-    return charon_element_inner_trivia_text(element->inner);
-}
-
-charon_trivia_kind_t charon_element_trivia_kind(charon_element_t *element) {
-    return charon_element_inner_trivia_kind(element->inner);
-}
-
-const char *charon_element_token_text(charon_element_t *element) {
-    return charon_element_inner_token_text(element->inner);
-}
-
-charon_token_kind_t charon_element_token_kind(charon_element_t *element) {
-    return charon_element_inner_token_kind(element->inner);
-}
-
-size_t charon_element_token_leading_trivia_count(charon_element_t *element) {
-    return charon_element_inner_token_leading_trivia_count(element->inner);
-}
-
-size_t charon_element_token_trailing_trivia_count(charon_element_t *element) {
-    return charon_element_inner_token_trailing_trivia_count(element->inner);
-}
-
-size_t charon_element_token_leading_trivia_length(charon_element_t *element) {
-    return charon_element_inner_token_leading_trivia_length(element->inner);
-}
-
-size_t charon_element_token_trailing_trivia_length(charon_element_t *element) {
-    return charon_element_inner_token_trailing_trivia_length(element->inner);
-}
-
-charon_element_t *charon_element_token_leading_trivia(charon_memory_allocator_t *allocator, charon_element_t *element, size_t index) {
-    assert(element->inner->type == CHARON_ELEMENT_TYPE_TOKEN);
-    assert(index < element->inner->token.leading_trivia_count);
-    return get_token_trivia(allocator, element, index);
-}
-
-charon_element_t *charon_element_token_trailing_trivia(charon_memory_allocator_t *allocator, charon_element_t *element, size_t index) {
-    assert(element->inner->type == CHARON_ELEMENT_TYPE_TOKEN);
-    assert(index < element->inner->token.trailing_trivia_count);
-    return get_token_trivia(allocator, element, element->inner->token.leading_trivia_count + index);
-}
-
-charon_node_kind_t charon_element_node_kind(charon_element_t *element) {
-    return charon_element_inner_node_kind(element->inner);
-}
-
-size_t charon_element_node_child_count(charon_element_t *element) {
-    return charon_element_inner_node_child_count(element->inner);
-}
-
-charon_element_t *charon_element_node_child(charon_memory_allocator_t *allocator, charon_element_t *element, size_t index) {
-    assert(element->inner->type == CHARON_ELEMENT_TYPE_NODE);
-    assert(index < element->inner->node.child_count);
-
-    charon_element_inner_t *inner_element = element->inner->node.children[index];
-
+charon_element_t *charon_element_wrap_node_child(charon_memory_allocator_t *allocator, charon_element_t *element, size_t index) {
     charon_element_t *token = charon_memory_allocate(allocator, sizeof(charon_element_t));
     token->parent = element;
-    token->inner = inner_element;
+    token->inner = charon_element_node_child(element->inner, index);
     token->offset = element->offset;
     for(size_t i = 0; i < index; i++) token->offset += element->inner->node.children[i]->length;
 
     return token;
+}
+
+charon_element_t *charon_element_wrap_token_leading_trivia(charon_memory_allocator_t *allocator, charon_element_t *element, size_t index) {
+    assert(index < element->inner->token.leading_trivia_count);
+    return token_trivia_wrap(allocator, element, index);
+}
+
+charon_element_t *charon_element_wrap_token_trailing_trivia(charon_memory_allocator_t *allocator, charon_element_t *element, size_t index) {
+    assert(index < element->inner->token.trailing_trivia_count);
+    return token_trivia_wrap(allocator, element, element->inner->token.leading_trivia_count + index);
+}
+
+charon_element_type_t charon_element_type(const charon_element_inner_t *inner_element) {
+    return inner_element->type;
+}
+
+size_t charon_element_length(const charon_element_inner_t *inner_element) {
+    return inner_element->length;
+}
+
+const char *charon_element_trivia_text(const charon_element_inner_t *inner_element) {
+    assert(inner_element->type == CHARON_ELEMENT_TYPE_TRIVIA);
+    return inner_element->trivia.text;
+}
+
+charon_trivia_kind_t charon_element_trivia_kind(const charon_element_inner_t *inner_element) {
+    assert(inner_element->type == CHARON_ELEMENT_TYPE_TRIVIA);
+    return inner_element->trivia.kind;
+}
+
+const char *charon_element_token_text(const charon_element_inner_t *inner_element) {
+    assert(inner_element->type == CHARON_ELEMENT_TYPE_TOKEN);
+    return inner_element->token.text;
+}
+
+charon_token_kind_t charon_element_token_kind(const charon_element_inner_t *inner_element) {
+    assert(inner_element->type == CHARON_ELEMENT_TYPE_TOKEN);
+    return inner_element->token.kind;
+}
+
+size_t charon_element_token_leading_trivia_count(const charon_element_inner_t *inner_element) {
+    assert(inner_element->type == CHARON_ELEMENT_TYPE_TOKEN);
+    return inner_element->token.leading_trivia_count;
+}
+
+size_t charon_element_token_trailing_trivia_count(const charon_element_inner_t *inner_element) {
+    assert(inner_element->type == CHARON_ELEMENT_TYPE_TOKEN);
+    return inner_element->token.trailing_trivia_count;
+}
+
+size_t charon_element_token_leading_trivia_length(const charon_element_inner_t *inner_element) {
+    assert(inner_element->type == CHARON_ELEMENT_TYPE_TOKEN);
+    return inner_element->token.leading_trivia_length;
+}
+
+size_t charon_element_token_trailing_trivia_length(const charon_element_inner_t *inner_element) {
+    assert(inner_element->type == CHARON_ELEMENT_TYPE_TOKEN);
+    return inner_element->token.trailing_trivia_length;
+}
+
+const charon_element_inner_t *charon_element_token_leading_trivia(const charon_element_inner_t *inner_element, size_t index) {
+    assert(index < inner_element->token.leading_trivia_count);
+    return token_trivia(inner_element, index);
+}
+
+const charon_element_inner_t *charon_element_token_trailing_trivia(const charon_element_inner_t *inner_element, size_t index) {
+    assert(index < inner_element->token.trailing_trivia_count);
+    return token_trivia(inner_element, inner_element->token.leading_trivia_count + index);
+}
+
+charon_node_kind_t charon_element_node_kind(const charon_element_inner_t *inner_element) {
+    assert(inner_element->type == CHARON_ELEMENT_TYPE_NODE);
+    return inner_element->node.kind;
+}
+
+size_t charon_element_node_child_count(const charon_element_inner_t *inner_element) {
+    assert(inner_element->type == CHARON_ELEMENT_TYPE_NODE);
+    return inner_element->node.child_count;
+}
+
+const charon_element_inner_t *charon_element_node_child(const charon_element_inner_t *inner_element, size_t index) {
+    assert(inner_element->type == CHARON_ELEMENT_TYPE_NODE);
+    assert(index < inner_element->node.child_count);
+    return inner_element->node.children[index];
 }

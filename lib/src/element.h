@@ -6,8 +6,8 @@
 #include <stdint.h>
 
 struct charon_element_inner {
-    size_t length;
     uint64_t hash;
+    size_t length;
 
     charon_element_type_t type;
     union {
@@ -21,13 +21,13 @@ struct charon_element_inner {
 
             size_t leading_trivia_count, leading_trivia_length;
             size_t trailing_trivia_count, trailing_trivia_length;
-            struct charon_element_inner *trivia[];
+            const struct charon_element_inner *trivia[];
         } token;
         struct {
             charon_node_kind_t kind;
 
             size_t child_count;
-            struct charon_element_inner *children[];
+            const struct charon_element_inner *children[];
         } node;
     };
 };

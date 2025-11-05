@@ -9,10 +9,10 @@
 
 typedef struct {
     size_t count;
-    charon_element_inner_t **elements;
+    const charon_element_inner_t **elements;
 } collector_t;
 
-static inline void collector_push(collector_t *collector, charon_element_inner_t *element) {
+static inline void collector_push(collector_t *collector, const charon_element_inner_t *element) {
     collector->elements = reallocarray(collector->elements, ++collector->count, sizeof(charon_element_inner_t *));
     collector->elements[collector->count - 1] = element;
 }

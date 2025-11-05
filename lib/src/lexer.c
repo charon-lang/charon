@@ -45,10 +45,10 @@ struct charon_lexer {
     size_t cursor;
     bool is_eof;
 
-    charon_element_inner_t *lookahead;
+    const charon_element_inner_t *lookahead;
 
     size_t cached_trivia_count;
-    charon_element_inner_t **cached_trivia;
+    const charon_element_inner_t **cached_trivia;
 };
 
 static uncompiled_entry_t g_uncompiled_spec[] = {
@@ -116,10 +116,10 @@ static bool is_eof(charon_lexer_t *lexer) {
     return lexer->cursor >= lexer->text_length;
 }
 
-static charon_element_inner_t *next(charon_lexer_t *lexer) {
+static const charon_element_inner_t *next(charon_lexer_t *lexer) {
     size_t trailing_trivia_count = 0;
     size_t leading_trivia_count = lexer->cached_trivia_count;
-    charon_element_inner_t **trivia = lexer->cached_trivia;
+    const charon_element_inner_t **trivia = lexer->cached_trivia;
 
     lexer->cached_trivia_count = 0;
     lexer->cached_trivia = nullptr;
@@ -156,10 +156,7 @@ static charon_element_inner_t *next(charon_lexer_t *lexer) {
     }
 
     while(true) {
-        if(is_eof(lexer)) {
-            lexer->is_eof = true;
-            goto consume_trailing;
-        }
+        if(is_eof(lexer)) goto consume_trailing;
 
         match = next_match(lexer, &match);
         if(match.size == 0 || !match.kind.is_trivia) break;
@@ -182,7 +179,7 @@ static charon_element_inner_t *next(charon_lexer_t *lexer) {
     }
 
 exit:
-    charon_element_inner_t *element = charon_element_inner_make_token(lexer->cache, token_kind, token_text, leading_trivia_count, trailing_trivia_count, trivia);
+    const charon_element_inner_t *element = charon_element_inner_make_token(lexer->cache, token_kind, token_text, leading_trivia_count, trailing_trivia_count, trivia);
 
     free(token_text);
     free(trivia);
@@ -214,12 +211,12 @@ void charon_lexer_destroy(charon_lexer_t *lexer) {
     free(lexer);
 }
 
-charon_element_inner_t *charon_lexer_peek(charon_lexer_t *lexer) {
+const charon_element_inner_t *charon_lexer_peek(charon_lexer_t *lexer) {
     return lexer->lookahead;
 }
 
-charon_element_inner_t *charon_lexer_advance(charon_lexer_t *lexer) {
-    charon_element_inner_t *element = charon_lexer_peek(lexer);
+const charon_element_inner_t *charon_lexer_advance(charon_lexer_t *lexer) {
+    const charon_element_inner_t *element = charon_lexer_peek(lexer);
     if(!charon_lexer_is_eof(lexer)) lexer->lookahead = next(lexer);
     return element;
 }

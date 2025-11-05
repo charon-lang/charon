@@ -19,7 +19,7 @@ NODE(TLC_TYPE_DEFINITION, "Type Definition")
 NODE(TLC_ENUMERATION, "Enumeration")
 
 // Statement
-NODE(STMT_EMPTY, "Empty Statement")
+NODE(STMT, "Statement")
 NODE(STMT_BLOCK, "Block")
 NODE(STMT_DECLARATION, "Declaration")
 NODE(STMT_EXPRESSION, "Expression")

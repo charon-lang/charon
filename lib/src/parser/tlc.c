@@ -6,7 +6,7 @@
 #include "parser/collector.h"
 #include "parser/parser.h"
 
-static charon_element_inner_t *parse_type_definition(charon_parser_t *parser) {
+static const charon_element_inner_t *parse_type_definition(charon_parser_t *parser) {
     collector_t collector = COLLECTOR_INIT;
     parser_consume(parser, &collector, CHARON_TOKEN_KIND_KEYWORD_TYPE);
     parser_consume(parser, &collector, CHARON_TOKEN_KIND_IDENTIFIER);
@@ -23,7 +23,7 @@ static charon_element_inner_t *parse_type_definition(charon_parser_t *parser) {
     return parser_build(parser, CHARON_NODE_KIND_TLC_TYPE_DEFINITION, &collector);
 }
 
-static charon_element_inner_t *parse_module(charon_parser_t *parser) {
+static const charon_element_inner_t *parse_module(charon_parser_t *parser) {
     collector_t collector = COLLECTOR_INIT;
     parser_consume(parser, &collector, CHARON_TOKEN_KIND_KEYWORD_MODULE);
     parser_consume(parser, &collector, CHARON_TOKEN_KIND_IDENTIFIER);
@@ -36,7 +36,7 @@ static charon_element_inner_t *parse_module(charon_parser_t *parser) {
     return parser_build(parser, CHARON_NODE_KIND_TLC_MODULE, &collector);
 }
 
-static charon_element_inner_t *parse_function(charon_parser_t *parser) {
+static const charon_element_inner_t *parse_function(charon_parser_t *parser) {
     collector_t collector = COLLECTOR_INIT;
     parser_consume(parser, &collector, CHARON_TOKEN_KIND_KEYWORD_FUNCTION);
     parser_consume(parser, &collector, CHARON_TOKEN_KIND_IDENTIFIER);
@@ -55,7 +55,7 @@ static charon_element_inner_t *parse_function(charon_parser_t *parser) {
     return parser_build(parser, CHARON_NODE_KIND_TLC_FUNCTION, &collector);
 }
 
-static charon_element_inner_t *parse_extern(charon_parser_t *parser) {
+static const charon_element_inner_t *parse_extern(charon_parser_t *parser) {
     collector_t collector = COLLECTOR_INIT;
     parser_consume(parser, &collector, CHARON_TOKEN_KIND_KEYWORD_EXTERN);
     parser_consume(parser, &collector, CHARON_TOKEN_KIND_KEYWORD_FUNCTION);
@@ -67,7 +67,7 @@ static charon_element_inner_t *parse_extern(charon_parser_t *parser) {
     return parser_build(parser, CHARON_NODE_KIND_TLC_EXTERN, &collector);
 }
 
-static charon_element_inner_t *parse_declaration(charon_parser_t *parser) {
+static const charon_element_inner_t *parse_declaration(charon_parser_t *parser) {
     collector_t collector = COLLECTOR_INIT;
     parser_consume(parser, &collector, CHARON_TOKEN_KIND_KEYWORD_LET);
     parser_consume(parser, &collector, CHARON_TOKEN_KIND_IDENTIFIER);
@@ -81,7 +81,7 @@ static charon_element_inner_t *parse_declaration(charon_parser_t *parser) {
     return parser_build(parser, CHARON_NODE_KIND_STMT_DECLARATION, &collector);
 }
 
-static charon_element_inner_t *parse_enum(charon_parser_t *parser) {
+static const charon_element_inner_t *parse_enum(charon_parser_t *parser) {
     collector_t collector = COLLECTOR_INIT;
     parser_consume(parser, &collector, CHARON_TOKEN_KIND_KEYWORD_ENUM);
     parser_consume(parser, &collector, CHARON_TOKEN_KIND_IDENTIFIER);
@@ -97,7 +97,7 @@ static charon_element_inner_t *parse_enum(charon_parser_t *parser) {
     return parser_build(parser, CHARON_NODE_KIND_TLC_ENUMERATION, &collector);
 }
 
-charon_element_inner_t *parse_tlc(charon_parser_t *parser) {
+const charon_element_inner_t *parse_tlc(charon_parser_t *parser) {
     switch(parser_peek(parser)) {
         case CHARON_TOKEN_KIND_KEYWORD_MODULE:   return parse_module(parser);
         case CHARON_TOKEN_KIND_KEYWORD_FUNCTION: return parse_function(parser);
@@ -105,10 +105,6 @@ charon_element_inner_t *parse_tlc(charon_parser_t *parser) {
         case CHARON_TOKEN_KIND_KEYWORD_TYPE:     return parse_type_definition(parser);
         case CHARON_TOKEN_KIND_KEYWORD_LET:      return parse_declaration(parser);
         case CHARON_TOKEN_KIND_KEYWORD_ENUM:     return parse_enum(parser);
-        default:                                 {
-            collector_t collector = COLLECTOR_INIT;
-            parser_consume_any(parser, &collector);
-            return parser_build(parser, CHARON_NODE_KIND_ERROR, &collector);
-        }
+        default:                                 return parser_build_unexpected_error(parser);
     }
 }

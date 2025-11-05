@@ -6,7 +6,7 @@
 #include "parser/parse.h"
 #include "parser/parser.h"
 
-charon_element_inner_t *parse_type(charon_parser_t *parser) {
+const charon_element_inner_t *parse_type(charon_parser_t *parser) {
     collector_t collector = COLLECTOR_INIT;
 
     // Struct type
@@ -67,7 +67,7 @@ charon_element_inner_t *parse_type(charon_parser_t *parser) {
     return parser_build(parser, CHARON_NODE_KIND_TYPE_REFERENCE, &collector);
 }
 
-charon_element_inner_t *parse_type_function(charon_parser_t *parser) {
+const charon_element_inner_t *parse_type_function(charon_parser_t *parser) {
     collector_t collector = COLLECTOR_INIT;
     parser_consume(parser, &collector, CHARON_TOKEN_KIND_PNCT_PARENTHESES_LEFT);
     if(!parser_consume_try(parser, &collector, CHARON_TOKEN_KIND_PNCT_PARENTHESES_RIGHT)) {
