@@ -1,2 +1,5 @@
 build/
 .cache/
+
+subprojects/*
+!subprojects/*.wrap
