@@ -7,6 +7,7 @@ charon_lib = static_library(
     'charon',
     files(
         'src/common/memory.c',
+        'src/lib/list.c',
         'src/parser/expression.c',
         'src/parser/parser.c',
         'src/parser/root.c',

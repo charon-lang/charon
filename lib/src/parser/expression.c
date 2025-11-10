@@ -1,138 +1,114 @@
-#include "charon/element.h"
 #include "charon/node.h"
 #include "charon/token.h"
 #include "parse.h"
-#include "parser/collector.h"
 #include "parser/parser.h"
 
 #include <stdarg.h>
 
-static bool helper_tokens_match_list(charon_token_kind_t kind, size_t count, va_list list) {
-    for(size_t i = 0; i < count; i++) {
-        charon_token_kind_t valid_kind = va_arg(list, charon_token_kind_t);
-        if(kind == valid_kind) return true;
-    }
-    return false;
-}
-
-static bool helper_tokens_match(charon_token_kind_t kind, size_t count, ...) {
-    va_list list;
-    va_start(list, count);
-    bool res = helper_tokens_match_list(kind, count, list);
-    va_end(list);
-    return res;
-}
-
-static const charon_element_inner_t *helper_binary_operation(charon_parser_t *parser, const charon_element_inner_t *(*func)(charon_parser_t *), size_t count, ...) {
-    const charon_element_inner_t *left = func(parser);
+static void helper_binary_operation(charon_parser_t *parser, void (*func)(charon_parser_t *), size_t count, ...) {
+    parser_event_t *checkpoint = parser_checkpoint(parser);
+    func(parser);
 
     va_list list;
     va_start(list, count);
-    while(helper_tokens_match_list(parser_peek(parser), count, list)) {
-        collector_t collector = COLLECTOR_INIT;
+    while(parser_consume_try_many_list(parser, count, list)) {
+        func(parser);
 
-        collector_push(&collector, left);
-        parser_consume_any(parser, &collector);
-        collector_push(&collector, func(parser));
-
-        left = parser_build(parser, CHARON_NODE_KIND_EXPR_BINARY, &collector);
+        parser_open_element_at(parser, checkpoint);
+        parser_close_element(parser, CHARON_NODE_KIND_EXPR_BINARY);
 
         va_end(list);
         va_start(list, count);
     }
     va_end(list);
-    return left;
 }
 
-static const charon_element_inner_t *parse_numeric_literal(charon_parser_t *parser) {
-    collector_t collector = COLLECTOR_INIT;
-    switch(parser_peek(parser)) {
-        case CHARON_TOKEN_KIND_LITERAL_NUMBER_BIN:
-        case CHARON_TOKEN_KIND_LITERAL_NUMBER_DEC:
-        case CHARON_TOKEN_KIND_LITERAL_NUMBER_OCT:
-        case CHARON_TOKEN_KIND_LITERAL_NUMBER_HEX: parser_consume_any(parser, &collector); break;
-        default:                                   return parser_build_unexpected_error(parser);
-    }
-    return parser_build(parser, CHARON_NODE_KIND_EXPR_LITERAL_NUMERIC, &collector);
+static void parse_numeric_literal(charon_parser_t *parser) {
+    parser_open_element(parser);
+
+    parser_consume_many(parser, 4, CHARON_TOKEN_KIND_LITERAL_NUMBER_BIN, CHARON_TOKEN_KIND_LITERAL_NUMBER_DEC, CHARON_TOKEN_KIND_LITERAL_NUMBER_OCT, CHARON_TOKEN_KIND_LITERAL_NUMBER_HEX);
+
+    parser_close_element(parser, CHARON_NODE_KIND_EXPR_LITERAL_NUMERIC);
 }
 
-static const charon_element_inner_t *parse_string_literal(charon_parser_t *parser) {
-    collector_t collector = COLLECTOR_INIT;
-    switch(parser_peek(parser)) {
-        case CHARON_TOKEN_KIND_LITERAL_STRING:
-        case CHARON_TOKEN_KIND_LITERAL_STRING_RAW: parser_consume_any(parser, &collector); break;
-        default:                                   return parser_build_unexpected_error(parser);
-    }
-    return parser_build(parser, CHARON_NODE_KIND_EXPR_LITERAL_STRING, &collector);
+static void parse_string_literal(charon_parser_t *parser) {
+    parser_open_element(parser);
+
+    parser_consume_many(parser, 2, CHARON_TOKEN_KIND_LITERAL_STRING, CHARON_TOKEN_KIND_LITERAL_STRING_RAW);
+
+    parser_close_element(parser, CHARON_NODE_KIND_EXPR_LITERAL_STRING);
 }
 
-static const charon_element_inner_t *parse_char_literal(charon_parser_t *parser) {
-    collector_t collector = COLLECTOR_INIT;
-    parser_consume(parser, &collector, CHARON_TOKEN_KIND_LITERAL_CHAR);
-    return parser_build(parser, CHARON_NODE_KIND_EXPR_LITERAL_STRING, &collector);
+static void parse_char_literal(charon_parser_t *parser) {
+    parser_open_element(parser);
+
+    parser_consume(parser, CHARON_TOKEN_KIND_LITERAL_CHAR);
+
+    parser_close_element(parser, CHARON_NODE_KIND_EXPR_LITERAL_STRING);
 }
 
-static const charon_element_inner_t *parse_bool_literal(charon_parser_t *parser) {
-    collector_t collector = COLLECTOR_INIT;
-    parser_consume(parser, &collector, CHARON_TOKEN_KIND_LITERAL_BOOL);
-    return parser_build(parser, CHARON_NODE_KIND_EXPR_LITERAL_BOOL, &collector);
+static void parse_bool_literal(charon_parser_t *parser) {
+    parser_open_element(parser);
+
+    parser_consume(parser, CHARON_TOKEN_KIND_LITERAL_BOOL);
+
+    parser_close_element(parser, CHARON_NODE_KIND_EXPR_LITERAL_BOOL);
 }
 
-static const charon_element_inner_t *parse_identifier(charon_parser_t *parser) {
-    collector_t collector = COLLECTOR_INIT;
+static void parse_identifier(charon_parser_t *parser) {
+    parser_open_element(parser);
 
-    parser_consume(parser, &collector, CHARON_TOKEN_KIND_IDENTIFIER);
-
-    if(parser_consume_try(parser, &collector, CHARON_TOKEN_KIND_PNCT_DOUBLE_COLON)) {
-        collector_push(&collector, parse_identifier(parser));
-        return parser_build(parser, CHARON_NODE_KIND_EXPR_SELECTOR, &collector);
+    parser_consume(parser, CHARON_TOKEN_KIND_IDENTIFIER);
+    if(parser_consume_try(parser, CHARON_TOKEN_KIND_PNCT_DOUBLE_COLON)) {
+        parse_identifier(parser);
+        return parser_close_element(parser, CHARON_NODE_KIND_EXPR_SELECTOR);
     }
 
-    if(parser_consume_try(parser, &collector, CHARON_TOKEN_KIND_PNCT_COLON)) {
-        parser_consume(parser, &collector, CHARON_TOKEN_KIND_PNCT_CARET_LEFT);
+    if(parser_consume_try(parser, CHARON_TOKEN_KIND_PNCT_COLON)) {
+        parser_consume(parser, CHARON_TOKEN_KIND_PNCT_CARET_LEFT);
         do {
-            collector_push(&collector, parse_type(parser));
-        } while(parser_consume_try(parser, &collector, CHARON_TOKEN_KIND_PNCT_COMMA));
-        parser_consume(parser, &collector, CHARON_TOKEN_KIND_PNCT_CARET_RIGHT);
-        return parser_build(parser, CHARON_NODE_KIND_EXPR_VARIABLE, &collector);
+            parse_type(parser);
+        } while(parser_consume_try(parser, CHARON_TOKEN_KIND_PNCT_COMMA));
+        parser_consume(parser, CHARON_TOKEN_KIND_PNCT_CARET_RIGHT);
+        return parser_close_element(parser, CHARON_NODE_KIND_EXPR_VARIABLE);
     }
 
-    if(parser_consume_try(parser, &collector, CHARON_TOKEN_KIND_PNCT_BRACE_LEFT)) {
-        if(!parser_consume_try(parser, &collector, CHARON_TOKEN_KIND_PNCT_BRACE_RIGHT)) {
+    if(parser_consume_try(parser, CHARON_TOKEN_KIND_PNCT_BRACE_LEFT)) {
+        if(!parser_consume_try(parser, CHARON_TOKEN_KIND_PNCT_BRACE_RIGHT)) {
             do {
-                parser_consume(parser, &collector, CHARON_TOKEN_KIND_IDENTIFIER);
-                parser_consume(parser, &collector, CHARON_TOKEN_KIND_PNCT_EQUAL);
-                collector_push(&collector, parse_expr(parser));
-            } while(parser_consume_try(parser, &collector, CHARON_TOKEN_KIND_PNCT_COMMA));
-            parser_consume(parser, &collector, CHARON_TOKEN_KIND_PNCT_BRACE_RIGHT);
+                parser_consume(parser, CHARON_TOKEN_KIND_IDENTIFIER);
+                parser_consume(parser, CHARON_TOKEN_KIND_PNCT_EQUAL);
+                parse_expr(parser);
+            } while(parser_consume_try(parser, CHARON_TOKEN_KIND_PNCT_COMMA));
+            parser_consume(parser, CHARON_TOKEN_KIND_PNCT_BRACE_RIGHT);
         }
-        return parser_build(parser, CHARON_NODE_KIND_EXPR_LITERAL_STRUCT, &collector);
+        return parser_close_element(parser, CHARON_NODE_KIND_EXPR_LITERAL_STRUCT);
     }
 
-    return parser_build(parser, CHARON_NODE_KIND_EXPR_VARIABLE, &collector);
+    parser_close_element(parser, CHARON_NODE_KIND_EXPR_VARIABLE);
 }
 
-static const charon_element_inner_t *parse_primary(charon_parser_t *parser) {
-    collector_t collector = COLLECTOR_INIT;
-
-    if(parser_consume_try(parser, &collector, CHARON_TOKEN_KIND_PNCT_PARENTHESES_LEFT)) {
-        collector_push(&collector, parse_expr(parser));
-        if(parser_consume_try(parser, &collector, CHARON_TOKEN_KIND_PNCT_COMMA)) {
+static void parse_primary(charon_parser_t *parser) {
+    if(parser_consume_try(parser, CHARON_TOKEN_KIND_PNCT_PARENTHESES_LEFT)) {
+        parser_open_element(parser);
+        parse_expr(parser);
+        if(parser_consume_try(parser, CHARON_TOKEN_KIND_PNCT_COMMA)) {
             do {
-                collector_push(&collector, parse_expr(parser));
-            } while(parser_consume_try(parser, &collector, CHARON_TOKEN_KIND_PNCT_COMMA));
-            parser_consume(parser, &collector, CHARON_TOKEN_KIND_PNCT_PARENTHESES_RIGHT);
-            return parser_build(parser, CHARON_NODE_KIND_EXPR_TUPLE, &collector);
+                parse_expr(parser);
+            } while(parser_consume_try(parser, CHARON_TOKEN_KIND_PNCT_COMMA));
+            parser_consume(parser, CHARON_TOKEN_KIND_PNCT_PARENTHESES_RIGHT);
+            return parser_close_element(parser, CHARON_NODE_KIND_EXPR_TUPLE);
         }
-        parser_consume(parser, &collector, CHARON_TOKEN_KIND_PNCT_PARENTHESES_RIGHT);
-        return parser_build(parser, CHARON_NODE_KIND_EXPR_PARENTHESES, &collector);
+        parser_consume(parser, CHARON_TOKEN_KIND_PNCT_PARENTHESES_RIGHT);
+        return parser_close_element(parser, CHARON_NODE_KIND_EXPR_PARENTHESES);
     }
 
-    if(parser_consume_try(parser, &collector, CHARON_TOKEN_KIND_KEYWORD_SIZEOF)) {
-        parser_consume(parser, &collector, CHARON_TOKEN_KIND_PNCT_PARENTHESES_LEFT);
-        collector_push(&collector, parse_type(parser));
-        parser_consume(parser, &collector, CHARON_TOKEN_KIND_PNCT_PARENTHESES_RIGHT);
-        return parser_build(parser, CHARON_NODE_KIND_EXPR_SIZEOF, &collector);
+    if(parser_consume_try(parser, CHARON_TOKEN_KIND_KEYWORD_SIZEOF)) {
+        parser_open_element(parser);
+        parser_consume(parser, CHARON_TOKEN_KIND_PNCT_PARENTHESES_LEFT);
+        parse_type(parser);
+        parser_consume(parser, CHARON_TOKEN_KIND_PNCT_PARENTHESES_RIGHT);
+        return parser_close_element(parser, CHARON_NODE_KIND_EXPR_SIZEOF);
     }
 
     switch(parser_peek(parser)) {
@@ -145,123 +121,132 @@ static const charon_element_inner_t *parse_primary(charon_parser_t *parser) {
         case CHARON_TOKEN_KIND_LITERAL_NUMBER_HEX:
         case CHARON_TOKEN_KIND_LITERAL_NUMBER_OCT:
         case CHARON_TOKEN_KIND_LITERAL_NUMBER_BIN: return parse_numeric_literal(parser);
-        default:                                   return parser_build_unexpected_error(parser);
+        default:                                   return parser_unexpected_error(parser);
     }
 }
 
-static const charon_element_inner_t *parse_unary_post(charon_parser_t *parser) {
-    const charon_element_inner_t *value = parse_primary(parser);
-    while(true) {
-        collector_t collector = COLLECTOR_INIT;
-        collector_push(&collector, value);
+static void parse_unary_post(charon_parser_t *parser) {
+    parser_event_t *checkpoint = parser_checkpoint(parser);
 
-        if(parser_consume_try(parser, &collector, CHARON_TOKEN_KIND_KEYWORD_AS)) {
-            collector_push(&collector, parse_type(parser));
-            value = parser_build(parser, CHARON_NODE_KIND_EXPR_CAST, &collector);
-            continue;
+    parse_primary(parser);
+
+repeat:
+    if(parser_consume_try(parser, CHARON_TOKEN_KIND_KEYWORD_AS)) {
+        parser_open_element_at(parser, checkpoint);
+
+        parse_type(parser);
+
+        parser_close_element(parser, CHARON_NODE_KIND_EXPR_CAST);
+        goto repeat;
+    }
+
+    if(parser_consume_try(parser, CHARON_TOKEN_KIND_PNCT_BRACKET_LEFT)) {
+        parser_open_element_at(parser, checkpoint);
+
+        parse_expr(parser);
+        parser_consume(parser, CHARON_TOKEN_KIND_PNCT_BRACKET_RIGHT);
+
+        parser_close_element(parser, CHARON_NODE_KIND_EXPR_SUBSCRIPT);
+        goto repeat;
+    }
+
+    if(parser_consume_try(parser, CHARON_TOKEN_KIND_PNCT_PARENTHESES_LEFT)) {
+        parser_open_element_at(parser, checkpoint);
+
+        if(!parser_consume_try(parser, CHARON_TOKEN_KIND_PNCT_PARENTHESES_RIGHT)) {
+            do {
+                parse_expr(parser);
+            } while(parser_consume_try(parser, CHARON_TOKEN_KIND_PNCT_COMMA));
+            parser_consume(parser, CHARON_TOKEN_KIND_PNCT_PARENTHESES_RIGHT);
         }
 
-        if(parser_consume_try(parser, &collector, CHARON_TOKEN_KIND_PNCT_BRACKET_LEFT)) {
-            collector_push(&collector, parse_expr(parser));
-            parser_consume(parser, &collector, CHARON_TOKEN_KIND_PNCT_BRACKET_RIGHT);
-            value = parser_build(parser, CHARON_NODE_KIND_EXPR_SUBSCRIPT, &collector);
-            continue;
+        parser_close_element(parser, CHARON_NODE_KIND_EXPR_CALL);
+        goto repeat;
+    }
+
+    if(parser_consume_try(parser, CHARON_TOKEN_KIND_PNCT_PERIOD)) {
+        parser_open_element_at(parser, checkpoint);
+
+        switch(parser_peek(parser)) {
+            case CHARON_TOKEN_KIND_LITERAL_NUMBER_DEC:
+            case CHARON_TOKEN_KIND_LITERAL_NUMBER_HEX:
+            case CHARON_TOKEN_KIND_LITERAL_NUMBER_OCT:
+            case CHARON_TOKEN_KIND_LITERAL_NUMBER_BIN: parse_numeric_literal(parser); break;
+            default:                                   parser_consume(parser, CHARON_TOKEN_KIND_IDENTIFIER); break;
         }
 
-        if(parser_consume_try(parser, &collector, CHARON_TOKEN_KIND_PNCT_PARENTHESES_LEFT)) {
-            if(!parser_consume_try(parser, &collector, CHARON_TOKEN_KIND_PNCT_PARENTHESES_RIGHT)) {
-                do {
-                    collector_push(&collector, parse_expr(parser));
-                } while(parser_consume_try(parser, &collector, CHARON_TOKEN_KIND_PNCT_COMMA));
-                parser_consume(parser, &collector, CHARON_TOKEN_KIND_PNCT_PARENTHESES_RIGHT);
-            }
-            value = parser_build(parser, CHARON_NODE_KIND_EXPR_CALL, &collector);
-            continue;
-        }
+        parser_close_element(parser, CHARON_NODE_KIND_EXPR_SUBSCRIPT);
+        goto repeat;
+    }
 
-        if(parser_consume_try(parser, &collector, CHARON_TOKEN_KIND_PNCT_PERIOD)) {
-            switch(parser_peek(parser)) {
-                case CHARON_TOKEN_KIND_LITERAL_NUMBER_DEC:
-                case CHARON_TOKEN_KIND_LITERAL_NUMBER_HEX:
-                case CHARON_TOKEN_KIND_LITERAL_NUMBER_OCT:
-                case CHARON_TOKEN_KIND_LITERAL_NUMBER_BIN: parse_numeric_literal(parser); break;
-                default:                                   parser_consume(parser, &collector, CHARON_TOKEN_KIND_IDENTIFIER); break;
-            }
-            value = parser_build(parser, CHARON_NODE_KIND_EXPR_SUBSCRIPT, &collector);
-            continue;
-        }
+    if(parser_consume_try(parser, CHARON_TOKEN_KIND_PNCT_ARROW)) {
+        parser_open_element_at(parser, checkpoint);
 
-        if(parser_consume_try(parser, &collector, CHARON_TOKEN_KIND_PNCT_ARROW)) {
-            parser_consume(parser, &collector, CHARON_TOKEN_KIND_IDENTIFIER);
-            value = parser_build(parser, CHARON_NODE_KIND_EXPR_SUBSCRIPT_DEREF, &collector);
-            continue;
-        }
+        parser_consume(parser, CHARON_TOKEN_KIND_IDENTIFIER);
 
-        collector_clear(&collector);
-        return value;
+        parser_close_element(parser, CHARON_NODE_KIND_EXPR_SUBSCRIPT_DEREF);
+        goto repeat;
     }
 }
 
-static const charon_element_inner_t *parse_unary_pre(charon_parser_t *parser) {
-    collector_t collector = COLLECTOR_INIT;
-    switch(parser_peek(parser)) {
-        case CHARON_TOKEN_KIND_PNCT_STAR:
-        case CHARON_TOKEN_KIND_PNCT_MINUS:
-        case CHARON_TOKEN_KIND_PNCT_NOT:
-        case CHARON_TOKEN_KIND_PNCT_AMPERSAND:
-            parser_consume_any(parser, &collector);
-            collector_push(&collector, parse_unary_pre(parser));
-            break;
-        default: return parse_unary_post(parser);
+static void parse_unary_pre(charon_parser_t *parser) {
+    parser_event_t *checkpoint = parser_checkpoint(parser);
+
+    if(parser_consume_try_many(parser, 4, CHARON_TOKEN_KIND_PNCT_STAR, CHARON_TOKEN_KIND_PNCT_MINUS, CHARON_TOKEN_KIND_PNCT_NOT, CHARON_TOKEN_KIND_PNCT_AMPERSAND)) {
+        parser_open_element_at(parser, checkpoint);
+        parse_unary_pre(parser);
+        parser_close_element(parser, CHARON_NODE_KIND_EXPR_UNARY);
+    } else {
+        parse_unary_post(parser);
     }
-    return parser_build(parser, CHARON_NODE_KIND_EXPR_UNARY, &collector);
 }
 
-static const charon_element_inner_t *parse_factor(charon_parser_t *parser) {
-    return helper_binary_operation(parser, parse_unary_pre, 3, CHARON_TOKEN_KIND_PNCT_STAR, CHARON_TOKEN_KIND_PNCT_SLASH, CHARON_TOKEN_KIND_PNCT_PERCENTAGE);
+static void parse_factor(charon_parser_t *parser) {
+    helper_binary_operation(parser, parse_unary_pre, 3, CHARON_TOKEN_KIND_PNCT_STAR, CHARON_TOKEN_KIND_PNCT_SLASH, CHARON_TOKEN_KIND_PNCT_PERCENTAGE);
 }
 
-static const charon_element_inner_t *parse_term(charon_parser_t *parser) {
-    return helper_binary_operation(parser, parse_factor, 2, CHARON_TOKEN_KIND_PNCT_PLUS, CHARON_TOKEN_KIND_PNCT_MINUS);
+static void parse_term(charon_parser_t *parser) {
+    helper_binary_operation(parser, parse_factor, 2, CHARON_TOKEN_KIND_PNCT_PLUS, CHARON_TOKEN_KIND_PNCT_MINUS);
 }
 
-static const charon_element_inner_t *parse_shift(charon_parser_t *parser) {
-    return helper_binary_operation(parser, parse_term, 2, CHARON_TOKEN_KIND_PNCT_SHIFT_LEFT, CHARON_TOKEN_KIND_PNCT_SHIFT_RIGHT);
+static void parse_shift(charon_parser_t *parser) {
+    helper_binary_operation(parser, parse_term, 2, CHARON_TOKEN_KIND_PNCT_SHIFT_LEFT, CHARON_TOKEN_KIND_PNCT_SHIFT_RIGHT);
 }
 
-static const charon_element_inner_t *parse_comparison(charon_parser_t *parser) {
-    return helper_binary_operation(parser, parse_shift, 4, CHARON_TOKEN_KIND_PNCT_CARET_RIGHT, CHARON_TOKEN_KIND_PNCT_GREATER_EQUAL, CHARON_TOKEN_KIND_PNCT_CARET_LEFT, CHARON_TOKEN_KIND_PNCT_LESS_EQUAL);
+static void parse_comparison(charon_parser_t *parser) {
+    helper_binary_operation(parser, parse_shift, 4, CHARON_TOKEN_KIND_PNCT_CARET_RIGHT, CHARON_TOKEN_KIND_PNCT_GREATER_EQUAL, CHARON_TOKEN_KIND_PNCT_CARET_LEFT, CHARON_TOKEN_KIND_PNCT_LESS_EQUAL);
 }
 
-static const charon_element_inner_t *parse_equality(charon_parser_t *parser) {
-    return helper_binary_operation(parser, parse_comparison, 2, CHARON_TOKEN_KIND_PNCT_EQUAL_EQUAL, CHARON_TOKEN_KIND_PNCT_NOT_EQUAL);
+static void parse_equality(charon_parser_t *parser) {
+    helper_binary_operation(parser, parse_comparison, 2, CHARON_TOKEN_KIND_PNCT_EQUAL_EQUAL, CHARON_TOKEN_KIND_PNCT_NOT_EQUAL);
 }
 
-static const charon_element_inner_t *parse_bitwise_and(charon_parser_t *parser) {
-    return helper_binary_operation(parser, parse_equality, 1, CHARON_TOKEN_KIND_PNCT_AMPERSAND);
+static void parse_bitwise_and(charon_parser_t *parser) {
+    helper_binary_operation(parser, parse_equality, 1, CHARON_TOKEN_KIND_PNCT_AMPERSAND);
 }
 
-static const charon_element_inner_t *parse_bitwise_xor(charon_parser_t *parser) {
-    return helper_binary_operation(parser, parse_bitwise_and, 1, CHARON_TOKEN_KIND_PNCT_CARET);
+static void parse_bitwise_xor(charon_parser_t *parser) {
+    helper_binary_operation(parser, parse_bitwise_and, 1, CHARON_TOKEN_KIND_PNCT_CARET);
 }
 
-static const charon_element_inner_t *parse_bitwise_or(charon_parser_t *parser) {
-    return helper_binary_operation(parser, parse_bitwise_xor, 1, CHARON_TOKEN_KIND_PNCT_PIPE);
+static void parse_bitwise_or(charon_parser_t *parser) {
+    helper_binary_operation(parser, parse_bitwise_xor, 1, CHARON_TOKEN_KIND_PNCT_PIPE);
 }
 
-static const charon_element_inner_t *parse_logical_and(charon_parser_t *parser) {
-    return helper_binary_operation(parser, parse_bitwise_or, 1, CHARON_TOKEN_KIND_PNCT_LOGICAL_AND);
+static void parse_logical_and(charon_parser_t *parser) {
+    helper_binary_operation(parser, parse_bitwise_or, 1, CHARON_TOKEN_KIND_PNCT_LOGICAL_AND);
 }
 
-static const charon_element_inner_t *parse_logical_or(charon_parser_t *parser) {
-    return helper_binary_operation(parser, parse_logical_and, 1, CHARON_TOKEN_KIND_PNCT_LOGICAL_OR);
+static void parse_logical_or(charon_parser_t *parser) {
+    helper_binary_operation(parser, parse_logical_and, 1, CHARON_TOKEN_KIND_PNCT_LOGICAL_OR);
 }
 
-static const charon_element_inner_t *parse_assignment(charon_parser_t *parser) {
-    const charon_element_inner_t *left = parse_logical_or(parser);
+static void parse_assignment(charon_parser_t *parser) {
+    parser_event_t *checkpoint = parser_checkpoint(parser);
 
-    if(!helper_tokens_match(
-           parser_peek(parser),
+    parse_logical_or(parser);
+    if(parser_consume_try_many(
+           parser,
            6,
            CHARON_TOKEN_KIND_PNCT_EQUAL,
            CHARON_TOKEN_KIND_PNCT_PLUS_EQUAL,
@@ -271,16 +256,12 @@ static const charon_element_inner_t *parse_assignment(charon_parser_t *parser) {
            CHARON_TOKEN_KIND_PNCT_PERCENTAGE_EQUAL
        ))
     {
-        return left;
+        parser_open_element_at(parser, checkpoint);
+        parse_assignment(parser);
+        parser_close_element(parser, CHARON_NODE_KIND_EXPR_BINARY);
     }
-
-    collector_t collector = COLLECTOR_INIT;
-    collector_push(&collector, left);
-    parser_consume_any(parser, &collector);
-    collector_push(&collector, parse_assignment(parser));
-    return parser_build(parser, CHARON_NODE_KIND_EXPR_BINARY, &collector);
 }
 
-const charon_element_inner_t *parse_expr(charon_parser_t *parser) {
-    return parse_assignment(parser);
+void parse_expr(charon_parser_t *parser) {
+    parse_assignment(parser);
 }
