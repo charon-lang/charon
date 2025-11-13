@@ -4,10 +4,12 @@
 #include "charon/token.h"
 #include "charon/trivia.h"
 #include "common/fatal.h"
+#include "common/utf8.h"
 
 #include <assert.h>
 #include <pcre2.h>
 #include <stddef.h>
+#include <stdint.h>
 #include <stdlib.h>
 #include <string.h>
 
@@ -39,8 +41,7 @@ typedef struct {
 struct charon_lexer {
     charon_element_cache_t *cache;
 
-    const char *text;
-    size_t text_length;
+    const charon_utf8_text_t *text;
 
     size_t cursor;
     bool is_eof;
@@ -67,8 +68,8 @@ static void spec_compile() {
     for(size_t i = 0; i < SPEC_SIZE; i++) {
         int error_code;
         PCRE2_SIZE error_offset;
-        pcre2_code *code = pcre2_compile((const uint8_t *) g_uncompiled_spec[i].pattern, PCRE2_ZERO_TERMINATED, 0, &error_code, &error_offset, NULL);
-        if(code == NULL) {
+        pcre2_code *code = pcre2_compile((const uint8_t *) g_uncompiled_spec[i].pattern, PCRE2_ZERO_TERMINATED, PCRE2_UTF | PCRE2_UCP, &error_code, &error_offset, nullptr);
+        if(code == nullptr) {
             char error_message[120];
             pcre2_get_error_message(error_code, (uint8_t *) error_message, 120);
             fatal("failed compiling pattern '%s' (%s)", g_uncompiled_spec[i].pattern, error_message);
@@ -78,10 +79,10 @@ static void spec_compile() {
     g_spec_compiled = true;
 }
 
-static spec_match_t spec_match(const char *string, size_t string_length) {
-    pcre2_match_data *md = pcre2_match_data_create(1, NULL);
+static spec_match_t spec_match(utf8_slice_t slice) {
+    pcre2_match_data *md = pcre2_match_data_create(1, nullptr);
     for(size_t i = 0; i < SPEC_SIZE; i++) {
-        int match_count = pcre2_match(g_spec[i].pattern, (const uint8_t *) string, string_length, 0, 0, md, NULL);
+        int match_count = pcre2_match(g_spec[i].pattern, &slice.text->data[slice.start_index], slice.size, 0, PCRE2_NO_UTF_CHECK, md, NULL);
         if(match_count <= 0) continue;
 
         PCRE2_SIZE size;
@@ -98,22 +99,18 @@ static spec_match_t spec_match(const char *string, size_t string_length) {
     return (spec_match_t) { .kind.is_trivia = false, .kind.token_kind = CHARON_TOKEN_KIND_UNKNOWN, .size = 0 };
 }
 
-static spec_match_t next_match(charon_lexer_t *lexer, spec_match_t *match) {
-    const char *sub = lexer->text + lexer->cursor;
-    size_t sub_length = lexer->text_length - lexer->cursor;
-    return spec_match(sub, sub_length);
-}
-
-static char *lexer_extract(charon_lexer_t *lexer, size_t length) {
-    char *str = malloc(length + 1);
-    memcpy(str, &lexer->text[lexer->cursor], length);
-    str[length] = '\0';
-    lexer->cursor += length;
-    return str;
+static spec_match_t next_match(charon_lexer_t *lexer) {
+    return spec_match(utf8_slice(lexer->text, lexer->cursor, lexer->text->size));
 }
 
 static bool is_eof(charon_lexer_t *lexer) {
-    return lexer->cursor >= lexer->text_length;
+    return lexer->cursor >= lexer->text->size;
+}
+
+static charon_utf8_text_t *lexer_extract(charon_lexer_t *lexer, size_t length) {
+    utf8_slice_t slice = utf8_slice(lexer->text, lexer->cursor, length);
+    lexer->cursor += length;
+    return utf8_slice_copy(slice);
 }
 
 static const charon_element_inner_t *next(charon_lexer_t *lexer) {
@@ -125,7 +122,7 @@ static const charon_element_inner_t *next(charon_lexer_t *lexer) {
     lexer->cached_trivia = nullptr;
 
     charon_token_kind_t token_kind;
-    char *token_text;
+    charon_utf8_text_t *token_text;
 
     spec_match_t match;
     while(true) {
@@ -136,20 +133,22 @@ static const charon_element_inner_t *next(charon_lexer_t *lexer) {
             goto exit;
         }
 
-        match = next_match(lexer, &match);
+        match = next_match(lexer);
         if(match.size == 0 || !match.kind.is_trivia) break;
 
-        char *text = lexer_extract(lexer, match.size);
+        charon_utf8_text_t *text = lexer_extract(lexer, match.size);
         trivia = reallocarray(trivia, ++leading_trivia_count, sizeof(charon_element_inner_t *));
         trivia[leading_trivia_count - 1] = charon_element_inner_make_trivia(lexer->cache, match.kind.trivia_kind, text);
-        free(text);
     }
 
     assert(match.size == 0 || !match.kind.is_trivia);
 
     if(match.size == 0) {
+        size_t char_length = charon_utf8_lead_width(lexer->text->data[lexer->cursor]);
+        if(char_length > lexer->text->size - lexer->cursor) fatal("lexer encountered truncated character sequence at the end of the file");
+
         token_kind = CHARON_TOKEN_KIND_UNKNOWN;
-        token_text = lexer_extract(lexer, 1);
+        token_text = lexer_extract(lexer, char_length);
     } else {
         token_kind = match.kind.token_kind;
         token_text = lexer_extract(lexer, match.size);
@@ -158,13 +157,12 @@ static const charon_element_inner_t *next(charon_lexer_t *lexer) {
     while(true) {
         if(is_eof(lexer)) goto consume_trailing;
 
-        match = next_match(lexer, &match);
+        match = next_match(lexer);
         if(match.size == 0 || !match.kind.is_trivia) break;
 
-        char *text = lexer_extract(lexer, match.size);
+        charon_utf8_text_t *text = lexer_extract(lexer, match.size);
         lexer->cached_trivia = reallocarray(lexer->cached_trivia, ++lexer->cached_trivia_count, sizeof(charon_element_inner_t *));
         lexer->cached_trivia[lexer->cached_trivia_count - 1] = charon_element_inner_make_trivia(lexer->cache, match.kind.trivia_kind, text);
-        free(text);
 
         if(match.kind.trivia_kind == CHARON_TRIVIA_KIND_NEWLINE) {
         consume_trailing:
@@ -181,13 +179,12 @@ static const charon_element_inner_t *next(charon_lexer_t *lexer) {
 exit:
     const charon_element_inner_t *element = charon_element_inner_make_token(lexer->cache, token_kind, token_text, leading_trivia_count, trailing_trivia_count, trivia);
 
-    free(token_text);
     free(trivia);
 
     return element;
 }
 
-charon_lexer_t *charon_lexer_make(charon_element_cache_t *element_cache, const char *text, size_t text_length) {
+charon_lexer_t *charon_lexer_make(charon_element_cache_t *element_cache, const charon_utf8_text_t *text) {
     assert(element_cache != nullptr);
 
     if(!g_spec_compiled) spec_compile();
@@ -195,7 +192,6 @@ charon_lexer_t *charon_lexer_make(charon_element_cache_t *element_cache, const c
     charon_lexer_t *lexer = malloc(sizeof(charon_lexer_t));
     lexer->cache = element_cache;
     lexer->text = text;
-    lexer->text_length = text_length;
     lexer->cursor = 0;
     lexer->is_eof = false;
     lexer->cached_trivia = nullptr;

@@ -1,12 +1,13 @@
 #pragma once
 
 #include "charon/element.h"
+#include "charon/utf8.h"
 
 #include <stddef.h>
 
 typedef struct charon_lexer charon_lexer_t;
 
-charon_lexer_t *charon_lexer_make(charon_element_cache_t *element_cache, const char *data, size_t data_length);
+charon_lexer_t *charon_lexer_make(charon_element_cache_t *element_cache, const charon_utf8_text_t *text);
 void charon_lexer_destroy(charon_lexer_t *lexer);
 
 const charon_element_inner_t *charon_lexer_peek(charon_lexer_t *lexer);

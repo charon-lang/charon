@@ -12,4 +12,3 @@ void *charon_memory_allocate(charon_memory_allocator_t *allocator, size_t size);
 void *charon_memory_allocate_resize(charon_memory_allocator_t *allocator, void *ptr, size_t size);
 void *charon_memory_allocate_array(charon_memory_allocator_t *allocator, void *array, size_t element_count, size_t element_size);
 void charon_memory_free(charon_memory_allocator_t *allocator, void *ptr);
-char *charon_memory_strdup(charon_memory_allocator_t *allocator, const char *str);

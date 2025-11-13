@@ -4,6 +4,7 @@
 #include "charon/memory.h"
 #include "charon/token.h"
 #include "charon/trivia.h"
+#include "common/utf8.h"
 
 #include <assert.h>
 #include <stddef.h>
@@ -37,30 +38,30 @@ static void free_buckets(charon_memory_allocator_t *allocator, interned_element_
     }
 }
 
-static uint64_t hash_trivia(charon_trivia_kind_t kind, const char *text) {
+static uint64_t hash_trivia(charon_trivia_kind_t kind, const charon_utf8_text_t *text) {
     const uint64_t p = 0x100000001b3ULL;
 
     uint64_t h = 0xcbf29ce484222325ULL;
     h ^= (uint64_t) kind;
     h *= p;
 
-    for(size_t i = 0; i < (text == nullptr ? 0 : strlen(text)); ++i) {
-        h ^= (uint8_t) text[i];
+    for(size_t i = 0; i < (text == nullptr ? 0 : text->size); ++i) {
+        h ^= text->data[i];
         h *= p;
     }
 
     return h;
 }
 
-static uint64_t hash_token(charon_token_kind_t kind, const char *text, const charon_element_inner_t *trivia[], size_t trivia_count) {
+static uint64_t hash_token(charon_token_kind_t kind, const charon_utf8_text_t *text, const charon_element_inner_t *trivia[], size_t trivia_count) {
     const uint64_t p = 0x100000001b3ULL;
 
     uint64_t h = 0xcbf29ce484222325ULL;
     h ^= (uint64_t) kind;
     h *= p;
 
-    for(size_t i = 0; i < (text == nullptr ? 0 : strlen(text)); ++i) {
-        h ^= (uint8_t) text[i];
+    for(size_t i = 0; i < (text == nullptr ? 0 : text->size); ++i) {
+        h ^= text->data[i];
         h *= p;
     }
 
@@ -123,7 +124,7 @@ void charon_element_cache_destroy(charon_element_cache_t *cache) {
     charon_memory_free(cache->allocator, cache);
 }
 
-const charon_element_inner_t *charon_element_inner_make_trivia(charon_element_cache_t *cache, charon_trivia_kind_t kind, const char *text) {
+const charon_element_inner_t *charon_element_inner_make_trivia(charon_element_cache_t *cache, charon_trivia_kind_t kind, charon_utf8_text_t *text) {
     uint64_t hash = hash_trivia(kind, text);
     size_t index = hash % INTERNED_TRIVIA_BUCKET_COUNT;
 
@@ -132,7 +133,8 @@ const charon_element_inner_t *charon_element_inner_make_trivia(charon_element_ca
         if(interned_element->element.trivia.text == nullptr || text == nullptr) {
             if(interned_element->element.trivia.text != text) continue;
         } else {
-            if(strcmp(interned_element->element.trivia.text, text) != 0) continue;
+            if(interned_element->element.trivia.text->size != text->size) continue;
+            if(memcmp(interned_element->element.trivia.text->data, text->data, text->size) != 0) continue;
         }
         return &interned_element->element;
     }
@@ -140,9 +142,9 @@ const charon_element_inner_t *charon_element_inner_make_trivia(charon_element_ca
     interned_element_t *interned_element = charon_memory_allocate(cache->allocator, sizeof(interned_element_t));
     interned_element->element.type = CHARON_ELEMENT_TYPE_TRIVIA;
     interned_element->element.hash = hash;
-    interned_element->element.length = text == nullptr ? 0 : strlen(text);
+    interned_element->element.length = text == nullptr ? 0 : text->size;
     interned_element->element.trivia.kind = kind;
-    interned_element->element.trivia.text = text == nullptr ? nullptr : charon_memory_strdup(cache->allocator, text);
+    interned_element->element.trivia.text = text;
 
     interned_element->next = cache->trivia_buckets[index];
     cache->trivia_buckets[index] = interned_element;
@@ -150,7 +152,7 @@ const charon_element_inner_t *charon_element_inner_make_trivia(charon_element_ca
     return &interned_element->element;
 }
 
-const charon_element_inner_t *charon_element_inner_make_token(charon_element_cache_t *cache, charon_token_kind_t kind, const char *text, size_t leading_trivia_count, size_t trailing_trivia_count, const charon_element_inner_t *trivia[]) {
+const charon_element_inner_t *charon_element_inner_make_token(charon_element_cache_t *cache, charon_token_kind_t kind, charon_utf8_text_t *text, size_t leading_trivia_count, size_t trailing_trivia_count, const charon_element_inner_t *trivia[]) {
     uint64_t hash = hash_token(kind, text, trivia, leading_trivia_count + trailing_trivia_count);
     size_t index = hash % INTERNED_TOKEN_BUCKET_COUNT;
 
@@ -159,7 +161,8 @@ const charon_element_inner_t *charon_element_inner_make_token(charon_element_cac
         if(interned_element->element.token.text == nullptr || text == nullptr) {
             if(interned_element->element.token.text != text) continue;
         } else {
-            if(strcmp(interned_element->element.token.text, text) != 0) continue;
+            if(interned_element->element.token.text->size != text->size) continue;
+            if(memcmp(interned_element->element.token.text->data, text->data, text->size) != 0) continue;
         }
 
         if(interned_element->element.token.leading_trivia_count != leading_trivia_count) continue;
@@ -175,9 +178,9 @@ const charon_element_inner_t *charon_element_inner_make_token(charon_element_cac
     interned_element_t *interned_element = charon_memory_allocate(cache->allocator, sizeof(interned_element_t) + (leading_trivia_count + trailing_trivia_count) * sizeof(charon_element_inner_t *));
     interned_element->element.type = CHARON_ELEMENT_TYPE_TOKEN;
     interned_element->element.hash = hash;
-    interned_element->element.length = text == nullptr ? 0 : strlen(text);
+    interned_element->element.length = text == nullptr ? 0 : text->size;
     interned_element->element.token.kind = kind;
-    interned_element->element.token.text = text == nullptr ? nullptr : charon_memory_strdup(cache->allocator, text);
+    interned_element->element.token.text = text;
     interned_element->element.token.leading_trivia_count = leading_trivia_count;
     interned_element->element.token.trailing_trivia_count = trailing_trivia_count;
     interned_element->element.token.leading_trivia_length = 0;
@@ -265,7 +268,7 @@ size_t charon_element_length(const charon_element_inner_t *inner_element) {
     return inner_element->length;
 }
 
-const char *charon_element_trivia_text(const charon_element_inner_t *inner_element) {
+const charon_utf8_text_t *charon_element_trivia_text(const charon_element_inner_t *inner_element) {
     assert(inner_element->type == CHARON_ELEMENT_TYPE_TRIVIA);
     return inner_element->trivia.text;
 }
@@ -275,7 +278,7 @@ charon_trivia_kind_t charon_element_trivia_kind(const charon_element_inner_t *in
     return inner_element->trivia.kind;
 }
 
-const char *charon_element_token_text(const charon_element_inner_t *inner_element) {
+const charon_utf8_text_t *charon_element_token_text(const charon_element_inner_t *inner_element) {
     assert(inner_element->type == CHARON_ELEMENT_TYPE_TOKEN);
     return inner_element->token.text;
 }

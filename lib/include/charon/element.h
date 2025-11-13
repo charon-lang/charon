@@ -4,6 +4,7 @@
 #include "charon/node.h"
 #include "charon/token.h"
 #include "charon/trivia.h"
+#include "charon/utf8.h"
 
 #include <stddef.h>
 
@@ -26,8 +27,8 @@ charon_element_cache_t *charon_element_cache_make(charon_memory_allocator_t *all
 void charon_element_cache_destroy(charon_element_cache_t *cache);
 
 /* Element makers */
-const charon_element_inner_t *charon_element_inner_make_trivia(charon_element_cache_t *cache, charon_trivia_kind_t kind, const char *text);
-const charon_element_inner_t *charon_element_inner_make_token(charon_element_cache_t *cache, charon_token_kind_t kind, const char *text, size_t leading_trivia_count, size_t trailing_trivia_count, const charon_element_inner_t *trivia[]);
+const charon_element_inner_t *charon_element_inner_make_trivia(charon_element_cache_t *cache, charon_trivia_kind_t kind, charon_utf8_text_t *text);
+const charon_element_inner_t *charon_element_inner_make_token(charon_element_cache_t *cache, charon_token_kind_t kind, charon_utf8_text_t *text, size_t leading_trivia_count, size_t trailing_trivia_count, const charon_element_inner_t *trivia[]);
 const charon_element_inner_t *charon_element_inner_make_node(charon_element_cache_t *cache, charon_node_kind_t kind, const charon_element_inner_t *children[], size_t child_count);
 
 /* Wrapper */
@@ -41,11 +42,11 @@ charon_element_type_t charon_element_type(const charon_element_inner_t *inner_el
 size_t charon_element_length(const charon_element_inner_t *inner_element);
 
 /* Trivia Accessors */
-const char *charon_element_trivia_text(const charon_element_inner_t *inner_element);
+const charon_utf8_text_t *charon_element_trivia_text(const charon_element_inner_t *inner_element);
 charon_trivia_kind_t charon_element_trivia_kind(const charon_element_inner_t *inner_element);
 
 /* Token Accessors */
-const char *charon_element_token_text(const charon_element_inner_t *inner_element);
+const charon_utf8_text_t *charon_element_token_text(const charon_element_inner_t *inner_element);
 charon_token_kind_t charon_element_token_kind(const charon_element_inner_t *inner_element);
 size_t charon_element_token_leading_trivia_count(const charon_element_inner_t *inner_element);
 size_t charon_element_token_trailing_trivia_count(const charon_element_inner_t *inner_element);

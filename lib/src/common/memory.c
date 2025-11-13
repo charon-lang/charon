@@ -69,9 +69,3 @@ void charon_memory_free(charon_memory_allocator_t *allocator, void *ptr) {
     allocator->entries = reallocarray(allocator->entries, --allocator->entry_count, sizeof(void *));
     free(ptr);
 }
-
-char *charon_memory_strdup(charon_memory_allocator_t *allocator, const char *str) {
-    char *ptr = strdup(str);
-    charon_memory_register_ptr(allocator, ptr);
-    return ptr;
-}
