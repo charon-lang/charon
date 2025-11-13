@@ -40,16 +40,16 @@ void linedb_clear(linedb_t *db) {
     db->line_count = 0;
 }
 
-bool linedb_offset_to_position(const linedb_t *db, size_t offset, size_t *out_line, size_t *out_column) {
+bool linedb_offset_to_line(const linedb_t *db, size_t *offset, size_t *out_line) {
     if(db->line_count == 0) return false;
-    size_t line = find_line(db, offset);
+    size_t line = find_line(db, *offset);
     *out_line = line;
-    *out_column = offset - db->line_starts[line];
+    *offset = db->line_starts[line];
     return true;
 }
 
-bool linedb_position_to_offset(const linedb_t *db, size_t line, size_t column, size_t *out_offset) {
+bool linedb_line_to_offset(const linedb_t *db, size_t line, size_t *out_line_offset) {
     if(line >= db->line_count) return false;
-    *out_offset = db->line_starts[line] + column;
+    *out_line_offset = db->line_starts[line];
     return true;
 }

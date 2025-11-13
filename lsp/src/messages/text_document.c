@@ -1,10 +1,13 @@
-#include "alloca.h"
+#include "charon/diag.h"
 #include "charon/node.h"
+#include "charon/path.h"
+#include "charon/utf8.h"
 #include "charon/util.h"
 #include "document.h"
 #include "io.h"
 #include "linedb.h"
 #include "lsp.h"
+#include "stdlib.h"
 
 #include <assert.h>
 #include <charon/element.h>
@@ -35,6 +38,38 @@
             lsp_log("%*s%s `%s`", depth * 2, "", charon_token_kind_tostring(token_kind), charon_element_token_text(element->inner));
             break;
     }
+}
+
+static size_t document_position_to_offset(document_t *document, size_t line, size_t column) {
+    size_t offset;
+    bool ok = linedb_line_to_offset(&document->linedb, line, &offset);
+    assert(ok);
+
+    for(size_t i = 0; i < column; i++) {
+        assert(offset < document->text_size);
+        char chr = document->text[offset];
+        assert(chr != '\n' && chr != '\0');
+        size_t chr_width = charon_utf8_lead_width(chr);
+        offset += chr_width;
+        if(chr_width == 4) column--;
+    }
+    return offset;
+}
+
+static void document_offset_to_position(document_t *document, size_t offset, size_t *out_line, size_t *out_column) {
+    size_t line_offset = offset;
+    bool ok = linedb_offset_to_line(&document->linedb, &line_offset, out_line);
+    assert(ok);
+
+    size_t column = 0;
+    for(size_t i = line_offset; i < offset;) {
+        char chr = document->text[offset];
+        assert(chr != '\n' && chr != '\0');
+        size_t chr_width = charon_utf8_lead_width(chr);
+        i += chr_width;
+        column += (chr_width == 4) ? 2 : 1;
+    }
+    *out_column = column;
 }
 
 static charon_element_t *find_element(charon_memory_allocator_t *allocator, charon_element_t *current, size_t offset) {
@@ -93,17 +128,26 @@ static void edit_text(char **text, size_t *text_length, size_t range_start, size
     *text_length = new_length;
 }
 
-static void search_diagnostics(charon_memory_allocator_t *allocator, const linedb_t *db, charon_element_t *current, struct json_object *diagnostics) {
-    if(charon_element_type(current->inner) != CHARON_ELEMENT_TYPE_NODE) return;
+static void publish_diagnostics(document_t *document) {
+    struct json_object *diagnostics = json_object_new_array();
 
-    charon_node_kind_t kind = charon_element_node_kind(current->inner);
-    if(kind == CHARON_NODE_KIND_ERROR) {
-        size_t length = charon_element_length(current->inner);
-        size_t offset = current->offset;
+    charon_memory_allocator_t *allocator = charon_memory_allocator_make();
+    charon_element_t *root_element = charon_element_wrap_root(allocator, document->root_element);
+    for(charon_diag_item_t *diag = document->diagnostics; diag != nullptr; diag = diag->next) {
+        charon_element_t *current_element = root_element;
+        for(size_t i = 0; i < diag->path->length; i++) {
+            size_t index = diag->path->steps[i];
+            assert(charon_element_type(current_element->inner) == CHARON_ELEMENT_TYPE_NODE);
+            assert(charon_element_node_child_count(current_element->inner) > index);
+            current_element = charon_element_wrap_node_child(allocator, current_element, diag->path->steps[i]);
+        }
+
+        size_t length = charon_element_length(current_element->inner);
+        size_t offset = current_element->offset;
 
         size_t start_line, start_column, end_line, end_column;
-        linedb_offset_to_position(db, offset, &start_line, &start_column);
-        linedb_offset_to_position(db, offset + length, &end_line, &end_column);
+        document_offset_to_position(document, offset, &start_line, &start_column);
+        document_offset_to_position(document, offset + length, &end_line, &end_column);
 
         struct json_object *start_pos = json_object_new_object();
         json_object_object_add(start_pos, "line", json_object_new_uint64(start_line));
@@ -117,25 +161,14 @@ static void search_diagnostics(charon_memory_allocator_t *allocator, const lined
         json_object_object_add(range, "start", start_pos);
         json_object_object_add(range, "end", end_pos);
 
-        struct json_object *diag = json_object_new_object();
-        json_object_object_add(diag, "range", range);
-        json_object_object_add(diag, "message", json_object_new_string("unexpected"));
+        struct json_object *diag_obj = json_object_new_object();
+        json_object_object_add(diag_obj, "range", range);
+        char *message = charon_diag_fmt(diag->kind, diag->data);
+        json_object_object_add(diag_obj, "message", json_object_new_string(message));
+        free(message);
 
-        json_object_array_add(diagnostics, diag);
-        return;
+        json_object_array_add(diagnostics, diag_obj);
     }
-
-    for(size_t i = 0; i < charon_element_node_child_count(current->inner); i++) {
-        search_diagnostics(allocator, db, charon_element_wrap_node_child(allocator, current, i), diagnostics);
-    }
-}
-
-static void publish_diagnostics(const document_t *document) {
-    struct json_object *diagnostics = json_object_new_array();
-
-    charon_memory_allocator_t *allocator = charon_memory_allocator_make();
-    charon_element_t *root_element = charon_element_wrap_root(allocator, document->root_element);
-    search_diagnostics(allocator, &document->linedb, root_element, diagnostics);
     charon_memory_allocator_free(allocator);
 
     struct json_object *p = json_object_new_object();
@@ -150,25 +183,28 @@ static void handle_open(struct json_object *message) {
     struct json_object *text_doc = json_object_object_get(params, "textDocument");
     struct json_object *uri = json_object_object_get(text_doc, "uri");
 
-    struct json_object *text = json_object_object_get(text_doc, "text");
-
-    const char *data = json_object_get_string(text);
+    const char *data = json_object_get_string(json_object_object_get(text_doc, "text"));
     size_t data_length = strlen(data);
 
     document_t *document = document_get(json_object_get_string(uri));
     document->text = strdup(data);
-    document->text_length = data_length;
+    document->text_size = data_length;
 
     linedb_clear(&document->linedb);
     linedb_build(&document->linedb, data, data_length);
 
-    charon_lexer_t *lexer = charon_lexer_make(document->cache, data, data_length);
+    charon_utf8_text_t *text = charon_utf8_from(data, data_length);
+    charon_lexer_t *lexer = charon_lexer_make(document->cache, text);
     charon_parser_t *parser = charon_parser_make(document->cache, lexer);
 
-    document->root_element = charon_parser_parse_root(parser);
+    charon_parser_output_t parser_output = charon_parser_parse_root(parser);
+    document->diagnostics = parser_output.diagnostics;
+    document->root_element = parser_output.root;
 
     charon_parser_destroy(parser);
     charon_lexer_destroy(lexer);
+
+    free(text);
 
     publish_diagnostics(document);
 }
@@ -198,45 +234,38 @@ static void handle_change(struct json_object *message) {
         struct json_object *new_text_obj = json_object_object_get(change, "text");
 
         const char *new_text = json_object_get_string(new_text_obj);
-        size_t new_text_length = strlen(new_text);
+        size_t new_text_size = strlen(new_text);
 
-        lsp_log("┌ change %lu:%lu - %lu:%lu changed to (%lu)%s", start_line, start_column, end_line, end_column, new_text_length, new_text);
+        lsp_log("===> [%lu:%lu - %lu:%lu] changed to (%lu)%s", start_line, start_column, end_line, end_column, new_text_size, new_text);
 
-        charon_memory_allocator_t *allocator = charon_memory_allocator_make();
+        // Compute range
+        size_t range_start = document_position_to_offset(document, start_line, start_column);
+        size_t range_end = document_position_to_offset(document, end_line, end_column);
 
-        /* Compute range */
-        size_t range_start, range_end;
-
-        bool ok = true;
-        ok = ok && linedb_position_to_offset(&document->linedb, start_line, start_column, &range_start);
-        ok = ok && linedb_position_to_offset(&document->linedb, end_line, end_column, &range_end);
-        assert(ok);
-
-        // Figure out what node we want
+        // Determine the narrowest reparse
         enum {
             REPARSE_LEVEL_FULL,
             REPARSE_LEVEL_BLOCK
         } reparse_level = REPARSE_LEVEL_BLOCK;
 
-        for(size_t i = 0; i < new_text_length; i++) {
+        for(size_t i = 0; i < new_text_size; i++) {
             switch(new_text[i]) {
                 case '{':
                 case '}': reparse_level = REPARSE_LEVEL_FULL; break;
             }
         }
 
-        if(reparse_level != REPARSE_LEVEL_FULL) {
-            for(size_t i = range_start; i < range_end; i++) {
-                switch(document->text[i]) {
-                    case '{':
-                    case '}': reparse_level = REPARSE_LEVEL_FULL; break;
-                }
+        for(size_t i = range_start; i < range_end; i++) {
+            switch(document->text[i]) {
+                case '{':
+                case '}': reparse_level = REPARSE_LEVEL_FULL; break;
             }
         }
 
-        /* Find the LCA */
+        // Find the LCA
+        charon_memory_allocator_t *allocator = charon_memory_allocator_make();
         charon_element_t *root = charon_element_wrap_root(allocator, document->root_element);
-        assert(charon_element_length(root->inner) == document->text_length);
+        assert(charon_element_length(root->inner) == document->text_size);
 
         charon_element_t *lca = root;
         if(reparse_level == REPARSE_LEVEL_BLOCK) {
@@ -248,6 +277,7 @@ static void handle_change(struct json_object *message) {
             }
         }
 
+        // Expand reparse if edit falls into trailing trivia
         {
             charon_element_t *current = lca;
             while(charon_element_type(current->inner) == CHARON_ELEMENT_TYPE_NODE) {
@@ -262,6 +292,7 @@ static void handle_change(struct json_object *message) {
             if(range_end >= current->offset + (token_length - trailing_length)) lca = root;
         }
 
+        // Expand reparse if edit falls into leading trivia
         {
             charon_element_t *current = lca;
             while(charon_element_type(current->inner) == CHARON_ELEMENT_TYPE_NODE) {
@@ -275,26 +306,70 @@ static void handle_change(struct json_object *message) {
             if(range_start <= current->offset + leading_length) lca = root;
         }
 
-
         lsp_log("= BEFORE ============================================================");
         lsp_log("%.*s", (int) charon_element_length(lca->inner), &document->text[lca->offset]);
         lsp_log("=====================================================================");
 
+        /* Cull diagnostics within LCA */
+        charon_path_t *lca_path = nullptr;
+        {
+            size_t index_count = 0;
+            size_t *indices = nullptr;
+
+            charon_element_t *current = lca;
+            while(current->parent != nullptr) {
+                indices = reallocarray(indices, ++index_count, sizeof(size_t));
+                indices[index_count - 1] = current->self_index;
+                current = current->parent;
+            }
+
+            lca_path = charon_path_make(index_count);
+            for(size_t i = 0; i < index_count; i++) lca_path->steps[i] = indices[index_count - 1 - i];
+            free(indices);
+
+            charon_diag_item_t *new_diagnostics = nullptr;
+            charon_diag_item_t *next_diag = document->diagnostics;
+            while(next_diag != nullptr) {
+                charon_diag_item_t *diag = next_diag;
+                next_diag = diag->next;
+
+                if(diag->path->length < lca_path->length) goto push;
+                for(size_t i = 0; i < lca_path->length; i++) {
+                    if(lca_path->steps[i] != diag->path->steps[i]) goto push;
+                }
+
+                charon_path_destroy(diag->path);
+                free(diag);
+                continue;
+            push:
+                diag->next = new_diagnostics;
+                new_diagnostics = diag;
+            }
+
+            document->diagnostics = new_diagnostics;
+        }
+        assert(lca_path != nullptr);
+
         /* Update the document text */
-        edit_text(&document->text, &document->text_length, range_start, range_end, new_text, new_text_length);
+        edit_text(&document->text, &document->text_size, range_start, range_end, new_text, new_text_size);
         linedb_clear(&document->linedb);
-        linedb_build(&document->linedb, document->text, document->text_length);
+        linedb_build(&document->linedb, document->text, document->text_size);
 
         /* Reparse */
-        size_t reparse_length = charon_element_length(lca->inner) - (range_end - range_start) + new_text_length;
-        charon_lexer_t *lexer = charon_lexer_make(document->cache, &document->text[lca->offset], reparse_length);
+        size_t reparse_length = charon_element_length(lca->inner) - (range_end - range_start) + new_text_size;
 
+        lsp_log("Range [%lu - %lu]", range_start, range_end);
+        lsp_log("New Text Size: %lu", new_text_size);
+        lsp_log("%lu / %lu", charon_element_length(lca->inner), reparse_length);
         lsp_log("= AFTER =============================================================");
         lsp_log("%.*s", (int) reparse_length, &document->text[lca->offset]);
         lsp_log("=====================================================================");
 
+        charon_utf8_text_t *text = charon_utf8_from(&document->text[lca->offset], reparse_length);
+        charon_lexer_t *lexer = charon_lexer_make(document->cache, text);
+
         charon_parser_t *parser = charon_parser_make(document->cache, lexer);
-        const charon_element_inner_t *(*reparse_fn)(charon_parser_t *parser) = nullptr;
+        charon_parser_output_t (*reparse_fn)(charon_parser_t *parser) = nullptr;
         switch(charon_element_node_kind(lca->inner)) {
             case CHARON_NODE_KIND_ROOT:       reparse_fn = charon_parser_parse_root; break;
             case CHARON_NODE_KIND_STMT_BLOCK: reparse_fn = charon_parser_parse_stmt_block; break;
@@ -302,18 +377,38 @@ static void handle_change(struct json_object *message) {
         }
         assert(reparse_fn != nullptr);
 
-        const charon_element_inner_t *reparsed_element = reparse_fn(parser);
+        charon_parser_output_t parser_output = reparse_fn(parser);
+
+        charon_diag_item_t *next_diag = parser_output.diagnostics;
+        while(next_diag != nullptr) {
+            charon_diag_item_t *diag = next_diag;
+            next_diag = diag->next;
+
+            charon_path_t *new_path = charon_path_make(lca_path->length + diag->path->length);
+            memcpy(new_path->steps, lca_path->steps, lca_path->length * sizeof(lca_path->steps[0]));
+            memcpy(&new_path->steps[lca_path->length], diag->path->steps, diag->path->length * sizeof(diag->path->steps[0]));
+
+            charon_path_destroy(diag->path);
+            diag->path = new_path;
+
+            diag->next = document->diagnostics;
+            document->diagnostics = diag;
+        }
+
+        charon_path_destroy(lca_path);
 
         charon_parser_destroy(parser);
         charon_lexer_destroy(lexer);
 
-        document->root_element = charon_util_element_swap(document->cache, lca, reparsed_element);
+        free(text);
+
+        document->root_element = charon_util_element_swap(document->cache, lca, parser_output.root);
 
         charon_memory_allocator_free(allocator);
 
         publish_diagnostics(document);
 
-        lsp_log("└ change computed");
+        lsp_log("===> change computed");
     }
 }
 
@@ -335,9 +430,8 @@ void handle_hover(struct json_object *message) {
     charon_memory_allocator_t *allocator = charon_memory_allocator_make();
     charon_element_t *root_element = charon_element_wrap_root(allocator, document->root_element);
 
-    size_t offset;
-    charon_element_t *elem = nullptr;
-    if(linedb_position_to_offset(&document->linedb, line, column, &offset)) elem = find_element(allocator, root_element, offset);
+    size_t offset = document_position_to_offset(document, line, column);
+    charon_element_t *elem = find_element(allocator, root_element, offset);
 
     struct json_object *contents = json_object_new_object();
     json_object_object_add(contents, "kind", json_object_new_string("plaintext"));
