@@ -1,6 +1,5 @@
 #pragma once
 
-#include "charon/diag.h"
 #include "charon/element.h"
 #include "charon/lexer.h"
 #include "charon/node.h"
@@ -23,8 +22,6 @@ struct charon_parser {
 
     parser_syncset_t syncset;
     list_t events;
-
-    charon_diag_t *diagnostics;
 };
 
 bool parser_is_eof(charon_parser_t *parser);
@@ -41,8 +38,6 @@ parser_event_t *parser_checkpoint(charon_parser_t *parser);
 void parser_open_element_at(charon_parser_t *parser, parser_event_t *checkpoint);
 void parser_open_element(charon_parser_t *parser);
 void parser_close_element(charon_parser_t *parser, charon_node_kind_t kind);
-void parser_error(charon_parser_t *parser);
+void parser_error(charon_parser_t *parser, charon_diag_t diag_kind, charon_diag_data_t *diag_kind_data);
 
-void parser_unexpected_error(charon_parser_t *parser);
-
-const charon_element_inner_t *parser_build(charon_parser_t *parser);
+charon_parser_output_t parser_build(charon_parser_t *parser);

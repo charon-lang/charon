@@ -15,6 +15,7 @@ charon_lib = static_library(
         'src/parser/statement.c',
         'src/parser/tlc.c',
         'src/parser/type.c',
+        'src/diag.c',
         'src/element.c',
         'src/lexer.c',
         'src/node.c',

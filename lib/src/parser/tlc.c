@@ -4,6 +4,8 @@
 #include "parse.h"
 #include "parser/parser.h"
 
+#include <string.h>
+
 static void parse_type_definition(charon_parser_t *parser) {
     parser_open_element(parser);
 
@@ -93,12 +95,22 @@ static void parse_enum(charon_parser_t *parser) {
 
 void parse_tlc(charon_parser_t *parser) {
     switch(parser_peek(parser)) {
-        case CHARON_TOKEN_KIND_KEYWORD_MODULE:   return parse_module(parser);
-        case CHARON_TOKEN_KIND_KEYWORD_FUNCTION: return parse_function(parser);
-        case CHARON_TOKEN_KIND_KEYWORD_EXTERN:   return parse_extern(parser);
-        case CHARON_TOKEN_KIND_KEYWORD_TYPE:     return parse_type_definition(parser);
-        case CHARON_TOKEN_KIND_KEYWORD_LET:      return parse_declaration(parser);
-        case CHARON_TOKEN_KIND_KEYWORD_ENUM:     return parse_enum(parser);
-        default:                                 return parser_unexpected_error(parser);
+        case CHARON_TOKEN_KIND_KEYWORD_MODULE:   parse_module(parser); break;
+        case CHARON_TOKEN_KIND_KEYWORD_FUNCTION: parse_function(parser); break;
+        case CHARON_TOKEN_KIND_KEYWORD_EXTERN:   parse_extern(parser); break;
+        case CHARON_TOKEN_KIND_KEYWORD_TYPE:     parse_type_definition(parser); break;
+        case CHARON_TOKEN_KIND_KEYWORD_LET:      parse_declaration(parser); break;
+        case CHARON_TOKEN_KIND_KEYWORD_ENUM:     parse_enum(parser); break;
+        default:                                 {
+            charon_token_kind_t kinds[6] = { CHARON_TOKEN_KIND_KEYWORD_MODULE, CHARON_TOKEN_KIND_KEYWORD_FUNCTION, CHARON_TOKEN_KIND_KEYWORD_EXTERN, CHARON_TOKEN_KIND_KEYWORD_TYPE, CHARON_TOKEN_KIND_KEYWORD_LET, CHARON_TOKEN_KIND_KEYWORD_ENUM };
+
+            charon_diag_data_t *diag_data = malloc(sizeof(charon_diag_data_t) + sizeof(kinds));
+            diag_data->unexpected_token.found = parser_peek(parser);
+            diag_data->unexpected_token.expected_count = sizeof(kinds) / sizeof(kinds[0]);
+            memcpy(&diag_data->unexpected_token.expected, kinds, sizeof(kinds));
+
+            parser_error(parser, CHARON_DIAG_UNEXPECTED_TOKEN, diag_data);
+            break;
+        }
     }
 }

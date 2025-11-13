@@ -1,9 +1,11 @@
+#include "charon/diag.h"
 #include "charon/node.h"
 #include "charon/token.h"
 #include "parse.h"
 #include "parser/parser.h"
 
 #include <stdarg.h>
+#include <string.h>
 
 static void helper_binary_operation(charon_parser_t *parser, void (*func)(charon_parser_t *), size_t count, ...) {
     parser_event_t *checkpoint = parser_checkpoint(parser);
@@ -112,16 +114,29 @@ static void parse_primary(charon_parser_t *parser) {
     }
 
     switch(parser_peek(parser)) {
-        case CHARON_TOKEN_KIND_IDENTIFIER:         return parse_identifier(parser);
+        case CHARON_TOKEN_KIND_IDENTIFIER:         parse_identifier(parser); break;
         case CHARON_TOKEN_KIND_LITERAL_STRING:
-        case CHARON_TOKEN_KIND_LITERAL_STRING_RAW: return parse_string_literal(parser);
-        case CHARON_TOKEN_KIND_LITERAL_CHAR:       return parse_char_literal(parser);
-        case CHARON_TOKEN_KIND_LITERAL_BOOL:       return parse_bool_literal(parser);
+        case CHARON_TOKEN_KIND_LITERAL_STRING_RAW: parse_string_literal(parser); break;
+        case CHARON_TOKEN_KIND_LITERAL_CHAR:       parse_char_literal(parser); break;
+        case CHARON_TOKEN_KIND_LITERAL_BOOL:       parse_bool_literal(parser); break;
         case CHARON_TOKEN_KIND_LITERAL_NUMBER_DEC:
         case CHARON_TOKEN_KIND_LITERAL_NUMBER_HEX:
         case CHARON_TOKEN_KIND_LITERAL_NUMBER_OCT:
-        case CHARON_TOKEN_KIND_LITERAL_NUMBER_BIN: return parse_numeric_literal(parser);
-        default:                                   return parser_unexpected_error(parser);
+        case CHARON_TOKEN_KIND_LITERAL_NUMBER_BIN: parse_numeric_literal(parser); break;
+        default:                                   {
+            charon_token_kind_t kinds[9] = {
+                CHARON_TOKEN_KIND_IDENTIFIER,         CHARON_TOKEN_KIND_LITERAL_STRING,     CHARON_TOKEN_KIND_LITERAL_STRING_RAW, CHARON_TOKEN_KIND_LITERAL_CHAR,       CHARON_TOKEN_KIND_LITERAL_BOOL,
+                CHARON_TOKEN_KIND_LITERAL_NUMBER_DEC, CHARON_TOKEN_KIND_LITERAL_NUMBER_HEX, CHARON_TOKEN_KIND_LITERAL_NUMBER_OCT, CHARON_TOKEN_KIND_LITERAL_NUMBER_BIN,
+            };
+
+            charon_diag_data_t *diag_data = malloc(sizeof(charon_diag_data_t) + sizeof(kinds));
+            diag_data->unexpected_token.found = parser_peek(parser);
+            diag_data->unexpected_token.expected_count = sizeof(kinds) / sizeof(kinds[0]);
+            memcpy(&diag_data->unexpected_token.expected, kinds, sizeof(kinds));
+
+            parser_error(parser, CHARON_DIAG_UNEXPECTED_TOKEN, diag_data);
+            break;
+        }
     }
 }
 

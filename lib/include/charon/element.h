@@ -21,6 +21,7 @@ typedef struct charon_element {
     const charon_element_inner_t *inner;
     struct charon_element *parent;
     size_t offset;
+    size_t self_index;
 } charon_element_t;
 
 charon_element_cache_t *charon_element_cache_make(charon_memory_allocator_t *allocator);

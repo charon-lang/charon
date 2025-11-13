@@ -99,9 +99,10 @@ static const charon_element_inner_t *token_trivia(const charon_element_inner_t *
 
 static charon_element_t *token_trivia_wrap(charon_memory_allocator_t *allocator, charon_element_t *element, size_t index) {
     charon_element_t *trivia = charon_memory_allocate(allocator, sizeof(charon_element_t));
-    trivia->parent = element;
     trivia->inner = token_trivia(element->inner, index);
+    trivia->parent = element;
     trivia->offset = element->offset;
+    trivia->self_index = index;
     if(index >= element->inner->token.leading_trivia_count) trivia->offset += element->inner->length - (element->inner->token.leading_trivia_length + element->inner->token.trailing_trivia_length);
     for(size_t i = 0; i < index; i++) trivia->offset += element->inner->token.trivia[i]->length;
 
@@ -234,20 +235,22 @@ const charon_element_inner_t *charon_element_inner_make_node(charon_element_cach
 
 charon_element_t *charon_element_wrap_root(charon_memory_allocator_t *allocator, const charon_element_inner_t *inner_root) {
     charon_element_t *element = charon_memory_allocate(allocator, sizeof(charon_element_t));
+    element->inner = inner_root;
     element->parent = NULL;
     element->offset = 0;
-    element->inner = inner_root;
+    element->self_index = 0;
     return element;
 }
 
 charon_element_t *charon_element_wrap_node_child(charon_memory_allocator_t *allocator, charon_element_t *element, size_t index) {
-    charon_element_t *token = charon_memory_allocate(allocator, sizeof(charon_element_t));
-    token->parent = element;
-    token->inner = charon_element_node_child(element->inner, index);
-    token->offset = element->offset;
-    for(size_t i = 0; i < index; i++) token->offset += element->inner->node.children[i]->length;
+    charon_element_t *child = charon_memory_allocate(allocator, sizeof(charon_element_t));
+    child->inner = charon_element_node_child(element->inner, index);
+    child->parent = element;
+    child->offset = element->offset;
+    child->self_index = index;
+    for(size_t i = 0; i < index; i++) child->offset += element->inner->node.children[i]->length;
 
-    return token;
+    return child;
 }
 
 charon_element_t *charon_element_wrap_token_leading_trivia(charon_memory_allocator_t *allocator, charon_element_t *element, size_t index) {
