@@ -7,7 +7,7 @@
 #include "charon/parser.h"
 #include "charon/path.h"
 #include "charon/token.h"
-#include "lib/list.h"
+#include "common/list.h"
 #include "parser/parse.h"
 
 #include <assert.h>

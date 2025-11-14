@@ -5,7 +5,7 @@
 #include "charon/node.h"
 #include "charon/parser.h"
 #include "charon/token.h"
-#include "lib/list.h"
+#include "common/list.h"
 
 #include <stdarg.h>
 #include <stddef.h>
