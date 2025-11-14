@@ -31,7 +31,7 @@ TOKEN(LITERAL_CHAR,       "char",               "^'[^']*'")
 TOKEN(LITERAL_BOOL,       "bool",               "^(?:true|false)")
 
 // Identifier
-TOKEN(IDENTIFIER,   "identifier",   "^[_a-zA-Z][_a-zA-Z0-9]*")
+TOKEN(IDENTIFIER,   "identifier",   "^[_a-zA-Z\\p{Extended_Pictographic}][_a-zA-Z0-9\\p{Extended_Pictographic}]*")
 
 // Punctuation
 TOKEN(PNCT_TRIPLE_PERIOD,       "...",      "^\\.\\.\\.")
