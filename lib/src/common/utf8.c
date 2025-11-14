@@ -1,9 +1,28 @@
 #include "utf8.h"
 
+#include "charon/utf8.h"
+
+#include <assert.h>
 #include <stddef.h>
 #include <stdint.h>
 #include <stdlib.h>
 #include <string.h>
+
+static size_t byte_offset(const charon_utf8_text_t *text, size_t char_offset) {
+    size_t index = 0;
+    size_t char_count = 0;
+    while(char_count < char_offset && index < text->size && text->data[index] != '\0') {
+        size_t advance = charon_utf8_lead_width(text->data[index]);
+        if(advance > text->size - index) {
+            index = text->size;
+            break;
+        }
+        index += advance;
+        char_count++;
+    }
+    assert(index <= text->size);
+    return index;
+}
 
 charon_utf8_text_t *charon_utf8_from(const char *data, size_t data_length) {
     charon_utf8_text_t *text = malloc(sizeof(charon_utf8_text_t) + data_length + 1);
@@ -38,107 +57,17 @@ size_t charon_utf8_lead_width(uint8_t ch) {
     return 1;
 }
 
-// static size_t effective_size(const charon_text_t *text) {
-//     const int8_t *base = UTF8_DATA(text);
+utf8_slice_t utf8_substring_end(const charon_utf8_text_t *text, size_t start_char) {
+    size_t start_offset = byte_offset(text, start_char);
+    if(start_offset > text->size) start_offset = text->size;
 
-//     const int8_t *str = base;
-//     while((size_t) (str - base) < text->size && '\0' != *str) {
-//         size_t advance = lead_width(*str);
-//         size_t consumed = (size_t) (str - base);
-//         size_t remaining = text->size - consumed;
-//         if(advance > remaining) {
-//             str = base + text->size;
-//             break;
-//         }
-//         str += advance;
-//     }
+    size_t slice_length = text->size - start_offset;
+    return utf8_slice(text, start_offset, slice_length);
+}
 
-//     if((size_t) (str - base) > text->size) str = base + text->size;
+utf8_slice_t utf8_substring_start(const charon_utf8_text_t *text, size_t end_char) {
+    size_t end_offset = byte_offset(text, end_char);
+    if(end_offset > text->size) end_offset = text->size;
 
-//     return (size_t) (str - base);
-// }
-
-// static size_t byte_offset(const charon_text_t *text, size_t char_offset) {
-//     const int8_t *base = UTF8_DATA(text);
-
-//     size_t current = 0;
-//     const int8_t *str = base;
-//     while(current < char_offset && (size_t) (str - base) < text->size && '\0' != *str) {
-//         size_t advance = lead_width(*str);
-//         size_t consumed = (size_t) (str - base);
-//         size_t remaining = text->size - consumed;
-//         if(advance > remaining) {
-//             str = base + text->size;
-//             break;
-//         }
-//         str += advance;
-//         current++;
-//     }
-
-//     if((size_t) (str - base) > text->size) return text->size;
-
-//     return (size_t) (str - base);
-// }
-
-// static size_t utf8_character_size(const charon_text_t *text, size_t byte_index) {
-//     return lead_width(UTF8_DATA(text)[byte_index]);
-// }
-
-// static size_t utf8_length(const charon_text_t *text) {
-//     if(text == nullptr) return 0;
-
-//     const int8_t *str = UTF8_DATA(text);
-//     const int8_t *base = str;
-//     size_t count = 0;
-
-//     while((size_t) (str - base) < text->size && '\0' != *str) {
-//         size_t advance = lead_width(*str);
-//         size_t consumed = (size_t) (str - base);
-//         size_t remaining = text->size - consumed;
-//         if(advance > remaining) break;
-
-//         str += advance;
-//         count++;
-//     }
-
-//     return count;
-// }
-
-// static char *utf8_to_ascii(const charon_text_t *text) {
-//     char *ascii = malloc(text->size + 1);
-//     memcpy(ascii, TEXT_DATA(text), text->size);
-//     ascii[text->size] = '\0';
-//     return ascii;
-// }
-
-// static int utf8_strcmp(const charon_text_t *lhs, const charon_text_t *rhs) {
-//     size_t lhs_size = effective_size(lhs);
-//     size_t rhs_size = effective_size(rhs);
-//     size_t min_size = lhs_size < rhs_size ? lhs_size : rhs_size;
-
-//     int cmp = memcmp(UTF8_DATA(lhs), UTF8_DATA(rhs), min_size);
-//     if(cmp != 0) return cmp;
-//     if(lhs_size == rhs_size) return 0;
-//     return lhs_size < rhs_size ? -1 : 1;
-// }
-
-// static charon_text_t *utf8_substr_end(const charon_text_t *text, size_t start_char) {
-//     if(text == nullptr) return nullptr;
-
-//     size_t start_offset = byte_offset(text, start_char);
-//     size_t size = effective_size(text);
-//     if(start_offset > size) start_offset = size;
-
-//     size_t slice_length = size - start_offset;
-//     return text_slice(text, start_offset, slice_length);
-// }
-
-// static charon_text_t *utf8_substr_start(const charon_text_t *text, size_t end_char) {
-//     if(text == nullptr) return nullptr;
-
-//     size_t end_offset = byte_offset(text, end_char);
-//     size_t size = effective_size(text);
-//     if(end_offset > size) end_offset = size;
-
-//     return text_slice(text, 0, end_offset);
-// }
+    return utf8_slice(text, 0, end_offset);
+}
