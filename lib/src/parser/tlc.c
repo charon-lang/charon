@@ -74,7 +74,7 @@ static void parse_declaration(charon_parser_t *parser) {
     if(parser_consume_try(parser, CHARON_TOKEN_KIND_PNCT_EQUAL)) parse_expr(parser);
     parser_consume(parser, CHARON_TOKEN_KIND_PNCT_SEMI_COLON);
 
-    parser_close_element(parser, CHARON_NODE_KIND_STMT_DECLARATION);
+    parser_close_element(parser, CHARON_NODE_KIND_TLC_DECLARATION);
 }
 
 static void parse_enum(charon_parser_t *parser) {
