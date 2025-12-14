@@ -66,6 +66,6 @@ run_test() {
 
 case $MODE in
     all)
-        for TEST_FILE in tests/exec/*.test; do run_test $TEST_FILE; done
+        for TEST_FILE in tests/parse/*.test; do run_test $TEST_FILE; done
         ;;
 esac
