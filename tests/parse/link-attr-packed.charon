@@ -2,12 +2,22 @@
 @link("printf")
 extern fn print_format(fmt: *char, ...): i32;
 
-@packed @test1 @test2
+@packed 
+@test_attr1
+@test_attr2
 type X struct {}
 
-fn main(): uint {
+@test_attr3(42)
+module Test {
+    @test_attr4
+    fn test_func(): i32 {
+        return 123;
+    }
+}
 
+@link("main")
+fn charon_main(): uint {
     print_format("Hello world\n");
-
+    Test::test_func();
     return 0;
 }

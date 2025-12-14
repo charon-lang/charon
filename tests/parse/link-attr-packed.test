@@ -30,10 +30,10 @@ Root
         Token(identifier `packed`)
     Attribute
         Token(`@`)
-        Token(identifier `test1`)
+        Token(identifier `test_attr1`)
     Attribute
         Token(`@`)
-        Token(identifier `test2`)
+        Token(identifier `test_attr2`)
     Type Definition
         Token(`type`)
         Token(identifier `X`)
@@ -41,9 +41,50 @@ Root
             Token(`struct`)
             Token(`{`)
             Token(`}`)
+    Attribute
+        Token(`@`)
+        Token(identifier `test_attr3`)
+        Token(`(`)
+        Literal Number
+            Token(decimal number `42`)
+        Token(`)`)
+    Module
+        Token(`module`)
+        Token(identifier `Test`)
+        Token(`{`)
+        Attribute
+            Token(`@`)
+            Token(identifier `test_attr4`)
+        Function
+            Token(`fn`)
+            Token(identifier `test_func`)
+            Function Type
+                Token(`(`)
+                Token(`)`)
+                Token(`:`)
+                Type Reference
+                    Token(identifier `i32`)
+            Statement
+                Block
+                    Token(`{`)
+                    Statement
+                        Return
+                            Token(`return`)
+                            Literal Number
+                                Token(decimal number `123`)
+                            Token(`;`)
+                    Token(`}`)
+        Token(`}`)
+    Attribute
+        Token(`@`)
+        Token(identifier `link`)
+        Token(`(`)
+        Literal String
+            Token(string `"main"`)
+        Token(`)`)
     Function
         Token(`fn`)
-        Token(identifier `main`)
+        Token(identifier `charon_main`)
         Function Type
             Token(`(`)
             Token(`)`)
@@ -61,6 +102,17 @@ Root
                             Token(`(`)
                             Literal String
                                 Token(string `"Hello world\n"`)
+                            Token(`)`)
+                        Token(`;`)
+                Statement
+                    Expression
+                        Function Call
+                            Selector
+                                Token(identifier `Test`)
+                                Token(`::`)
+                                Variable
+                                    Token(identifier `test_func`)
+                            Token(`(`)
                             Token(`)`)
                         Token(`;`)
                 Statement
