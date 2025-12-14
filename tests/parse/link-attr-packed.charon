@@ -2,7 +2,8 @@
 @link("printf")
 extern fn print_format(fmt: *char, ...): i32;
 
-type X @packed @test1 @test2 struct {}
+@packed @test1 @test2
+type X struct {}
 
 fn main(): uint {
 
