@@ -1,12 +1,12 @@
-#include "charon/diag.h"
-#include "charon/path.h"
-#include "charon/utf8.h"
-
 #include <assert.h>
+#include <charon/diag.h>
 #include <charon/element.h>
+#include <charon/file.h>
 #include <charon/lexer.h>
 #include <charon/memory.h>
 #include <charon/parser.h>
+#include <charon/path.h>
+#include <charon/utf8.h>
 #include <charon/util.h>
 #include <errno.h>
 #include <libgen.h>
@@ -19,9 +19,11 @@
 bool raw_output = true;
 bool quiet_mode = false;
 
-#define PRINTF_IF_NOT_QUIET(...)                 \
-    do {                                         \
-        if(!quiet_mode) { printf(__VA_ARGS__); } \
+#define PRINTF_IF_NOT_QUIET(...) \
+    do {                         \
+        if(!quiet_mode) {        \
+            printf(__VA_ARGS__); \
+        }                        \
     } while(0)
 
 char *ansi_color(const char *text) {
@@ -41,7 +43,9 @@ static void print_tree(charon_memory_allocator_t *allocator, charon_element_t *e
             PRINTF_IF_NOT_QUIET("%s%s%s\n", node_kind == CHARON_NODE_KIND_ERROR ? ansi_color("\e[41m") : "", charon_node_kind_tostring(node_kind), ansi_color("\e[0m"));
 
             size_t child_count = charon_element_node_child_count(element->inner);
-            for(size_t i = 0; i < child_count; i++) { print_tree(allocator, charon_element_wrap_node_child(allocator, element, i), depth + 1); }
+            for(size_t i = 0; i < child_count; i++) {
+                print_tree(allocator, charon_element_wrap_node_child(allocator, element, i), depth + 1);
+            }
             break;
         }
         case CHARON_ELEMENT_TYPE_TOKEN:
@@ -59,6 +63,8 @@ static void print_tree(charon_memory_allocator_t *allocator, charon_element_t *e
             break;
     }
 }
+
+extern void test(charon_memory_allocator_t *allocator, const charon_file_t *file);
 
 int main(int argc, char **argv) {
     if(argc < 2) {
@@ -138,6 +144,9 @@ int main(int argc, char **argv) {
         charon_path_destroy(diag->path);
         free(diag);
     }
+
+    charon_file_t f = { .name = name, .text = text, .root_element = root_element->inner };
+    test(allocator, &f);
 
     charon_lexer_destroy(lexer);
     charon_parser_destroy(parser);
