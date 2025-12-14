@@ -42,8 +42,8 @@ Root
                         Token(`:`)
                         Type Reference
                             Token(identifier `uint`)
+                        Token(`=`)
                         Cast
-                            Token(`=`)
                             Literal Number
                                 Token(decimal number `5`)
                             Token(`as`)
@@ -55,8 +55,8 @@ Root
                         Binary Expression
                             Variable
                                 Token(identifier `x`)
+                            Token(`=`)
                             Cast
-                                Token(`=`)
                                 Literal Number
                                     Token(decimal number `4`)
                                 Token(`as`)
@@ -70,8 +70,8 @@ Root
                         Token(`:`)
                         Type Reference
                             Token(identifier `u8`)
+                        Token(`=`)
                         Cast
-                            Token(`=`)
                             Literal Number
                                 Token(decimal number `5`)
                             Token(`as`)
@@ -85,8 +85,8 @@ Root
                         Token(`:`)
                         Type Reference
                             Token(identifier `u16`)
+                        Token(`=`)
                         Cast
-                            Token(`=`)
                             Literal Number
                                 Token(decimal number `5`)
                             Token(`as`)
@@ -98,8 +98,8 @@ Root
                         Binary Expression
                             Variable
                                 Token(identifier `x`)
+                            Token(`=`)
                             Binary Expression
-                                Token(`=`)
                                 Variable
                                     Token(identifier `a`)
                                 Token(`+`)
@@ -111,8 +111,8 @@ Root
                         Binary Expression
                             Variable
                                 Token(identifier `x`)
+                            Token(`=`)
                             Binary Expression
-                                Token(`=`)
                                 Variable
                                     Token(identifier `b`)
                                 Token(`+`)
@@ -134,8 +134,8 @@ Root
                         Token(`;`)
                 Statement
                     Return
+                        Token(`return`)
                         Cast
-                            Token(`return`)
                             Literal Number
                                 Token(decimal number `0`)
                             Token(`as`)

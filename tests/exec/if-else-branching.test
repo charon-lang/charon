@@ -61,8 +61,8 @@ Root
                 Statement
                     If
                         Token(`if`)
+                        Token(`(`)
                         Binary Expression
-                            Token(`(`)
                             Literal Number
                                 Token(decimal number `5`)
                             Token(`>`)

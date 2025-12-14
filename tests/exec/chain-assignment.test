@@ -64,16 +64,16 @@ Root
                         Binary Expression
                             Variable
                                 Token(identifier `a`)
+                            Token(`=`)
                             Binary Expression
-                                Token(`=`)
                                 Variable
                                     Token(identifier `b`)
+                                Token(`=`)
                                 Binary Expression
-                                    Token(`=`)
                                     Variable
                                         Token(identifier `c`)
+                                    Token(`=`)
                                     Binary Expression
-                                        Token(`=`)
                                         Variable
                                             Token(identifier `d`)
                                         Token(`=`)

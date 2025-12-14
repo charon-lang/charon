@@ -86,14 +86,14 @@ Root
                             Token(`(`)
                             Literal String
                                 Token(string `"%lu %lu\n"`)
+                            Token(`,`)
                             Subscript
-                                Token(`,`)
                                 Variable
                                     Token(identifier `test`)
                                 Token(`.`)
                                 Token(identifier `a`)
+                            Token(`,`)
                             Subscript
-                                Token(`,`)
                                 Variable
                                     Token(identifier `test`)
                                 Token(`.`)
@@ -108,12 +108,12 @@ Root
                             Token(`(`)
                             Literal String
                                 Token(string `"%lu\n"`)
+                            Token(`,`)
                             Function Call
-                                Token(`,`)
                                 Variable
                                     Token(identifier `sum`)
+                                Token(`(`)
                                 Unary Expression
-                                    Token(`(`)
                                     Token(`&`)
                                     Variable
                                         Token(identifier `test`)
@@ -128,12 +128,12 @@ Root
                             Token(`(`)
                             Literal String
                                 Token(string `"%lu\n"`)
+                            Token(`,`)
                             Function Call
-                                Token(`,`)
                                 Variable
                                     Token(identifier `sum2`)
+                                Token(`(`)
                                 Unary Expression
-                                    Token(`(`)
                                     Token(`&`)
                                     Variable
                                         Token(identifier `test`)
@@ -167,9 +167,9 @@ Root
                 Token(`{`)
                 Statement
                     Return
+                        Token(`return`)
                         Binary Expression
                             Subscript
-                                Token(`return`)
                                 Token(`(`)
                                 Parentheses Wrapped Expression
                                     Unary Expression
@@ -179,8 +179,8 @@ Root
                                     Token(`)`)
                                 Token(`.`)
                                 Token(identifier `a`)
+                            Token(`+`)
                             Subscript
-                                Token(`+`)
                                 Token(`(`)
                                 Parentheses Wrapped Expression
                                     Unary Expression
@@ -212,15 +212,15 @@ Root
                 Token(`{`)
                 Statement
                     Return
+                        Token(`return`)
                         Binary Expression
                             Subscript Dereference
-                                Token(`return`)
                                 Variable
                                     Token(identifier `v`)
                                 Token(`->`)
                                 Token(identifier `a`)
+                            Token(`+`)
                             Subscript Dereference
-                                Token(`+`)
                                 Variable
                                     Token(identifier `v`)
                                 Token(`->`)

@@ -72,8 +72,8 @@ Root
                             Token(`(`)
                             Literal String
                                 Token(string `"# %lu\n"`)
+                            Token(`,`)
                             Subscript
-                                Token(`,`)
                                 Variable
                                     Token(identifier `a`)
                                 Token(`.`)
@@ -89,8 +89,8 @@ Root
                             Token(`(`)
                             Literal String
                                 Token(string `"$ %lu\n"`)
+                            Token(`,`)
                             Subscript
-                                Token(`,`)
                                 Variable
                                     Token(identifier `a`)
                                 Token(`.`)
@@ -119,8 +119,8 @@ Root
                             Token(`(`)
                             Literal String
                                 Token(string `"%% %lu\n"`)
+                            Token(`,`)
                             Subscript
-                                Token(`,`)
                                 Variable
                                     Token(identifier `a`)
                                 Token(`.`)

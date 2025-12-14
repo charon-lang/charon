@@ -46,8 +46,8 @@ Root
                         Function Call
                             Variable
                                 Token(identifier `printf`)
+                            Token(`(`)
                             Subscript
-                                Token(`(`)
                                 Variable
                                     Token(identifier `b`)
                                 Token(`.`)

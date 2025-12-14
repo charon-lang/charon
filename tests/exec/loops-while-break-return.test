@@ -67,8 +67,8 @@ Root
                                 Statement
                                     If
                                         Token(`if`)
+                                        Token(`(`)
                                         Binary Expression
-                                            Token(`(`)
                                             Variable
                                                 Token(identifier `x`)
                                             Token(`>=`)
@@ -94,8 +94,8 @@ Root
                     Declaration
                         Token(`let`)
                         Token(identifier `x`)
+                        Token(`=`)
                         Cast
-                            Token(`=`)
                             Literal Number
                                 Token(decimal number `500`)
                             Token(`as`)
@@ -115,8 +115,8 @@ Root
                 Statement
                     While
                         Token(`while`)
+                        Token(`(`)
                         Binary Expression
-                            Token(`(`)
                             Variable
                                 Token(identifier `i`)
                             Token(`>`)

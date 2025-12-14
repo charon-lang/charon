@@ -114,8 +114,8 @@ Root
                         Token(`;`)
                 Statement
                     Return
+                        Token(`return`)
                         Cast
-                            Token(`return`)
                             Literal Number
                                 Token(decimal number `0`)
                             Token(`as`)

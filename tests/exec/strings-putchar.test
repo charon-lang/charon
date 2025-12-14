@@ -47,8 +47,8 @@ Root
                         Function Call
                             Variable
                                 Token(identifier `putchar`)
+                            Token(`(`)
                             Cast
-                                Token(`(`)
                                 Literal String
                                     Token(char `'x'`)
                                 Token(`as`)
@@ -61,9 +61,9 @@ Root
                         Function Call
                             Variable
                                 Token(identifier `putchar`)
+                            Token(`(`)
                             Cast
                                 Subscript
-                                    Token(`(`)
                                     Token(`(`)
                                     Parentheses Wrapped Expression
                                         Literal String
@@ -83,8 +83,8 @@ Root
                         Function Call
                             Variable
                                 Token(identifier `putchar`)
+                            Token(`(`)
                             Cast
-                                Token(`(`)
                                 Literal String
                                     Token(char `'x'`)
                                 Token(`as`)
@@ -130,9 +130,9 @@ Root
                         Function Call
                             Variable
                                 Token(identifier `putchar`)
+                            Token(`(`)
                             Cast
                                 Subscript
-                                    Token(`(`)
                                     Variable
                                         Token(identifier `str`)
                                     Token(`.`)
@@ -148,9 +148,9 @@ Root
                         Function Call
                             Variable
                                 Token(identifier `putchar`)
+                            Token(`(`)
                             Cast
                                 Subscript
-                                    Token(`(`)
                                     Variable
                                         Token(identifier `str`)
                                     Token(`.`)
@@ -194,17 +194,17 @@ Root
                 Statement
                     While
                         Token(`while`)
+                        Token(`(`)
                         Binary Expression
                             Subscript
-                                Token(`(`)
                                 Variable
                                     Token(identifier `str`)
                                 Token(`[`)
                                 Variable
                                     Token(identifier `i`)
                                 Token(`]`)
+                            Token(`!=`)
                             Cast
-                                Token(`!=`)
                                 Literal Number
                                     Token(decimal number `0`)
                                 Token(`as`)
@@ -219,9 +219,9 @@ Root
                                         Function Call
                                             Variable
                                                 Token(identifier `putchar`)
+                                            Token(`(`)
                                             Cast
                                                 Subscript
-                                                    Token(`(`)
                                                     Variable
                                                         Token(identifier `str`)
                                                     Token(`[`)

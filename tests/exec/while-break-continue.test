@@ -69,8 +69,8 @@ Root
                                 Statement
                                     If
                                         Token(`if`)
+                                        Token(`(`)
                                         Binary Expression
-                                            Token(`(`)
                                             Variable
                                                 Token(identifier `i`)
                                             Token(`==`)
@@ -157,8 +157,8 @@ Root
                                 Statement
                                     If
                                         Token(`if`)
+                                        Token(`(`)
                                         Binary Expression
-                                            Token(`(`)
                                             Variable
                                                 Token(identifier `i`)
                                             Token(`==`)
@@ -172,8 +172,8 @@ Root
                                 Statement
                                     If
                                         Token(`if`)
+                                        Token(`(`)
                                         Binary Expression
-                                            Token(`(`)
                                             Variable
                                                 Token(identifier `i`)
                                             Token(`==`)
@@ -197,8 +197,8 @@ Root
                         Token(`;`)
                 Statement
                     Return
+                        Token(`return`)
                         Cast
-                            Token(`return`)
                             Literal Number
                                 Token(decimal number `0`)
                             Token(`as`)

@@ -35,8 +35,8 @@ Root
                             Token(`(`)
                             Literal String
                                 Token(string `"%u\n"`)
+                            Token(`,`)
                             Function Call
-                                Token(`,`)
                                 Variable
                                     Token(identifier `sum`)
                                     Token(`:`)
@@ -61,8 +61,8 @@ Root
                             Token(`(`)
                             Literal String
                                 Token(string `"%i\n"`)
+                            Token(`,`)
                             Function Call
-                                Token(`,`)
                                 Variable
                                     Token(identifier `sum`)
                                     Token(`:`)
@@ -70,17 +70,17 @@ Root
                                     Type Reference
                                         Token(identifier `int`)
                                     Token(`>`)
+                                Token(`(`)
                                 Unary Expression
-                                    Token(`(`)
+                                    Token(`-`)
                                     Cast
-                                        Token(`-`)
                                         Literal Number
                                             Token(decimal number `10`)
                                         Token(`as`)
                                         Type Reference
                                             Token(identifier `int`)
+                                Token(`,`)
                                 Cast
-                                    Token(`,`)
                                     Literal Number
                                         Token(decimal number `8`)
                                     Token(`as`)
@@ -97,8 +97,8 @@ Root
                             Token(`(`)
                             Literal String
                                 Token(string `"%u\n"`)
+                            Token(`,`)
                             Function Call
-                                Token(`,`)
                                 Variable
                                     Token(identifier `sum`)
                                     Token(`:`)
@@ -142,8 +142,8 @@ Root
                 Token(`{`)
                 Statement
                     Return
+                        Token(`return`)
                         Binary Expression
-                            Token(`return`)
                             Variable
                                 Token(identifier `a`)
                             Token(`+`)

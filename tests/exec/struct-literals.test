@@ -1,0 +1,156 @@
+Root
+    Extern
+        Token(`extern`)
+        Token(`fn`)
+        Token(identifier `printf`)
+        Function Type
+            Token(`(`)
+            Token(identifier `fmt`)
+            Token(`:`)
+            Pointer Type
+                Token(`*`)
+                Type Reference
+                    Token(identifier `u8`)
+            Token(`,`)
+            Token(`...`)
+            Token(`)`)
+            Token(`:`)
+            Type Reference
+                Token(identifier `i32`)
+        Token(`;`)
+    Type Definition
+        Token(`type`)
+        Token(identifier `Test`)
+        Structure Type
+            Token(`struct`)
+            Token(`{`)
+            Token(identifier `a`)
+            Token(`:`)
+            Type Reference
+                Token(identifier `uint`)
+            Token(`,`)
+            Token(identifier `b`)
+            Token(`:`)
+            Type Reference
+                Token(identifier `uint`)
+            Token(`,`)
+            Token(identifier `c`)
+            Token(`:`)
+            Type Reference
+                Token(identifier `uint`)
+            Token(`}`)
+    Global Declaration
+        Token(`let`)
+        Token(identifier `x`)
+        Token(`:`)
+        Type Reference
+            Token(identifier `Test`)
+        Token(`=`)
+        Literal Struct
+            Token(identifier `Test`)
+            Token(`{`)
+            Token(identifier `a`)
+            Token(`=`)
+            Literal Number
+                Token(decimal number `5`)
+            Token(`,`)
+            Token(identifier `b`)
+            Token(`=`)
+            Literal Number
+                Token(decimal number `9`)
+            Token(`,`)
+            Token(identifier `c`)
+            Token(`=`)
+            Literal Number
+                Token(decimal number `3`)
+            Token(`}`)
+        Token(`;`)
+    Function
+        Token(`fn`)
+        Token(identifier `main`)
+        Function Type
+            Token(`(`)
+            Token(`)`)
+        Statement
+            Block
+                Token(`{`)
+                Statement
+                    Declaration
+                        Token(`let`)
+                        Token(identifier `y`)
+                        Token(`=`)
+                        Literal Number
+                            Token(decimal number `7`)
+                        Token(`;`)
+                Statement
+                    Declaration
+                        Token(`let`)
+                        Token(identifier `z`)
+                        Token(`=`)
+                        Literal Struct
+                            Token(identifier `Test`)
+                            Token(`{`)
+                            Token(identifier `a`)
+                            Token(`=`)
+                            Variable
+                                Token(identifier `y`)
+                            Token(`,`)
+                            Token(identifier `b`)
+                            Token(`=`)
+                            Literal Number
+                                Token(decimal number `2`)
+                            Token(`,`)
+                            Token(identifier `c`)
+                            Token(`=`)
+                            Literal Number
+                                Token(decimal number `9`)
+                            Token(`}`)
+                        Token(`;`)
+                Statement
+                    Expression
+                        Function Call
+                            Variable
+                                Token(identifier `printf`)
+                            Token(`(`)
+                            Literal String
+                                Token(string `"%u, %u, %u, %u, %u, %u\n"`)
+                            Token(`,`)
+                            Subscript
+                                Variable
+                                    Token(identifier `x`)
+                                Token(`.`)
+                                Token(identifier `a`)
+                            Token(`,`)
+                            Subscript
+                                Variable
+                                    Token(identifier `x`)
+                                Token(`.`)
+                                Token(identifier `b`)
+                            Token(`,`)
+                            Subscript
+                                Variable
+                                    Token(identifier `x`)
+                                Token(`.`)
+                                Token(identifier `c`)
+                            Token(`,`)
+                            Subscript
+                                Variable
+                                    Token(identifier `z`)
+                                Token(`.`)
+                                Token(identifier `a`)
+                            Token(`,`)
+                            Subscript
+                                Variable
+                                    Token(identifier `z`)
+                                Token(`.`)
+                                Token(identifier `b`)
+                            Token(`,`)
+                            Subscript
+                                Variable
+                                    Token(identifier `z`)
+                                Token(`.`)
+                                Token(identifier `c`)
+                            Token(`)`)
+                        Token(`;`)
+                Token(`}`)
+    Token(eof)

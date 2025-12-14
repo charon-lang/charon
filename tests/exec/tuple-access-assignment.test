@@ -52,8 +52,8 @@ Root
                             Token(`(`)
                             Literal String
                                 Token(string `"%lu\n"`)
+                            Token(`,`)
                             Subscript
-                                Token(`,`)
                                 Variable
                                     Token(identifier `a`)
                                 Token(`.`)
@@ -82,8 +82,8 @@ Root
                             Token(`(`)
                             Literal String
                                 Token(string `"%lu\n"`)
+                            Token(`,`)
                             Subscript
-                                Token(`,`)
                                 Variable
                                     Token(identifier `a`)
                                 Token(`.`)
@@ -95,8 +95,8 @@ Root
                     Declaration
                         Token(`let`)
                         Token(identifier `b`)
+                        Token(`=`)
                         Subscript
-                            Token(`=`)
                             Token(`(`)
                             Tuple
                                 Literal Number

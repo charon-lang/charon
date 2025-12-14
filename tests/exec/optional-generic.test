@@ -125,14 +125,14 @@ Root
                         Function Call
                             Variable
                                 Token(identifier `printf`)
+                            Token(`(`)
                             Subscript
-                                Token(`(`)
                                 Variable
                                     Token(identifier `b`)
                                 Token(`.`)
                                 Token(identifier `value`)
+                            Token(`,`)
                             Subscript
-                                Token(`,`)
                                 Variable
                                     Token(identifier `a`)
                                 Token(`.`)

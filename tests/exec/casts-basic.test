@@ -53,8 +53,8 @@ Root
                         Token(`:`)
                         Type Reference
                             Token(identifier `u8`)
+                        Token(`=`)
                         Cast
-                            Token(`=`)
                             Variable
                                 Token(identifier `x`)
                             Token(`as`)
@@ -68,8 +68,8 @@ Root
                         Token(`:`)
                         Type Reference
                             Token(identifier `u32`)
+                        Token(`=`)
                         Cast
-                            Token(`=`)
                             Variable
                                 Token(identifier `y`)
                             Token(`as`)

@@ -47,8 +47,8 @@ Root
                             Token(`*`)
                             Type Reference
                                 Token(identifier `u64`)
+                        Token(`=`)
                         Unary Expression
-                            Token(`=`)
                             Token(`&`)
                             Variable
                                 Token(identifier `x`)
@@ -60,8 +60,8 @@ Root
                         Token(`:`)
                         Type Reference
                             Token(identifier `u64`)
+                        Token(`=`)
                         Unary Expression
-                            Token(`=`)
                             Token(`*`)
                             Variable
                                 Token(identifier `xp`)
@@ -113,8 +113,8 @@ Root
                         Binary Expression
                             Variable
                                 Token(identifier `c`)
+                            Token(`=`)
                             Unary Expression
-                                Token(`=`)
                                 Token(`&`)
                                 Variable
                                     Token(identifier `a`)
@@ -124,8 +124,8 @@ Root
                         Binary Expression
                             Variable
                                 Token(identifier `b`)
+                            Token(`=`)
                             Unary Expression
-                                Token(`=`)
                                 Token(`*`)
                                 Variable
                                     Token(identifier `c`)
@@ -138,10 +138,10 @@ Root
                             Token(`(`)
                             Literal String
                                 Token(string `"> %lu\n"`)
+                            Token(`,`)
                             Unary Expression
-                                Token(`,`)
+                                Token(`*`)
                                 Unary Expression
-                                    Token(`*`)
                                     Token(`&`)
                                     Variable
                                         Token(identifier `b`)

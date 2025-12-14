@@ -1,18 +1,18 @@
 extern fn printf(fmt: *char, ...): i32;
 
-let x: uint = 100
-let y: uint = 55 + 8
+let x: uint = 100;
+let y: uint = 55 + 8;
 
 type X struct {
     a: i8,
     b: i32
-}
+};
 
 type Y struct {
     a: i8,
     b: i32,
     c: i8
-}
+};
 
 fn main() {
     printf("%llu, %llu\n", x, y);

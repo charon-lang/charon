@@ -72,8 +72,8 @@ Root
                     Declaration
                         Token(`let`)
                         Token(identifier `xx`)
+                        Token(`=`)
                         Function Call
-                            Token(`=`)
                             Variable
                                 Token(identifier `x`)
                             Token(`(`)
@@ -83,8 +83,8 @@ Root
                     Declaration
                         Token(`let`)
                         Token(identifier `yy`)
+                        Token(`=`)
                         Function Call
-                            Token(`=`)
                             Variable
                                 Token(identifier `y`)
                             Token(`(`)
@@ -93,8 +93,8 @@ Root
                 Statement
                     If
                         Token(`if`)
+                        Token(`(`)
                         Binary Expression
-                            Token(`(`)
                             Variable
                                 Token(identifier `xx`)
                             Token(`&&`)
@@ -132,8 +132,8 @@ Root
                                 Statement
                                     If
                                         Token(`if`)
+                                        Token(`(`)
                                         Binary Expression
-                                            Token(`(`)
                                             Variable
                                                 Token(identifier `xx`)
                                             Token(`||`)
@@ -173,12 +173,12 @@ Root
                 Statement
                     If
                         Token(`if`)
+                        Token(`(`)
                         Binary Expression
-                            Token(`(`)
                             Variable
                                 Token(identifier `xx`)
+                            Token(`&&`)
                             Binary Expression
-                                Token(`&&`)
                                 Literal Number
                                     Token(decimal number `5`)
                                 Token(`>`)
@@ -202,9 +202,9 @@ Root
                 Statement
                     If
                         Token(`if`)
+                        Token(`(`)
                         Binary Expression
                             Binary Expression
-                                Token(`(`)
                                 Variable
                                     Token(identifier `xx`)
                                 Token(`&&`)
@@ -231,9 +231,9 @@ Root
                 Statement
                     If
                         Token(`if`)
+                        Token(`(`)
                         Binary Expression
                             Binary Expression
-                                Token(`(`)
                                 Variable
                                     Token(identifier `xx`)
                                 Token(`&&`)
@@ -260,8 +260,8 @@ Root
                 Statement
                     If
                         Token(`if`)
+                        Token(`(`)
                         Binary Expression
-                            Token(`(`)
                             Token(`(`)
                             Parentheses Wrapped Expression
                                 Binary Expression

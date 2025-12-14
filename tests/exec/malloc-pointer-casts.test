@@ -58,8 +58,8 @@ Root
                     Declaration
                         Token(`let`)
                         Token(identifier `brr`)
+                        Token(`=`)
                         Cast
-                            Token(`=`)
                             Literal Number
                                 Token(hexadecimal number `0x80000`)
                             Token(`as`)
@@ -85,8 +85,8 @@ Root
                     Declaration
                         Token(`let`)
                         Token(identifier `back`)
+                        Token(`=`)
                         Cast
-                            Token(`=`)
                             Variable
                                 Token(identifier `brr`)
                             Token(`as`)
@@ -110,8 +110,8 @@ Root
                     Declaration
                         Token(`let`)
                         Token(identifier `data`)
+                        Token(`=`)
                         Function Call
-                            Token(`=`)
                             Variable
                                 Token(identifier `malloc`)
                             Token(`(`)
@@ -135,8 +135,8 @@ Root
                                             Type Reference
                                                 Token(identifier `u8`)
                                     Token(`)`)
+                            Token(`=`)
                             Cast
-                                Token(`=`)
                                 Literal Number
                                     Token(decimal number `100`)
                                 Token(`as`)

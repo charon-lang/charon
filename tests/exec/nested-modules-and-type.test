@@ -116,15 +116,15 @@ Root
                             Token(`(`)
                             Literal String
                                 Token(string `"%u\n"`)
+                            Token(`,`)
                             Binary Expression
                                 Subscript
-                                    Token(`,`)
                                     Variable
                                         Token(identifier `x`)
                                     Token(`.`)
                                     Token(identifier `a`)
+                                Token(`+`)
                                 Subscript
-                                    Token(`+`)
                                     Variable
                                         Token(identifier `x`)
                                     Token(`.`)
@@ -133,8 +133,8 @@ Root
                         Token(`;`)
                 Statement
                     Return
+                        Token(`return`)
                         Cast
-                            Token(`return`)
                             Literal Number
                                 Token(decimal number `0`)
                             Token(`as`)

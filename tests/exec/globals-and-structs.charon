@@ -3,14 +3,14 @@ extern fn printf(fmt: *char, ...): i32;
 type Test struct {
     a: uint,
     b: uint
-}
+};
 
 type W struct {
     i: *W
-}
+};
 
-let x: uint
-let test: Test
+let x: uint;
+let test: Test;
 
 fn main(): uint {
 

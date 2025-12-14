@@ -52,8 +52,8 @@ Root
                             Token(`(`)
                             Literal String
                                 Token(string `"> %lu\n"`)
+                            Token(`,`)
                             Subscript
-                                Token(`,`)
                                 Token(`(`)
                                 Tuple
                                     Literal Number
@@ -75,8 +75,8 @@ Root
                             Token(`(`)
                             Literal String
                                 Token(string `"> %lu\n"`)
+                            Token(`,`)
                             Subscript
-                                Token(`,`)
                                 Variable
                                     Token(identifier `a`)
                                 Token(`.`)
@@ -112,22 +112,22 @@ Root
                         Function Call
                             Variable
                                 Token(identifier `printf`)
+                            Token(`(`)
                             Subscript
-                                Token(`(`)
                                 Variable
                                     Token(identifier `b`)
                                 Token(`.`)
                                 Literal Number
                                     Token(decimal number `2`)
+                            Token(`,`)
                             Subscript
-                                Token(`,`)
                                 Variable
                                     Token(identifier `b`)
                                 Token(`.`)
                                 Literal Number
                                     Token(decimal number `1`)
+                            Token(`,`)
                             Subscript
-                                Token(`,`)
                                 Variable
                                     Token(identifier `b`)
                                 Token(`.`)

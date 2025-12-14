@@ -56,12 +56,12 @@ Root
                         Token(`:`)
                         Type Reference
                             Token(identifier `uint`)
+                        Token(`=`)
                         Binary Expression
-                            Token(`=`)
                             Literal Number
                                 Token(decimal number `5`)
+                            Token(`+`)
                             Binary Expression
-                                Token(`+`)
                                 Variable
                                     Token(identifier `x`)
                                 Token(`*`)

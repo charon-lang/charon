@@ -45,8 +45,8 @@ Root
                         Token(`:`)
                         Type Reference
                             Token(identifier `int`)
+                        Token(`=`)
                         Cast
-                            Token(`=`)
                             Literal Number
                                 Token(decimal number `100`)
                             Token(`as`)
@@ -61,8 +61,8 @@ Root
                             Token(`(`)
                             Literal String
                                 Token(string `"> %li\n"`)
+                            Token(`,`)
                             Unary Expression
-                                Token(`,`)
                                 Token(`-`)
                                 Variable
                                     Token(identifier `x`)
@@ -76,8 +76,8 @@ Root
                             Token(`(`)
                             Literal String
                                 Token(string `"> %li\n"`)
+                            Token(`,`)
                             Unary Expression
-                                Token(`,`)
                                 Token(`!`)
                                 Variable
                                     Token(identifier `x`)
@@ -95,8 +95,8 @@ Root
                     Declaration
                         Token(`let`)
                         Token(identifier `zp`)
+                        Token(`=`)
                         Unary Expression
-                            Token(`=`)
                             Token(`&`)
                             Variable
                                 Token(identifier `z`)
@@ -109,8 +109,8 @@ Root
                             Token(`(`)
                             Literal String
                                 Token(string `"> %lu"`)
+                            Token(`,`)
                             Unary Expression
-                                Token(`,`)
                                 Token(`*`)
                                 Variable
                                     Token(identifier `zp`)
