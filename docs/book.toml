@@ -1,0 +1,8 @@
+[book]
+title = "Charon Documentation"
+authors = ["WuX"]
+language = "en"
+src = "src"
+
+[output.html]
+admonitions = true

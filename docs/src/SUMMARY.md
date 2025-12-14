@@ -1,0 +1,5 @@
+- [Charon](./charon.md)
+- [Types](./lang/types.md)
+- [Syntax](./lang/syntax/main.md)
+    - [Literals](./lang/syntax/literals.md)
+    - [Loops](./lang/syntax/loops.md)
