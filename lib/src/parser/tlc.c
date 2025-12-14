@@ -31,7 +31,6 @@ static void parse_type_definition(charon_parser_t *parser) {
         do { parser_consume(parser, CHARON_TOKEN_KIND_IDENTIFIER); } while(parser_consume_try(parser, CHARON_TOKEN_KIND_PNCT_COMMA));
         parser_consume(parser, CHARON_TOKEN_KIND_PNCT_CARET_RIGHT);
     }
-    while(parser_peek(parser) == CHARON_TOKEN_KIND_PNCT_AT) { parse_attribute(parser); }
     parse_type(parser);
 
     parser_close_element(parser, CHARON_NODE_KIND_TLC_TYPE_DEFINITION);
@@ -104,6 +103,7 @@ static void parse_enum(charon_parser_t *parser) {
 
 void parse_tlc(charon_parser_t *parser) {
     switch(parser_peek(parser)) {
+        case CHARON_TOKEN_KIND_PNCT_AT:          parse_attribute(parser); break;
         case CHARON_TOKEN_KIND_KEYWORD_MODULE:   parse_module(parser); break;
         case CHARON_TOKEN_KIND_KEYWORD_FUNCTION: parse_function(parser); break;
         case CHARON_TOKEN_KIND_KEYWORD_EXTERN:   parse_extern(parser); break;
@@ -111,7 +111,8 @@ void parse_tlc(charon_parser_t *parser) {
         case CHARON_TOKEN_KIND_KEYWORD_LET:      parse_declaration(parser); break;
         case CHARON_TOKEN_KIND_KEYWORD_ENUM:     parse_enum(parser); break;
         default:                                 {
-            charon_token_kind_t kinds[6] = { CHARON_TOKEN_KIND_KEYWORD_MODULE, CHARON_TOKEN_KIND_KEYWORD_FUNCTION, CHARON_TOKEN_KIND_KEYWORD_EXTERN, CHARON_TOKEN_KIND_KEYWORD_TYPE, CHARON_TOKEN_KIND_KEYWORD_LET, CHARON_TOKEN_KIND_KEYWORD_ENUM };
+            charon_token_kind_t kinds[7] = { CHARON_TOKEN_KIND_PNCT_AT,      CHARON_TOKEN_KIND_KEYWORD_MODULE, CHARON_TOKEN_KIND_KEYWORD_FUNCTION, CHARON_TOKEN_KIND_KEYWORD_EXTERN,
+                                             CHARON_TOKEN_KIND_KEYWORD_TYPE, CHARON_TOKEN_KIND_KEYWORD_LET,    CHARON_TOKEN_KIND_KEYWORD_ENUM };
 
             charon_diag_data_t *diag_data = malloc(sizeof(charon_diag_data_t) + sizeof(kinds));
             diag_data->unexpected_token.found = parser_peek(parser);
