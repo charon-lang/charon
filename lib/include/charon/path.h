@@ -5,7 +5,6 @@
 
 typedef struct {
     size_t length;
-    size_t rel_start, rel_end;
     size_t steps[];
 } charon_path_t;
 
