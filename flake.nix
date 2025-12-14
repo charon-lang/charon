@@ -4,32 +4,32 @@
         flake-utils.url = "github:numtide/flake-utils";
     };
 
-    outputs = { nixpkgs, flake-utils, ... }: flake-utils.lib.eachDefaultSystem (system:
-        let
-            pkgs = import nixpkgs { inherit system; };
-            inherit (pkgs) mkShell;
-        in {
-            devShells.default = mkShell {
-                shellHook = "export NIX_SHELL_NAME='charon'";
-                nativeBuildInputs = with pkgs; [
-                    meson
-                    ninja
-                    pkgconf
+    outputs =
+        { nixpkgs, flake-utils, ... }:
+        flake-utils.lib.eachDefaultSystem (
+            system:
+            let
+                pkgs = import nixpkgs { inherit system; };
+            in
+            {
+                devShells.default = pkgs.mkShell {
+                    shellHook = "export NIX_SHELL_NAME='charon'; export NIX_HARDENING_ENABLE=''";
+                    buildInputs = with pkgs; [
+                        meson
+                        ninja
+                        pkg-config
 
-                    clang_20
-                    llvmPackages_20.clang-tools
-                    lld_20
+                        clang_20
+                        llvmPackages_20.clang-tools
+                        lld_20
 
-                    pcre2
-                    llvmPackages_20.libllvm
+                        pcre2
+                        llvmPackages_20.libllvm
 
-                    gdb
-                    valgrind
-
-                    sphinx
-                    python312Packages.sphinx-rtd-theme
-                ];
-            };
-        }
-    );
+                        gdb
+                        valgrind
+                    ];
+                };
+            }
+        );
 }
