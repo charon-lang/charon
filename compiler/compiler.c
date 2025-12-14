@@ -16,6 +16,14 @@
 #include <string.h>
 #include <sys/stat.h>
 
+bool supports_ansi = true;
+
+char* ansi_color(const char* text) {
+    if(!supports_ansi) return "";
+
+    return strdup(text);
+}
+
 static void print_tree(charon_memory_allocator_t *allocator, charon_element_t *element, int depth) {
     for(size_t i = 0; i < depth * 4; i++) printf(" ");
 
@@ -23,7 +31,8 @@ static void print_tree(charon_memory_allocator_t *allocator, charon_element_t *e
         case CHARON_ELEMENT_TYPE_TRIVIA: assert(false);
         case CHARON_ELEMENT_TYPE_NODE:   {
             charon_node_kind_t node_kind = charon_element_node_kind(element->inner);
-            printf("%s%s%s\n", node_kind == CHARON_NODE_KIND_ERROR ? "\e[41m" : "", charon_node_kind_tostring(node_kind), "\e[0m");
+
+            printf("%s%s%s\n", node_kind == CHARON_NODE_KIND_ERROR ? ansi_color("\e[41m") : "", charon_node_kind_tostring(node_kind), ansi_color("\e[0m"));
 
             size_t child_count = charon_element_node_child_count(element->inner);
             for(size_t i = 0; i < child_count; i++) {
@@ -51,6 +60,12 @@ int main(int argc, char **argv) {
     if(argc < 2) {
         printf("no path provided\n");
         exit(EXIT_FAILURE);
+    }
+
+    if(argc == 3) {
+        if(strcmp(argv[2], "--shut-the-fuck-up") == 0) {
+            supports_ansi = false;
+        }
     }
 
     char *name = basename(strdup(argv[1]));
@@ -103,7 +118,7 @@ int main(int argc, char **argv) {
             current_element = charon_element_wrap_node_child(allocator, current_element, child_index);
         }
 
-        printf("DIAGNOSTIC %s\n", charon_diag_tostring(diag->kind));
+        printf("DIAGNOSTIC %s %s\n", charon_diag_tostring(diag->kind), charon_diag_fmt(diag->kind, diag->data));
         print_tree(allocator, current_element, 0);
 
         charon_path_destroy(diag->path);

@@ -1,0 +1,17 @@
+extern fn printf(fmt: *u8, ...): i32;
+
+type Test struct {
+    a: uint,
+    b: uint,
+    c: uint
+}
+
+let x: Test = Test { a = 5, b = 9, c = 3 };
+
+fn main() {
+    let y = 7;
+
+    let z = Test { a = y, b = 2, c = 9 };
+
+    printf("%u, %u, %u, %u, %u, %u\n", x.a, x.b, x.c, z.a, z.b, z.c);
+}

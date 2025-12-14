@@ -1,0 +1,157 @@
+Root
+    Extern
+        Token(`extern`)
+        Token(`fn`)
+        Token(identifier `printf`)
+        Function Type
+            Token(`(`)
+            Token(identifier `fmt`)
+            Token(`:`)
+            Pointer Type
+                Token(`*`)
+                Type Reference
+                    Token(identifier `u8`)
+            Token(`,`)
+            Token(`...`)
+            Token(`)`)
+            Token(`:`)
+            Type Reference
+                Token(identifier `i32`)
+        Token(`;`)
+    Extern
+        Token(`extern`)
+        Token(`fn`)
+        Token(identifier `malloc`)
+        Function Type
+            Token(`(`)
+            Token(identifier `size`)
+            Token(`:`)
+            Type Reference
+                Token(identifier `u64`)
+            Token(`)`)
+            Token(`:`)
+            Type Reference
+                Token(identifier `ptr`)
+        Token(`;`)
+    Extern
+        Token(`extern`)
+        Token(`fn`)
+        Token(identifier `free`)
+        Function Type
+            Token(`(`)
+            Token(identifier `ptr`)
+            Token(`:`)
+            Type Reference
+                Token(identifier `ptr`)
+            Token(`)`)
+        Token(`;`)
+    Function
+        Token(`fn`)
+        Token(identifier `main`)
+        Function Type
+            Token(`(`)
+            Token(`)`)
+        Statement
+            Block
+                Token(`{`)
+                Statement
+                    Declaration
+                        Token(`let`)
+                        Token(identifier `brr`)
+                        Cast
+                            Token(`=`)
+                            Literal Number
+                                Token(hexadecimal number `0x80000`)
+                            Token(`as`)
+                            Pointer Type
+                                Token(`*`)
+                                Type Reference
+                                    Token(identifier `char`)
+                        Token(`;`)
+                Statement
+                    Expression
+                        Function Call
+                            Variable
+                                Token(identifier `printf`)
+                            Token(`(`)
+                            Literal String
+                                Token(string `"%p\n"`)
+                            Token(`,`)
+                            Variable
+                                Token(identifier `brr`)
+                            Token(`)`)
+                        Token(`;`)
+                Statement
+                    Declaration
+                        Token(`let`)
+                        Token(identifier `back`)
+                        Cast
+                            Token(`=`)
+                            Variable
+                                Token(identifier `brr`)
+                            Token(`as`)
+                            Type Reference
+                                Token(identifier `uint`)
+                        Token(`;`)
+                Statement
+                    Expression
+                        Function Call
+                            Variable
+                                Token(identifier `printf`)
+                            Token(`(`)
+                            Literal String
+                                Token(string `"%#lx\n"`)
+                            Token(`,`)
+                            Variable
+                                Token(identifier `back`)
+                            Token(`)`)
+                        Token(`;`)
+                Statement
+                    Declaration
+                        Token(`let`)
+                        Token(identifier `data`)
+                        Function Call
+                            Token(`=`)
+                            Variable
+                                Token(identifier `malloc`)
+                            Token(`(`)
+                            Literal Number
+                                Token(decimal number `16`)
+                            Token(`)`)
+                        Token(`;`)
+                Statement
+                    Expression
+                        Binary Expression
+                            Unary Expression
+                                Token(`*`)
+                                Token(`(`)
+                                Parentheses Wrapped Expression
+                                    Cast
+                                        Variable
+                                            Token(identifier `data`)
+                                        Token(`as`)
+                                        Pointer Type
+                                            Token(`*`)
+                                            Type Reference
+                                                Token(identifier `u8`)
+                                    Token(`)`)
+                            Cast
+                                Token(`=`)
+                                Literal Number
+                                    Token(decimal number `100`)
+                                Token(`as`)
+                                Type Reference
+                                    Token(identifier `u8`)
+                        Token(`;`)
+                Statement
+                    Expression
+                        Function Call
+                            Variable
+                                Token(identifier `free`)
+                            Token(`(`)
+                            Variable
+                                Token(identifier `data`)
+                            Token(`)`)
+                        Token(`;`)
+                Token(`}`)
+    Token(eof)

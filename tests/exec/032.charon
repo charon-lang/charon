@@ -1,0 +1,21 @@
+extern fn printf(fmt: *u8, ...): i32;
+
+fn test(value: uint) {
+    switch(value) {
+        2 => {
+            printf("two\n");
+        }
+        1 => printf("one\n");
+        5 => printf("five\n");
+        default => {
+            printf("default\n");
+        }
+    }
+}
+
+fn main() {
+    test(2);
+    test(5);
+    test(99);
+    test(1);
+}

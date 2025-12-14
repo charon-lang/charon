@@ -1,0 +1,126 @@
+Root
+    Extern
+        Token(`extern`)
+        Token(`fn`)
+        Token(identifier `printf`)
+        Function Type
+            Token(`(`)
+            Token(identifier `fmt`)
+            Token(`:`)
+            Pointer Type
+                Token(`*`)
+                Type Reference
+                    Token(identifier `char`)
+            Token(`,`)
+            Token(`...`)
+            Token(`)`)
+            Token(`:`)
+            Type Reference
+                Token(identifier `i32`)
+        Token(`;`)
+    Enumeration
+        Token(`enum`)
+        Token(identifier `Fruit`)
+        Token(`{`)
+        Token(identifier `APPLE`)
+        Token(`,`)
+        Token(identifier `ORANGE`)
+        Token(`,`)
+        Token(identifier `PINEAPPLE`)
+        Token(`,`)
+        Token(identifier `PEAR`)
+        Token(`}`)
+    Function
+        Token(`fn`)
+        Token(identifier `test`)
+        Function Type
+            Token(`(`)
+            Token(identifier `fruit`)
+            Token(`:`)
+            Type Reference
+                Token(identifier `Fruit`)
+            Token(`)`)
+        Statement
+            Block
+                Token(`{`)
+                Statement
+                    Expression
+                        Function Call
+                            Variable
+                                Token(identifier `printf`)
+                            Token(`(`)
+                            Literal String
+                                Token(string `"%u\n"`)
+                            Token(`,`)
+                            Variable
+                                Token(identifier `fruit`)
+                            Token(`)`)
+                        Token(`;`)
+                Token(`}`)
+    Function
+        Token(`fn`)
+        Token(identifier `main`)
+        Function Type
+            Token(`(`)
+            Token(`)`)
+            Token(`:`)
+            Type Reference
+                Token(identifier `u32`)
+        Statement
+            Block
+                Token(`{`)
+                Statement
+                    Declaration
+                        Token(`let`)
+                        Token(identifier `x`)
+                        Token(`=`)
+                        Selector
+                            Token(identifier `Fruit`)
+                            Token(`::`)
+                            Variable
+                                Token(identifier `APPLE`)
+                        Token(`;`)
+                Statement
+                    Expression
+                        Function Call
+                            Variable
+                                Token(identifier `printf`)
+                            Token(`(`)
+                            Literal String
+                                Token(string `"%u %u\n"`)
+                            Token(`,`)
+                            Variable
+                                Token(identifier `x`)
+                            Token(`,`)
+                            Selector
+                                Token(identifier `Fruit`)
+                                Token(`::`)
+                                Variable
+                                    Token(identifier `PEAR`)
+                            Token(`)`)
+                        Token(`;`)
+                Statement
+                    Expression
+                        Function Call
+                            Variable
+                                Token(identifier `test`)
+                            Token(`(`)
+                            Selector
+                                Token(identifier `Fruit`)
+                                Token(`::`)
+                                Variable
+                                    Token(identifier `ORANGE`)
+                            Token(`)`)
+                        Token(`;`)
+                Statement
+                    Return
+                        Cast
+                            Token(`return`)
+                            Literal Number
+                                Token(decimal number `0`)
+                            Token(`as`)
+                            Type Reference
+                                Token(identifier `u8`)
+                        Token(`;`)
+                Token(`}`)
+    Token(eof)

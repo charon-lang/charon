@@ -1,0 +1,30 @@
+extern fn printf(fmt: *char, ...): i32;
+
+fn main(): u32 {
+    let i = 0;
+
+    while {
+        printf("%u\n", i);
+        i += 1;
+        if(i == 5) break;
+        continue;
+        printf("x\n");
+    }
+
+    printf("beep\n");
+
+    i = 0;
+    while {
+        i += 1;
+        while {
+            printf("%u\n", i);
+            break;
+        }
+        if(i == 1) continue;
+        if(i == 2) break;
+    }
+
+    printf("done\n");
+
+    return 0 as u8;
+}
