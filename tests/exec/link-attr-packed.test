@@ -24,6 +24,12 @@ Root
         Attribute
             Token(`@`)
             Token(identifier `packed`)
+        Attribute
+            Token(`@`)
+            Token(identifier `test1`)
+        Attribute
+            Token(`@`)
+            Token(identifier `test2`)
         Structure Type
             Token(`struct`)
             Token(`{`)
