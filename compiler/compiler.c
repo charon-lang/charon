@@ -17,27 +17,31 @@
 #include <sys/stat.h>
 
 bool supports_ansi = true;
+bool quiet_mode = false;
 
-char* ansi_color(const char* text) {
+#define PRINTF_IF_NOT_QUIET(...)                 \
+    do {                                         \
+        if(!quiet_mode) { printf(__VA_ARGS__); } \
+    } while(0)
+
+char *ansi_color(const char *text) {
     if(!supports_ansi) return "";
 
     return strdup(text);
 }
 
 static void print_tree(charon_memory_allocator_t *allocator, charon_element_t *element, int depth) {
-    for(size_t i = 0; i < depth * 4; i++) printf(" ");
+    for(size_t i = 0; i < depth * 4; i++) PRINTF_IF_NOT_QUIET(" ");
 
     switch(charon_element_type(element->inner)) {
         case CHARON_ELEMENT_TYPE_TRIVIA: assert(false);
         case CHARON_ELEMENT_TYPE_NODE:   {
             charon_node_kind_t node_kind = charon_element_node_kind(element->inner);
 
-            printf("%s%s%s\n", node_kind == CHARON_NODE_KIND_ERROR ? ansi_color("\e[41m") : "", charon_node_kind_tostring(node_kind), ansi_color("\e[0m"));
+            PRINTF_IF_NOT_QUIET("%s%s%s\n", node_kind == CHARON_NODE_KIND_ERROR ? ansi_color("\e[41m") : "", charon_node_kind_tostring(node_kind), ansi_color("\e[0m"));
 
             size_t child_count = charon_element_node_child_count(element->inner);
-            for(size_t i = 0; i < child_count; i++) {
-                print_tree(allocator, charon_element_wrap_node_child(allocator, element, i), depth + 1);
-            }
+            for(size_t i = 0; i < child_count; i++) { print_tree(allocator, charon_element_wrap_node_child(allocator, element, i), depth + 1); }
             break;
         }
         case CHARON_ELEMENT_TYPE_TOKEN:
@@ -45,13 +49,13 @@ static void print_tree(charon_memory_allocator_t *allocator, charon_element_t *e
             const char *kind_text = charon_token_kind_tostring(token_kind);
             const charon_utf8_text_t *token_text = charon_element_token_text(element->inner);
             const char *str = token_text == nullptr ? nullptr : charon_utf8_as_string(token_text);
-            printf("Token(");
+            PRINTF_IF_NOT_QUIET("Token(");
             if(str == nullptr || strcmp(kind_text, str) != 0) {
-                printf("%s", kind_text);
-                if(str != nullptr) printf(" ");
+                PRINTF_IF_NOT_QUIET("%s", kind_text);
+                if(str != nullptr) PRINTF_IF_NOT_QUIET(" ");
             }
-            if(str != nullptr) printf("`%s`", str);
-            printf(")\n");
+            if(str != nullptr) PRINTF_IF_NOT_QUIET("`%s`", str);
+            PRINTF_IF_NOT_QUIET(")\n");
             break;
     }
 }
@@ -63,8 +67,18 @@ int main(int argc, char **argv) {
     }
 
     if(argc == 3) {
-        if(strcmp(argv[2], "--shut-the-fuck-up") == 0) {
+        // @note: very technical option names
+        // ignores ANSI support
+        if(strcmp(argv[2], "--no-ansi") == 0) {
             supports_ansi = false;
+        }
+        // disables ALL printing
+        else if(strcmp(argv[2], "--quiet") == 0)
+        {
+            quiet_mode = true;
+        } else {
+            printf("unknown option: %s\n", argv[2]);
+            exit(EXIT_FAILURE);
         }
     }
 
@@ -118,7 +132,7 @@ int main(int argc, char **argv) {
             current_element = charon_element_wrap_node_child(allocator, current_element, child_index);
         }
 
-        printf("DIAGNOSTIC %s %s\n", charon_diag_tostring(diag->kind), charon_diag_fmt(diag->kind, diag->data));
+        PRINTF_IF_NOT_QUIET("DIAGNOSTIC %s %s\n", charon_diag_tostring(diag->kind), charon_diag_fmt(diag->kind, diag->data));
         print_tree(allocator, current_element, 0);
 
         charon_path_destroy(diag->path);

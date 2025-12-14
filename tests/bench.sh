@@ -50,7 +50,7 @@ run_exec() {
         return
     fi
 
-    ./build/compiler/charonc $CHARON_FILE --fully-shut-the-fuck-up
+    ./build/compiler/charonc $CHARON_FILE --quiet
     EXIT_CODE=$?
     if [ $EXIT_CODE -ne 0 ]; then
         print_result 0 $TEST_NAME "tester exited with $EXIT_CODE"
