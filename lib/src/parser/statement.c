@@ -73,7 +73,6 @@ static void parse_for(charon_parser_t *parser) {
     parser_consume(parser, CHARON_TOKEN_KIND_PNCT_PARENTHESES_LEFT);
     if(!parser_consume_try(parser, CHARON_TOKEN_KIND_PNCT_SEMI_COLON)) {
         parse_declaration(parser);
-        parser_consume(parser, CHARON_TOKEN_KIND_PNCT_SEMI_COLON);
     }
     if(!parser_consume_try(parser, CHARON_TOKEN_KIND_PNCT_SEMI_COLON)) {
         parse_expr(parser);
