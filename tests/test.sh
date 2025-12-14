@@ -1,12 +1,19 @@
 #!/usr/bin/env sh
 
 MODE="all"
+PASSED=0
+FAILED=0
+TOTAL=0
 
 POSITIONAL_ARGS=()
 while [[ $# -gt 0 ]]; do
     case $1 in
         -a|--all)
             MODE="all"
+            shift
+            ;;
+        -p|--parse)
+            MODE="parse"
             shift
             ;;
         -*|--*)
@@ -37,10 +44,7 @@ print_result() {
     echo -ne "\n"
 }
 
-PASSED=0
-FAILED=0
-TOTAL=0
-run_exec() {
+run_parse_test() {
     TEST_PATH="${1%.test}"
     TEST_NAME="${TEST_PATH##*/}"
     TOTAL=$(($TOTAL+1))
@@ -70,10 +74,21 @@ run_exec() {
     fi
 }
 
+run_parse_tests() {
+    PASSED=0
+    FAILED=0
+    TOTAL=0
+
+    echo "| Running Parse Tests"
+    for TEST_FILE in tests/parse/*.test; do run_parse_test $TEST_FILE; done
+    echo "| Done $PASSED/$TOTAL Passed ($FAILED Failed)"
+}
+
 case $MODE in
     all)
-        echo "| Running Execution Tests"
-        for TEST_FILE in tests/exec/*.test; do run_exec $TEST_FILE; done
-        echo "| Done $PASSED/$TOTAL Passed ($FAILED Failed)"
+        run_parse_tests
+        ;;
+    parse)
+        run_parse_tests
         ;;
 esac
