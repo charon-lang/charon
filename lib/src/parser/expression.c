@@ -91,8 +91,9 @@ static void parse_identifier(charon_parser_t *parser) {
 }
 
 static void parse_primary(charon_parser_t *parser) {
-    if(parser_consume_try(parser, CHARON_TOKEN_KIND_PNCT_PARENTHESES_LEFT)) {
+    if(parser_peek(parser) == CHARON_TOKEN_KIND_PNCT_PARENTHESES_LEFT) {
         parser_open_element(parser);
+        parser_consume_try(parser, CHARON_TOKEN_KIND_PNCT_PARENTHESES_LEFT);
         parse_expr(parser);
         if(parser_consume_try(parser, CHARON_TOKEN_KIND_PNCT_COMMA)) {
             do {
@@ -105,8 +106,9 @@ static void parse_primary(charon_parser_t *parser) {
         return parser_close_element(parser, CHARON_NODE_KIND_EXPR_PARENTHESES);
     }
 
-    if(parser_consume_try(parser, CHARON_TOKEN_KIND_KEYWORD_SIZEOF)) {
+    if(parser_peek(parser) == CHARON_TOKEN_KIND_KEYWORD_SIZEOF) {
         parser_open_element(parser);
+        parser_consume_try(parser, CHARON_TOKEN_KIND_KEYWORD_SIZEOF);
         parser_consume(parser, CHARON_TOKEN_KIND_PNCT_PARENTHESES_LEFT);
         parse_type(parser);
         parser_consume(parser, CHARON_TOKEN_KIND_PNCT_PARENTHESES_RIGHT);
