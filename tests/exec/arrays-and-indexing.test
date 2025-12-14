@@ -55,6 +55,21 @@ Root
                                 Token(identifier `uint`)
                         Token(`;`)
                 Statement
+                    Declaration
+                        Token(`let`)
+                        Token(identifier `z`)
+                        Token(`:`)
+                        Pointer Type
+                            Token(`*`)
+                            Array Type
+                                Token(`[`)
+                                Literal Number
+                                    Token(decimal number `5`)
+                                Token(`]`)
+                                Type Reference
+                                    Token(identifier `uint`)
+                        Token(`;`)
+                Statement
                     Expression
                         Binary Expression
                             Subscript

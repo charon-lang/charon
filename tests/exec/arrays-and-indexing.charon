@@ -3,6 +3,7 @@ extern fn printf(fmt: *char, ...): i32;
 fn main(): uint {
     let x: [25]uint;
     let y: []uint;
+    let z: *[5]uint;
 
     x[0] = x[1] = 5;
     x[2] = 9;
