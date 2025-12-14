@@ -170,8 +170,8 @@ Root
                         Token(`return`)
                         Binary Expression
                             Subscript
-                                Token(`(`)
                                 Parentheses Wrapped Expression
+                                    Token(`(`)
                                     Unary Expression
                                         Token(`*`)
                                         Variable
@@ -181,8 +181,8 @@ Root
                                 Token(identifier `a`)
                             Token(`+`)
                             Subscript
-                                Token(`(`)
                                 Parentheses Wrapped Expression
+                                    Token(`(`)
                                     Unary Expression
                                         Token(`*`)
                                         Variable

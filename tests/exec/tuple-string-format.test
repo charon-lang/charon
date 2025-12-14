@@ -32,8 +32,8 @@ Root
                         Token(`let`)
                         Token(identifier `b`)
                         Token(`=`)
-                        Token(`(`)
                         Tuple
+                            Token(`(`)
                             Literal Number
                                 Token(decimal number `1`)
                             Token(`,`)

@@ -165,8 +165,8 @@ Root
                             Variable
                                 Token(identifier `other_test`)
                             Token(`(`)
-                            Token(`(`)
                             Tuple
+                                Token(`(`)
                                 Literal Number
                                     Token(decimal number `25`)
                                 Token(`,`)

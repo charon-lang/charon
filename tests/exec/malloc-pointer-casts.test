@@ -124,8 +124,8 @@ Root
                         Binary Expression
                             Unary Expression
                                 Token(`*`)
-                                Token(`(`)
                                 Parentheses Wrapped Expression
+                                    Token(`(`)
                                     Cast
                                         Variable
                                             Token(identifier `data`)

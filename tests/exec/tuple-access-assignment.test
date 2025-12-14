@@ -32,8 +32,8 @@ Root
                         Token(`let`)
                         Token(identifier `a`)
                         Token(`=`)
-                        Token(`(`)
                         Tuple
+                            Token(`(`)
                             Literal Number
                                 Token(decimal number `5`)
                             Token(`,`)
@@ -97,8 +97,8 @@ Root
                         Token(identifier `b`)
                         Token(`=`)
                         Subscript
-                            Token(`(`)
                             Tuple
+                                Token(`(`)
                                 Literal Number
                                     Token(decimal number `10`)
                                 Token(`,`)

@@ -60,8 +60,8 @@ Root
                 Token(`{`)
                 Statement
                     Return
+                        Token(`return`)
                         Binary Expression
-                            Token(`return`)
                             Variable
                                 Token(identifier `a`)
                             Token(`+`)
@@ -100,8 +100,8 @@ Root
                             Token(`(`)
                             Literal String
                                 Token(string `"> %lu\n"`)
+                            Token(`,`)
                             Function Call
-                                Token(`,`)
                                 Variable
                                     Token(identifier `x`)
                                 Token(`(`)
@@ -116,8 +116,8 @@ Root
                             Token(`(`)
                             Literal String
                                 Token(string `"> %lu\n"`)
+                            Token(`,`)
                             Function Call
-                                Token(`,`)
                                 Variable
                                     Token(identifier `add`)
                                 Token(`(`)

@@ -6,13 +6,13 @@ let y: uint = 55 + 8;
 type X struct {
     a: i8,
     b: i32
-};
+}
 
 type Y struct {
     a: i8,
     b: i32,
     c: i8
-};
+}
 
 fn main() {
     printf("%llu, %llu\n", x, y);

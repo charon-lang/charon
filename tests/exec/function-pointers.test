@@ -88,8 +88,8 @@ Root
                 Statement
                     Expression
                         Function Call
-                            Token(`(`)
                             Parentheses Wrapped Expression
+                                Token(`(`)
                                 Unary Expression
                                     Token(`*`)
                                     Unary Expression

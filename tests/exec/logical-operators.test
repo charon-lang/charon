@@ -262,8 +262,8 @@ Root
                         Token(`if`)
                         Token(`(`)
                         Binary Expression
-                            Token(`(`)
                             Parentheses Wrapped Expression
+                                Token(`(`)
                                 Binary Expression
                                     Variable
                                         Token(identifier `xx`)

@@ -1,0 +1,159 @@
+Root
+    Extern
+        Token(`extern`)
+        Token(`fn`)
+        Token(identifier `printf`)
+        Function Type
+            Token(`(`)
+            Token(identifier `fmt`)
+            Token(`:`)
+            Pointer Type
+                Token(`*`)
+                Type Reference
+                    Token(identifier `char`)
+            Token(`,`)
+            Token(`...`)
+            Token(`)`)
+            Token(`:`)
+            Type Reference
+                Token(identifier `i32`)
+        Token(`;`)
+    Global Declaration
+        Token(`let`)
+        Token(identifier `x`)
+        Token(`:`)
+        Type Reference
+            Token(identifier `uint`)
+        Token(`=`)
+        Literal Number
+            Token(decimal number `100`)
+        Token(`;`)
+    Global Declaration
+        Token(`let`)
+        Token(identifier `y`)
+        Token(`:`)
+        Type Reference
+            Token(identifier `uint`)
+        Token(`=`)
+        Binary Expression
+            Literal Number
+                Token(decimal number `55`)
+            Token(`+`)
+            Literal Number
+                Token(decimal number `8`)
+        Token(`;`)
+    Type Definition
+        Token(`type`)
+        Token(identifier `X`)
+        Structure Type
+            Token(`struct`)
+            Token(`{`)
+            Token(identifier `a`)
+            Token(`:`)
+            Type Reference
+                Token(identifier `i8`)
+            Token(`,`)
+            Token(identifier `b`)
+            Token(`:`)
+            Type Reference
+                Token(identifier `i32`)
+            Token(`}`)
+    Type Definition
+        Token(`type`)
+        Token(identifier `Y`)
+        Structure Type
+            Token(`struct`)
+            Token(`{`)
+            Token(identifier `a`)
+            Token(`:`)
+            Type Reference
+                Token(identifier `i8`)
+            Token(`,`)
+            Token(identifier `b`)
+            Token(`:`)
+            Type Reference
+                Token(identifier `i32`)
+            Token(`,`)
+            Token(identifier `c`)
+            Token(`:`)
+            Type Reference
+                Token(identifier `i8`)
+            Token(`}`)
+    Function
+        Token(`fn`)
+        Token(identifier `main`)
+        Function Type
+            Token(`(`)
+            Token(`)`)
+        Statement
+            Block
+                Token(`{`)
+                Statement
+                    Expression
+                        Function Call
+                            Variable
+                                Token(identifier `printf`)
+                            Token(`(`)
+                            Literal String
+                                Token(string `"%llu, %llu\n"`)
+                            Token(`,`)
+                            Variable
+                                Token(identifier `x`)
+                            Token(`,`)
+                            Variable
+                                Token(identifier `y`)
+                            Token(`)`)
+                        Token(`;`)
+                Statement
+                    Expression
+                        Function Call
+                            Variable
+                                Token(identifier `printf`)
+                            Token(`(`)
+                            Literal String
+                                Token(string `"%llu\n"`)
+                            Token(`,`)
+                            Sizeof
+                                Token(`sizeof`)
+                                Token(`(`)
+                                Type Reference
+                                    Token(identifier `uint`)
+                                Token(`)`)
+                            Token(`)`)
+                        Token(`;`)
+                Statement
+                    Expression
+                        Function Call
+                            Variable
+                                Token(identifier `printf`)
+                            Token(`(`)
+                            Literal String
+                                Token(string `"%llu\n"`)
+                            Token(`,`)
+                            Sizeof
+                                Token(`sizeof`)
+                                Token(`(`)
+                                Type Reference
+                                    Token(identifier `X`)
+                                Token(`)`)
+                            Token(`)`)
+                        Token(`;`)
+                Statement
+                    Expression
+                        Function Call
+                            Variable
+                                Token(identifier `printf`)
+                            Token(`(`)
+                            Literal String
+                                Token(string `"%llu\n"`)
+                            Token(`,`)
+                            Sizeof
+                                Token(`sizeof`)
+                                Token(`(`)
+                                Type Reference
+                                    Token(identifier `Y`)
+                                Token(`)`)
+                            Token(`)`)
+                        Token(`;`)
+                Token(`}`)
+    Token(eof)
