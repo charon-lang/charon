@@ -1,0 +1,26 @@
+extern fn printf(fmt: *char, ...): i32;
+extern fn putchar(ch: i32);
+
+fn main(): uint {
+    putchar('x' as i32);
+    putchar(("hello")[1] as i32);
+    putchar('x' as i32);
+    printf("\n");
+
+    let str: *char = "hello\n";
+
+    printstr(str);
+
+    putchar(str.2 as i32);
+    putchar(str.4 as i32);
+
+    return 0;
+}
+
+fn printstr(str: *char) {
+    let i = 0;
+    while(str[i] != 0 as char) {
+        putchar(str[i] as i32);
+        i += 1;
+    }
+}

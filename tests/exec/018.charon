@@ -1,0 +1,12 @@
+extern fn printf(fmt: *char, ...): i32;
+
+fn main(): uint {
+    printf("\43\104el\108o\n");
+
+    printf("%c\n", 'x');
+    printf("%c\n", '\43');
+
+    '\0';
+
+    return 0;
+}

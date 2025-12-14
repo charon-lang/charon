@@ -1,0 +1,143 @@
+Root
+    Extern
+        Token(`extern`)
+        Token(`fn`)
+        Token(identifier `printf`)
+        Function Type
+            Token(`(`)
+            Token(identifier `fmt`)
+            Token(`:`)
+            Pointer Type
+                Token(`*`)
+                Type Reference
+                    Token(identifier `char`)
+            Token(`,`)
+            Token(`...`)
+            Token(`)`)
+            Token(`:`)
+            Type Reference
+                Token(identifier `i32`)
+        Token(`;`)
+    Type Definition
+        Token(`type`)
+        Token(identifier `Optional`)
+        Token(`<`)
+        Token(identifier `T`)
+        Token(`>`)
+        Structure Type
+            Token(`struct`)
+            Token(`{`)
+            Token(identifier `present`)
+            Token(`:`)
+            Type Reference
+                Token(identifier `bool`)
+            Token(`,`)
+            Token(identifier `value`)
+            Token(`:`)
+            Type Reference
+                Token(identifier `T`)
+            Token(`}`)
+    Function
+        Token(`fn`)
+        Token(identifier `main`)
+        Function Type
+            Token(`(`)
+            Token(`)`)
+        Statement
+            Block
+                Token(`{`)
+                Statement
+                    Declaration
+                        Token(`let`)
+                        Token(identifier `a`)
+                        Token(`:`)
+                        Type Reference
+                            Token(identifier `Optional`)
+                            Token(`<`)
+                            Type Reference
+                                Token(identifier `uint`)
+                            Token(`>`)
+                        Token(`;`)
+                Statement
+                    Expression
+                        Binary Expression
+                            Subscript
+                                Variable
+                                    Token(identifier `a`)
+                                Token(`.`)
+                                Token(identifier `present`)
+                            Token(`=`)
+                            Literal Boolean
+                                Token(bool `true`)
+                        Token(`;`)
+                Statement
+                    Expression
+                        Binary Expression
+                            Subscript
+                                Variable
+                                    Token(identifier `a`)
+                                Token(`.`)
+                                Token(identifier `value`)
+                            Token(`=`)
+                            Literal Number
+                                Token(decimal number `5`)
+                        Token(`;`)
+                Statement
+                    Declaration
+                        Token(`let`)
+                        Token(identifier `b`)
+                        Token(`:`)
+                        Type Reference
+                            Token(identifier `Optional`)
+                            Token(`<`)
+                            Pointer Type
+                                Token(`*`)
+                                Type Reference
+                                    Token(identifier `char`)
+                            Token(`>`)
+                        Token(`;`)
+                Statement
+                    Expression
+                        Binary Expression
+                            Subscript
+                                Variable
+                                    Token(identifier `b`)
+                                Token(`.`)
+                                Token(identifier `present`)
+                            Token(`=`)
+                            Literal Boolean
+                                Token(bool `true`)
+                        Token(`;`)
+                Statement
+                    Expression
+                        Binary Expression
+                            Subscript
+                                Variable
+                                    Token(identifier `b`)
+                                Token(`.`)
+                                Token(identifier `value`)
+                            Token(`=`)
+                            Literal String
+                                Token(string `"Hello! %lu\n"`)
+                        Token(`;`)
+                Statement
+                    Expression
+                        Function Call
+                            Variable
+                                Token(identifier `printf`)
+                            Subscript
+                                Token(`(`)
+                                Variable
+                                    Token(identifier `b`)
+                                Token(`.`)
+                                Token(identifier `value`)
+                            Subscript
+                                Token(`,`)
+                                Variable
+                                    Token(identifier `a`)
+                                Token(`.`)
+                                Token(identifier `value`)
+                            Token(`)`)
+                        Token(`;`)
+                Token(`}`)
+    Token(eof)

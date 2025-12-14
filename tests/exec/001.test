@@ -1,0 +1,111 @@
+Root
+    Extern
+        Token(`extern`)
+        Token(`fn`)
+        Token(identifier `printf`)
+        Function Type
+            Token(`(`)
+            Token(identifier `fmt`)
+            Token(`:`)
+            Pointer Type
+                Token(`*`)
+                Type Reference
+                    Token(identifier `u8`)
+            Token(`,`)
+            Token(`...`)
+            Token(`)`)
+            Token(`:`)
+            Type Reference
+                Token(identifier `i32`)
+        Token(`;`)
+    Function
+        Token(`fn`)
+        Token(identifier `main`)
+        Function Type
+            Token(`(`)
+            Token(identifier `argc`)
+            Token(`:`)
+            Type Reference
+                Token(identifier `i32`)
+            Token(`,`)
+            Token(identifier `argv`)
+            Token(`:`)
+            Pointer Type
+                Token(`*`)
+                Type Reference
+                    Token(identifier `char`)
+            Token(`)`)
+        Statement
+            Block
+                Token(`{`)
+                Statement
+                    Declaration
+                        Token(`let`)
+                        Token(identifier `x`)
+                        Token(`:`)
+                        Type Reference
+                            Token(identifier `uint`)
+                        Token(`=`)
+                        Literal Number
+                            Token(decimal number `100`)
+                        Token(`;`)
+                Statement
+                    Declaration
+                        Token(`let`)
+                        Token(identifier `y`)
+                        Token(`:`)
+                        Type Reference
+                            Token(identifier `uint`)
+                        Binary Expression
+                            Token(`=`)
+                            Literal Number
+                                Token(decimal number `5`)
+                            Binary Expression
+                                Token(`+`)
+                                Variable
+                                    Token(identifier `x`)
+                                Token(`*`)
+                                Literal Number
+                                    Token(decimal number `2`)
+                        Token(`;`)
+                Statement
+                    Declaration
+                        Token(`let`)
+                        Token(identifier `fmt`)
+                        Token(`:`)
+                        Pointer Type
+                            Token(`*`)
+                            Type Reference
+                                Token(identifier `char`)
+                        Token(`=`)
+                        Literal String
+                            Token(string `"hello world %lu %i\n"`)
+                        Token(`;`)
+                Statement
+                    Expression
+                        Function Call
+                            Variable
+                                Token(identifier `printf`)
+                            Token(`(`)
+                            Variable
+                                Token(identifier `fmt`)
+                            Token(`,`)
+                            Variable
+                                Token(identifier `y`)
+                            Token(`,`)
+                            Variable
+                                Token(identifier `argc`)
+                            Token(`)`)
+                        Token(`;`)
+                Statement
+                    Expression
+                        Function Call
+                            Variable
+                                Token(identifier `printf`)
+                            Token(`(`)
+                            Literal String
+                                Token(string `"Hello world\n"`)
+                            Token(`)`)
+                        Token(`;`)
+                Token(`}`)
+    Token(eof)

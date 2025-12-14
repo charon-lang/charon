@@ -1,0 +1,37 @@
+extern fn printf(fmt: *char, ...): i32;
+
+type Test struct {
+    a: uint,
+    b: uint
+}
+
+type W struct {
+    i: *W
+}
+
+let x: uint
+let test: Test
+
+fn main(): uint {
+
+    x = 505;
+
+    printf("%lu\n", x);
+
+    x += 20;
+
+    printf("%lu\n", x);
+
+    test.a = 15;
+    test.b = 20;
+
+    printf("%lu\n", test.a + test.b);
+
+    let a: W;
+    let b: W;
+
+    a.i = &b;
+    b.i = &a;
+
+    return 0;
+}

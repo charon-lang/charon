@@ -1,0 +1,102 @@
+Root
+    Extern
+        Token(`extern`)
+        Token(`fn`)
+        Token(identifier `printf`)
+        Function Type
+            Token(`(`)
+            Token(identifier `fmt`)
+            Token(`:`)
+            Pointer Type
+                Token(`*`)
+                Type Reference
+                    Token(identifier `u8`)
+            Token(`,`)
+            Token(`...`)
+            Token(`)`)
+            Token(`:`)
+            Type Reference
+                Token(identifier `i32`)
+        Token(`;`)
+    Function
+        Token(`fn`)
+        Token(identifier `main`)
+        Function Type
+            Token(`(`)
+            Token(`)`)
+        Statement
+            Block
+                Token(`{`)
+                Statement
+                    Expression
+                        Function Call
+                            Variable
+                                Token(identifier `printf`)
+                            Token(`(`)
+                            Literal String
+                                Token(string `"hello\n"`)
+                            Token(`)`)
+                        Token(`;`)
+                Statement
+                    If
+                        Token(`if`)
+                        Token(`(`)
+                        Literal Boolean
+                            Token(bool `true`)
+                        Token(`)`)
+                        Statement
+                            Block
+                                Token(`{`)
+                                Statement
+                                    Expression
+                                        Function Call
+                                            Variable
+                                                Token(identifier `printf`)
+                                            Token(`(`)
+                                            Literal String
+                                                Token(string `"world\n"`)
+                                            Token(`)`)
+                                        Token(`;`)
+                                Token(`}`)
+                Statement
+                    If
+                        Token(`if`)
+                        Binary Expression
+                            Token(`(`)
+                            Literal Number
+                                Token(decimal number `5`)
+                            Token(`>`)
+                            Literal Number
+                                Token(decimal number `10`)
+                        Token(`)`)
+                        Statement
+                            Block
+                                Token(`{`)
+                                Statement
+                                    Expression
+                                        Function Call
+                                            Variable
+                                                Token(identifier `printf`)
+                                            Token(`(`)
+                                            Literal String
+                                                Token(string `"a\n"`)
+                                            Token(`)`)
+                                        Token(`;`)
+                                Token(`}`)
+                        Token(`else`)
+                        Statement
+                            Block
+                                Token(`{`)
+                                Statement
+                                    Expression
+                                        Function Call
+                                            Variable
+                                                Token(identifier `printf`)
+                                            Token(`(`)
+                                            Literal String
+                                                Token(string `"b\n"`)
+                                            Token(`)`)
+                                        Token(`;`)
+                                Token(`}`)
+                Token(`}`)
+    Token(eof)

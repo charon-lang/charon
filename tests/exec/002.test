@@ -1,0 +1,179 @@
+Root
+    Extern
+        Token(`extern`)
+        Token(`fn`)
+        Token(identifier `printf`)
+        Function Type
+            Token(`(`)
+            Token(identifier `fmt`)
+            Token(`:`)
+            Pointer Type
+                Token(`*`)
+                Type Reference
+                    Token(identifier `u8`)
+            Token(`,`)
+            Token(`...`)
+            Token(`)`)
+            Token(`:`)
+            Type Reference
+                Token(identifier `i32`)
+        Token(`;`)
+    Function
+        Token(`fn`)
+        Token(identifier `test`)
+        Function Type
+            Token(`(`)
+            Token(identifier `x`)
+            Token(`:`)
+            Type Reference
+                Token(identifier `u64`)
+            Token(`)`)
+        Statement
+            Block
+                Token(`{`)
+                Statement
+                    Expression
+                        Function Call
+                            Variable
+                                Token(identifier `printf`)
+                            Token(`(`)
+                            Literal String
+                                Token(string `"test > %i\n"`)
+                            Token(`,`)
+                            Variable
+                                Token(identifier `x`)
+                            Token(`)`)
+                        Token(`;`)
+                Token(`}`)
+    Function
+        Token(`fn`)
+        Token(identifier `other_test`)
+        Function Type
+            Token(`(`)
+            Token(identifier `a`)
+            Token(`:`)
+            Tuple Type
+                Token(`(`)
+                Type Reference
+                    Token(identifier `u64`)
+                Token(`,`)
+                Type Reference
+                    Token(identifier `u64`)
+                Token(`)`)
+            Token(`)`)
+        Statement
+            Block
+                Token(`{`)
+                Statement
+                    Expression
+                        Function Call
+                            Variable
+                                Token(identifier `printf`)
+                            Token(`(`)
+                            Literal String
+                                Token(string `"# %lu\n"`)
+                            Subscript
+                                Token(`,`)
+                                Variable
+                                    Token(identifier `a`)
+                                Token(`.`)
+                                Literal Number
+                                    Token(decimal number `1`)
+                            Token(`)`)
+                        Token(`;`)
+                Statement
+                    Expression
+                        Function Call
+                            Variable
+                                Token(identifier `printf`)
+                            Token(`(`)
+                            Literal String
+                                Token(string `"$ %lu\n"`)
+                            Subscript
+                                Token(`,`)
+                                Variable
+                                    Token(identifier `a`)
+                                Token(`.`)
+                                Literal Number
+                                    Token(decimal number `0`)
+                            Token(`)`)
+                        Token(`;`)
+                Statement
+                    Expression
+                        Binary Expression
+                            Subscript
+                                Variable
+                                    Token(identifier `a`)
+                                Token(`.`)
+                                Literal Number
+                                    Token(decimal number `0`)
+                            Token(`=`)
+                            Literal Number
+                                Token(decimal number `100`)
+                        Token(`;`)
+                Statement
+                    Expression
+                        Function Call
+                            Variable
+                                Token(identifier `printf`)
+                            Token(`(`)
+                            Literal String
+                                Token(string `"%% %lu\n"`)
+                            Subscript
+                                Token(`,`)
+                                Variable
+                                    Token(identifier `a`)
+                                Token(`.`)
+                                Literal Number
+                                    Token(decimal number `0`)
+                            Token(`)`)
+                        Token(`;`)
+                Token(`}`)
+    Function
+        Token(`fn`)
+        Token(identifier `main`)
+        Function Type
+            Token(`(`)
+            Token(identifier `argc`)
+            Token(`:`)
+            Type Reference
+                Token(identifier `i32`)
+            Token(`,`)
+            Token(identifier `argv`)
+            Token(`:`)
+            Pointer Type
+                Token(`*`)
+                Type Reference
+                    Token(identifier `char`)
+            Token(`)`)
+        Statement
+            Block
+                Token(`{`)
+                Statement
+                    Expression
+                        Function Call
+                            Variable
+                                Token(identifier `test`)
+                            Token(`(`)
+                            Literal Number
+                                Token(decimal number `500`)
+                            Token(`)`)
+                        Token(`;`)
+                Statement
+                    Expression
+                        Function Call
+                            Variable
+                                Token(identifier `other_test`)
+                            Token(`(`)
+                            Token(`(`)
+                            Tuple
+                                Literal Number
+                                    Token(decimal number `25`)
+                                Token(`,`)
+                                Literal Number
+                                    Token(decimal number `500`)
+                                Token(`)`)
+                            Token(`)`)
+                        Token(`;`)
+                Token(`}`)
+    Token(eof)

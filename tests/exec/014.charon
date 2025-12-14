@@ -1,0 +1,10 @@
+extern fn printf(fmt: *char, ...): i32;
+
+fn main(): uint {
+    hello();
+    return 0;
+}
+
+fn hello() {
+    printf("hello\n");
+}

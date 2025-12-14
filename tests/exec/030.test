@@ -1,0 +1,154 @@
+Root
+    Extern
+        Token(`extern`)
+        Token(`fn`)
+        Token(identifier `printf`)
+        Function Type
+            Token(`(`)
+            Token(identifier `fmt`)
+            Token(`:`)
+            Pointer Type
+                Token(`*`)
+                Type Reference
+                    Token(identifier `u8`)
+            Token(`,`)
+            Token(`...`)
+            Token(`)`)
+            Token(`:`)
+            Type Reference
+                Token(identifier `i32`)
+        Token(`;`)
+    Function
+        Token(`fn`)
+        Token(identifier `main`)
+        Function Type
+            Token(`(`)
+            Token(`)`)
+        Statement
+            Block
+                Token(`{`)
+                Statement
+                    Expression
+                        Function Call
+                            Variable
+                                Token(identifier `printf`)
+                            Token(`(`)
+                            Literal String
+                                Token(string `"%u\n"`)
+                            Function Call
+                                Token(`,`)
+                                Variable
+                                    Token(identifier `sum`)
+                                    Token(`:`)
+                                    Token(`<`)
+                                    Type Reference
+                                        Token(identifier `uint`)
+                                    Token(`>`)
+                                Token(`(`)
+                                Literal Number
+                                    Token(decimal number `10`)
+                                Token(`,`)
+                                Literal Number
+                                    Token(decimal number `10`)
+                                Token(`)`)
+                            Token(`)`)
+                        Token(`;`)
+                Statement
+                    Expression
+                        Function Call
+                            Variable
+                                Token(identifier `printf`)
+                            Token(`(`)
+                            Literal String
+                                Token(string `"%i\n"`)
+                            Function Call
+                                Token(`,`)
+                                Variable
+                                    Token(identifier `sum`)
+                                    Token(`:`)
+                                    Token(`<`)
+                                    Type Reference
+                                        Token(identifier `int`)
+                                    Token(`>`)
+                                Unary Expression
+                                    Token(`(`)
+                                    Cast
+                                        Token(`-`)
+                                        Literal Number
+                                            Token(decimal number `10`)
+                                        Token(`as`)
+                                        Type Reference
+                                            Token(identifier `int`)
+                                Cast
+                                    Token(`,`)
+                                    Literal Number
+                                        Token(decimal number `8`)
+                                    Token(`as`)
+                                    Type Reference
+                                        Token(identifier `int`)
+                                Token(`)`)
+                            Token(`)`)
+                        Token(`;`)
+                Statement
+                    Expression
+                        Function Call
+                            Variable
+                                Token(identifier `printf`)
+                            Token(`(`)
+                            Literal String
+                                Token(string `"%u\n"`)
+                            Function Call
+                                Token(`,`)
+                                Variable
+                                    Token(identifier `sum`)
+                                    Token(`:`)
+                                    Token(`<`)
+                                    Type Reference
+                                        Token(identifier `uint`)
+                                    Token(`>`)
+                                Token(`(`)
+                                Literal Number
+                                    Token(decimal number `10`)
+                                Token(`,`)
+                                Literal Number
+                                    Token(decimal number `4`)
+                                Token(`)`)
+                            Token(`)`)
+                        Token(`;`)
+                Token(`}`)
+    Function
+        Token(`fn`)
+        Token(identifier `sum`)
+        Token(`<`)
+        Token(identifier `T`)
+        Token(`>`)
+        Function Type
+            Token(`(`)
+            Token(identifier `a`)
+            Token(`:`)
+            Type Reference
+                Token(identifier `T`)
+            Token(`,`)
+            Token(identifier `b`)
+            Token(`:`)
+            Type Reference
+                Token(identifier `T`)
+            Token(`)`)
+            Token(`:`)
+            Type Reference
+                Token(identifier `T`)
+        Statement
+            Block
+                Token(`{`)
+                Statement
+                    Return
+                        Binary Expression
+                            Token(`return`)
+                            Variable
+                                Token(identifier `a`)
+                            Token(`+`)
+                            Variable
+                                Token(identifier `b`)
+                        Token(`;`)
+                Token(`}`)
+    Token(eof)

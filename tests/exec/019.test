@@ -1,0 +1,112 @@
+Root
+    Extern
+        Token(`extern`)
+        Token(`fn`)
+        Token(identifier `printf`)
+        Function Type
+            Token(`(`)
+            Token(identifier `fmt`)
+            Token(`:`)
+            Pointer Type
+                Token(`*`)
+                Type Reference
+                    Token(identifier `char`)
+            Token(`,`)
+            Token(`...`)
+            Token(`)`)
+            Token(`:`)
+            Type Reference
+                Token(identifier `i32`)
+        Token(`;`)
+    Function
+        Token(`fn`)
+        Token(identifier `brr`)
+        Function Type
+            Token(`(`)
+            Token(identifier `x`)
+            Token(`:`)
+            Type Reference
+                Token(identifier `uint`)
+            Token(`)`)
+        Statement
+            Block
+                Token(`{`)
+                Statement
+                    Expression
+                        Function Call
+                            Variable
+                                Token(identifier `printf`)
+                            Token(`(`)
+                            Literal String
+                                Token(string `"HELLO %lu\n"`)
+                            Token(`,`)
+                            Variable
+                                Token(identifier `x`)
+                            Token(`)`)
+                        Token(`;`)
+                Token(`}`)
+    Function
+        Token(`fn`)
+        Token(identifier `main`)
+        Function Type
+            Token(`(`)
+            Token(`)`)
+            Token(`:`)
+            Type Reference
+                Token(identifier `uint`)
+        Statement
+            Block
+                Token(`{`)
+                Statement
+                    Declaration
+                        Token(`let`)
+                        Token(identifier `test`)
+                        Token(`:`)
+                        Function Reference Type
+                            Token(`fn`)
+                            Function Type
+                                Token(`(`)
+                                Token(identifier `x`)
+                                Token(`:`)
+                                Type Reference
+                                    Token(identifier `uint`)
+                                Token(`)`)
+                        Token(`=`)
+                        Variable
+                            Token(identifier `brr`)
+                        Token(`;`)
+                Statement
+                    Expression
+                        Function Call
+                            Variable
+                                Token(identifier `test`)
+                            Token(`(`)
+                            Literal Number
+                                Token(decimal number `6`)
+                            Token(`)`)
+                        Token(`;`)
+                Statement
+                    Expression
+                        Function Call
+                            Token(`(`)
+                            Parentheses Wrapped Expression
+                                Unary Expression
+                                    Unary Expression
+                                        Token(`*`)
+                                        Token(`&`)
+                                        Variable
+                                            Token(identifier `test`)
+                                Token(`)`)
+                            Token(`(`)
+                            Literal Number
+                                Token(decimal number `5`)
+                            Token(`)`)
+                        Token(`;`)
+                Statement
+                    Return
+                        Token(`return`)
+                        Literal Number
+                            Token(decimal number `0`)
+                        Token(`;`)
+                Token(`}`)
+    Token(eof)

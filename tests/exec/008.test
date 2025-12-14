@@ -1,0 +1,151 @@
+Root
+    Extern
+        Token(`extern`)
+        Token(`fn`)
+        Token(identifier `printf`)
+        Function Type
+            Token(`(`)
+            Token(identifier `fmt`)
+            Token(`:`)
+            Pointer Type
+                Token(`*`)
+                Type Reference
+                    Token(identifier `u8`)
+            Token(`,`)
+            Token(`...`)
+            Token(`)`)
+            Token(`:`)
+            Type Reference
+                Token(identifier `i32`)
+        Token(`;`)
+    Function
+        Token(`fn`)
+        Token(identifier `main`)
+        Function Type
+            Token(`(`)
+            Token(`)`)
+        Statement
+            Block
+                Token(`{`)
+                Statement
+                    Declaration
+                        Token(`let`)
+                        Token(identifier `x`)
+                        Token(`:`)
+                        Type Reference
+                            Token(identifier `u64`)
+                        Token(`=`)
+                        Literal Number
+                            Token(decimal number `600`)
+                        Token(`;`)
+                Statement
+                    Declaration
+                        Token(`let`)
+                        Token(identifier `xp`)
+                        Token(`:`)
+                        Pointer Type
+                            Token(`*`)
+                            Type Reference
+                                Token(identifier `u64`)
+                        Unary Expression
+                            Token(`=`)
+                            Token(`&`)
+                            Variable
+                                Token(identifier `x`)
+                        Token(`;`)
+                Statement
+                    Declaration
+                        Token(`let`)
+                        Token(identifier `y`)
+                        Token(`:`)
+                        Type Reference
+                            Token(identifier `u64`)
+                        Unary Expression
+                            Token(`=`)
+                            Token(`*`)
+                            Variable
+                                Token(identifier `xp`)
+                        Token(`;`)
+                Statement
+                    Expression
+                        Function Call
+                            Variable
+                                Token(identifier `printf`)
+                            Token(`(`)
+                            Literal String
+                                Token(string `"> %lu\n"`)
+                            Token(`,`)
+                            Variable
+                                Token(identifier `y`)
+                            Token(`)`)
+                        Token(`;`)
+                Statement
+                    Declaration
+                        Token(`let`)
+                        Token(identifier `a`)
+                        Token(`:`)
+                        Type Reference
+                            Token(identifier `u64`)
+                        Token(`=`)
+                        Literal Number
+                            Token(decimal number `543`)
+                        Token(`;`)
+                Statement
+                    Declaration
+                        Token(`let`)
+                        Token(identifier `b`)
+                        Token(`:`)
+                        Type Reference
+                            Token(identifier `u64`)
+                        Token(`;`)
+                Statement
+                    Declaration
+                        Token(`let`)
+                        Token(identifier `c`)
+                        Token(`:`)
+                        Pointer Type
+                            Token(`*`)
+                            Type Reference
+                                Token(identifier `u64`)
+                        Token(`;`)
+                Statement
+                    Expression
+                        Binary Expression
+                            Variable
+                                Token(identifier `c`)
+                            Unary Expression
+                                Token(`=`)
+                                Token(`&`)
+                                Variable
+                                    Token(identifier `a`)
+                        Token(`;`)
+                Statement
+                    Expression
+                        Binary Expression
+                            Variable
+                                Token(identifier `b`)
+                            Unary Expression
+                                Token(`=`)
+                                Token(`*`)
+                                Variable
+                                    Token(identifier `c`)
+                        Token(`;`)
+                Statement
+                    Expression
+                        Function Call
+                            Variable
+                                Token(identifier `printf`)
+                            Token(`(`)
+                            Literal String
+                                Token(string `"> %lu\n"`)
+                            Unary Expression
+                                Token(`,`)
+                                Unary Expression
+                                    Token(`*`)
+                                    Token(`&`)
+                                    Variable
+                                        Token(identifier `b`)
+                            Token(`)`)
+                        Token(`;`)
+                Token(`}`)
+    Token(eof)

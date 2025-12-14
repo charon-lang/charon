@@ -1,0 +1,93 @@
+Root
+    Extern
+        Token(`extern`)
+        Token(`fn`)
+        Token(identifier `printf`)
+        Function Type
+            Token(`(`)
+            Token(identifier `fmt`)
+            Token(`:`)
+            Pointer Type
+                Token(`*`)
+                Type Reference
+                    Token(identifier `u8`)
+            Token(`,`)
+            Token(`...`)
+            Token(`)`)
+            Token(`:`)
+            Type Reference
+                Token(identifier `i32`)
+        Token(`;`)
+    Function
+        Token(`fn`)
+        Token(identifier `main`)
+        Function Type
+            Token(`(`)
+            Token(identifier `argc`)
+            Token(`:`)
+            Type Reference
+                Token(identifier `i32`)
+            Token(`,`)
+            Token(identifier `argv`)
+            Token(`:`)
+            Pointer Type
+                Token(`*`)
+                Type Reference
+                    Token(identifier `char`)
+            Token(`)`)
+        Statement
+            Block
+                Token(`{`)
+                Statement
+                    Declaration
+                        Token(`let`)
+                        Token(identifier `x`)
+                        Token(`=`)
+                        Literal Number
+                            Token(decimal number `1000`)
+                        Token(`;`)
+                Statement
+                    Declaration
+                        Token(`let`)
+                        Token(identifier `y`)
+                        Token(`:`)
+                        Type Reference
+                            Token(identifier `u8`)
+                        Cast
+                            Token(`=`)
+                            Variable
+                                Token(identifier `x`)
+                            Token(`as`)
+                            Type Reference
+                                Token(identifier `u8`)
+                        Token(`;`)
+                Statement
+                    Declaration
+                        Token(`let`)
+                        Token(identifier `z`)
+                        Token(`:`)
+                        Type Reference
+                            Token(identifier `u32`)
+                        Cast
+                            Token(`=`)
+                            Variable
+                                Token(identifier `y`)
+                            Token(`as`)
+                            Type Reference
+                                Token(identifier `u32`)
+                        Token(`;`)
+                Statement
+                    Expression
+                        Function Call
+                            Variable
+                                Token(identifier `printf`)
+                            Token(`(`)
+                            Literal String
+                                Token(string `"> %u\n"`)
+                            Token(`,`)
+                            Variable
+                                Token(identifier `z`)
+                            Token(`)`)
+                        Token(`;`)
+                Token(`}`)
+    Token(eof)

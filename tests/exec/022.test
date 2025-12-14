@@ -1,0 +1,299 @@
+Root
+    Extern
+        Token(`extern`)
+        Token(`fn`)
+        Token(identifier `printf`)
+        Function Type
+            Token(`(`)
+            Token(identifier `fmt`)
+            Token(`:`)
+            Pointer Type
+                Token(`*`)
+                Type Reference
+                    Token(identifier `char`)
+            Token(`,`)
+            Token(`...`)
+            Token(`)`)
+            Token(`:`)
+            Type Reference
+                Token(identifier `i32`)
+        Token(`;`)
+    Function
+        Token(`fn`)
+        Token(identifier `x`)
+        Function Type
+            Token(`(`)
+            Token(`)`)
+            Token(`:`)
+            Type Reference
+                Token(identifier `bool`)
+        Statement
+            Block
+                Token(`{`)
+                Statement
+                    Return
+                        Token(`return`)
+                        Literal Boolean
+                            Token(bool `true`)
+                        Token(`;`)
+                Token(`}`)
+    Function
+        Token(`fn`)
+        Token(identifier `y`)
+        Function Type
+            Token(`(`)
+            Token(`)`)
+            Token(`:`)
+            Type Reference
+                Token(identifier `bool`)
+        Statement
+            Block
+                Token(`{`)
+                Statement
+                    Return
+                        Token(`return`)
+                        Literal Boolean
+                            Token(bool `false`)
+                        Token(`;`)
+                Token(`}`)
+    Function
+        Token(`fn`)
+        Token(identifier `main`)
+        Function Type
+            Token(`(`)
+            Token(`)`)
+            Token(`:`)
+            Type Reference
+                Token(identifier `uint`)
+        Statement
+            Block
+                Token(`{`)
+                Statement
+                    Declaration
+                        Token(`let`)
+                        Token(identifier `xx`)
+                        Function Call
+                            Token(`=`)
+                            Variable
+                                Token(identifier `x`)
+                            Token(`(`)
+                            Token(`)`)
+                        Token(`;`)
+                Statement
+                    Declaration
+                        Token(`let`)
+                        Token(identifier `yy`)
+                        Function Call
+                            Token(`=`)
+                            Variable
+                                Token(identifier `y`)
+                            Token(`(`)
+                            Token(`)`)
+                        Token(`;`)
+                Statement
+                    If
+                        Token(`if`)
+                        Binary Expression
+                            Token(`(`)
+                            Variable
+                                Token(identifier `xx`)
+                            Token(`&&`)
+                            Variable
+                                Token(identifier `yy`)
+                        Token(`)`)
+                        Statement
+                            Block
+                                Token(`{`)
+                                Statement
+                                    Expression
+                                        Function Call
+                                            Variable
+                                                Token(identifier `printf`)
+                                            Token(`(`)
+                                            Literal String
+                                                Token(string `"Hello\n"`)
+                                            Token(`)`)
+                                        Token(`;`)
+                                Token(`}`)
+                        Token(`else`)
+                        Statement
+                            Block
+                                Token(`{`)
+                                Statement
+                                    Expression
+                                        Function Call
+                                            Variable
+                                                Token(identifier `printf`)
+                                            Token(`(`)
+                                            Literal String
+                                                Token(string `"World\n"`)
+                                            Token(`)`)
+                                        Token(`;`)
+                                Statement
+                                    If
+                                        Token(`if`)
+                                        Binary Expression
+                                            Token(`(`)
+                                            Variable
+                                                Token(identifier `xx`)
+                                            Token(`||`)
+                                            Variable
+                                                Token(identifier `yy`)
+                                        Token(`)`)
+                                        Statement
+                                            Block
+                                                Token(`{`)
+                                                Statement
+                                                    Expression
+                                                        Function Call
+                                                            Variable
+                                                                Token(identifier `printf`)
+                                                            Token(`(`)
+                                                            Literal String
+                                                                Token(string `"1\n"`)
+                                                            Token(`)`)
+                                                        Token(`;`)
+                                                Token(`}`)
+                                        Token(`else`)
+                                        Statement
+                                            Block
+                                                Token(`{`)
+                                                Statement
+                                                    Expression
+                                                        Function Call
+                                                            Variable
+                                                                Token(identifier `printf`)
+                                                            Token(`(`)
+                                                            Literal String
+                                                                Token(string `"2\n"`)
+                                                            Token(`)`)
+                                                        Token(`;`)
+                                                Token(`}`)
+                                Token(`}`)
+                Statement
+                    If
+                        Token(`if`)
+                        Binary Expression
+                            Token(`(`)
+                            Variable
+                                Token(identifier `xx`)
+                            Binary Expression
+                                Token(`&&`)
+                                Literal Number
+                                    Token(decimal number `5`)
+                                Token(`>`)
+                                Literal Number
+                                    Token(decimal number `1`)
+                        Token(`)`)
+                        Statement
+                            Block
+                                Token(`{`)
+                                Statement
+                                    Expression
+                                        Function Call
+                                            Variable
+                                                Token(identifier `printf`)
+                                            Token(`(`)
+                                            Literal String
+                                                Token(string `"3\n"`)
+                                            Token(`)`)
+                                        Token(`;`)
+                                Token(`}`)
+                Statement
+                    If
+                        Token(`if`)
+                        Binary Expression
+                            Binary Expression
+                                Token(`(`)
+                                Variable
+                                    Token(identifier `xx`)
+                                Token(`&&`)
+                                Literal Boolean
+                                    Token(bool `false`)
+                            Token(`&&`)
+                            Literal Boolean
+                                Token(bool `true`)
+                        Token(`)`)
+                        Statement
+                            Block
+                                Token(`{`)
+                                Statement
+                                    Expression
+                                        Function Call
+                                            Variable
+                                                Token(identifier `printf`)
+                                            Token(`(`)
+                                            Literal String
+                                                Token(string `"4\n"`)
+                                            Token(`)`)
+                                        Token(`;`)
+                                Token(`}`)
+                Statement
+                    If
+                        Token(`if`)
+                        Binary Expression
+                            Binary Expression
+                                Token(`(`)
+                                Variable
+                                    Token(identifier `xx`)
+                                Token(`&&`)
+                                Literal Boolean
+                                    Token(bool `false`)
+                            Token(`||`)
+                            Literal Boolean
+                                Token(bool `true`)
+                        Token(`)`)
+                        Statement
+                            Block
+                                Token(`{`)
+                                Statement
+                                    Expression
+                                        Function Call
+                                            Variable
+                                                Token(identifier `printf`)
+                                            Token(`(`)
+                                            Literal String
+                                                Token(string `"5\n"`)
+                                            Token(`)`)
+                                        Token(`;`)
+                                Token(`}`)
+                Statement
+                    If
+                        Token(`if`)
+                        Binary Expression
+                            Token(`(`)
+                            Token(`(`)
+                            Parentheses Wrapped Expression
+                                Binary Expression
+                                    Variable
+                                        Token(identifier `xx`)
+                                    Token(`&&`)
+                                    Literal Boolean
+                                        Token(bool `false`)
+                                Token(`)`)
+                            Token(`||`)
+                            Literal Boolean
+                                Token(bool `true`)
+                        Token(`)`)
+                        Statement
+                            Block
+                                Token(`{`)
+                                Statement
+                                    Expression
+                                        Function Call
+                                            Variable
+                                                Token(identifier `printf`)
+                                            Token(`(`)
+                                            Literal String
+                                                Token(string `"6\n"`)
+                                            Token(`)`)
+                                        Token(`;`)
+                                Token(`}`)
+                Statement
+                    Return
+                        Token(`return`)
+                        Literal Number
+                            Token(decimal number `0`)
+                        Token(`;`)
+                Token(`}`)
+    Token(eof)

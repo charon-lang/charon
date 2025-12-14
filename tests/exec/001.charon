@@ -1,0 +1,12 @@
+extern fn printf(fmt: *u8, ...): i32;
+
+fn main(argc: i32, argv: *char) {
+    let x: uint = 100;
+    let y: uint = 5 + x * 2;
+
+    let fmt: *char = "hello world %lu %i\n";
+
+    printf(fmt, y, argc);
+
+    printf("Hello world\n");
+}
