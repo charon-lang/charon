@@ -157,7 +157,7 @@ parser_event_t *parser_checkpoint(charon_parser_t *parser) {
 void parser_open_element_at(charon_parser_t *parser, parser_event_t *checkpoint) {
     parser_event_t *event = malloc(sizeof(parser_event_t));
     event->event_type = PARSER_EVENT_TYPE_OPEN;
-    list_node_append(&parser->events, &checkpoint->list_node, &event->list_node);
+    list_node_prepend(&parser->events, &checkpoint->list_node, &event->list_node);
 }
 
 void parser_open_element(charon_parser_t *parser) {
