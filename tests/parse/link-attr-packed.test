@@ -1,4 +1,11 @@
 Root
+    Attribute
+        Token(`@`)
+        Token(identifier `link`)
+        Token(`(`)
+        Literal String
+            Token(string `"printf"`)
+        Token(`)`)
     Extern
         Token(`extern`)
         Token(`fn`)
@@ -18,18 +25,18 @@ Root
             Type Reference
                 Token(identifier `i32`)
         Token(`;`)
+    Attribute
+        Token(`@`)
+        Token(identifier `packed`)
+    Attribute
+        Token(`@`)
+        Token(identifier `test1`)
+    Attribute
+        Token(`@`)
+        Token(identifier `test2`)
     Type Definition
         Token(`type`)
         Token(identifier `X`)
-        Attribute
-            Token(`@`)
-            Token(identifier `packed`)
-        Attribute
-            Token(`@`)
-            Token(identifier `test1`)
-        Attribute
-            Token(`@`)
-            Token(identifier `test2`)
         Structure Type
             Token(`struct`)
             Token(`{`)
