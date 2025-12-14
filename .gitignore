@@ -4,4 +4,5 @@ build/
 subprojects/*
 !subprojects/*.wrap
 
+docs/book
 *.result
