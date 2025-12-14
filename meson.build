@@ -8,5 +8,9 @@ add_project_arguments(
 )
 
 subdir('lib')
-subdir('lsp')
+
+if get_option('build_lsp')
+    subdir('lsp')
+endif
+
 subdir('compiler')

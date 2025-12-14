@@ -1,6 +1,7 @@
 #include "charon/lexer.h"
 
 #include "charon/element.h"
+#include "charon/platform.h"
 #include "charon/token.h"
 #include "charon/trivia.h"
 #include "common/fatal.h"

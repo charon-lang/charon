@@ -6,6 +6,7 @@
 #include "charon/node.h"
 #include "charon/parser.h"
 #include "charon/path.h"
+#include "charon/platform.h"
 #include "charon/token.h"
 #include "common/list.h"
 #include "parser/parse.h"

@@ -33,7 +33,13 @@ void list_push_back(list_t *list, list_node_t *node) {
     list_node_append(list, list->tail, node);
 }
 
+#ifndef __APPLE__
 [[gnu::alias("list_push_front")]] void list_push(list_t *list, list_node_t *node);
+#else
+void list_push(list_t *list, list_node_t *node) {
+    list_push_front(list, node);
+}
+#endif
 
 list_node_t *list_pop_front(list_t *list) {
     list_node_t *node = list->head;
@@ -47,7 +53,13 @@ list_node_t *list_pop_back(list_t *list) {
     return node;
 }
 
+#ifndef __APPLE__
 [[gnu::alias("list_pop_front")]] list_node_t *list_pop(list_t *list);
+#else
+list_node_t *list_pop(list_t *list) {
+    return list_pop_front(list);
+}
+#endif
 
 void list_node_append(list_t *list, list_node_t *pos, list_node_t *node) {
     node->next = pos->next;

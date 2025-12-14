@@ -1,0 +1,1 @@
+option('build_lsp', type : 'boolean', value : true, description : 'Build LSP module')
