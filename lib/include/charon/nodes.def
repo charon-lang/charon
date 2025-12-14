@@ -30,6 +30,7 @@ NODE(STMT_CONTINUE, "Continue")
 NODE(STMT_BREAK, "Break")
 NODE(STMT_FOR, "For")
 NODE(STMT_SWITCH, "Switch")
+NODE(STMT_ATTRIBUTE, "Attribute")
 
 // Expression
 NODE(EXPR_LITERAL_NUMERIC, "Literal Number")

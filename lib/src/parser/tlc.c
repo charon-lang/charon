@@ -6,17 +6,32 @@
 
 #include <string.h>
 
+static void parse_attribute(charon_parser_t *parser) {
+    parser_open_element(parser);
+
+    parser_consume(parser, CHARON_TOKEN_KIND_PNCT_AT);
+    parser_consume(parser, CHARON_TOKEN_KIND_IDENTIFIER);
+    if(parser_consume_try(parser, CHARON_TOKEN_KIND_PNCT_PARENTHESES_LEFT)) {
+        if(parser_peek(parser) != CHARON_TOKEN_KIND_PNCT_PARENTHESES_RIGHT) {
+            parse_expr(parser);
+            while(parser_consume_try(parser, CHARON_TOKEN_KIND_PNCT_COMMA)) { parse_expr(parser); }
+        }
+        parser_consume(parser, CHARON_TOKEN_KIND_PNCT_PARENTHESES_RIGHT);
+    }
+
+    parser_close_element(parser, CHARON_NODE_KIND_STMT_ATTRIBUTE);
+}
+
 static void parse_type_definition(charon_parser_t *parser) {
     parser_open_element(parser);
 
     parser_consume(parser, CHARON_TOKEN_KIND_KEYWORD_TYPE);
     parser_consume(parser, CHARON_TOKEN_KIND_IDENTIFIER);
     if(parser_consume_try(parser, CHARON_TOKEN_KIND_PNCT_CARET_LEFT)) {
-        do {
-            parser_consume(parser, CHARON_TOKEN_KIND_IDENTIFIER);
-        } while(parser_consume_try(parser, CHARON_TOKEN_KIND_PNCT_COMMA));
+        do { parser_consume(parser, CHARON_TOKEN_KIND_IDENTIFIER); } while(parser_consume_try(parser, CHARON_TOKEN_KIND_PNCT_COMMA));
         parser_consume(parser, CHARON_TOKEN_KIND_PNCT_CARET_RIGHT);
     }
+    while(parser_peek(parser) == CHARON_TOKEN_KIND_PNCT_AT) { parse_attribute(parser); }
     parse_type(parser);
 
     parser_close_element(parser, CHARON_NODE_KIND_TLC_TYPE_DEFINITION);
@@ -28,9 +43,7 @@ static void parse_module(charon_parser_t *parser) {
     parser_consume(parser, CHARON_TOKEN_KIND_KEYWORD_MODULE);
     parser_consume(parser, CHARON_TOKEN_KIND_IDENTIFIER);
     parser_consume(parser, CHARON_TOKEN_KIND_PNCT_BRACE_LEFT);
-    while(!parser_is_eof(parser) && !parser_consume_try(parser, CHARON_TOKEN_KIND_PNCT_BRACE_RIGHT)) {
-        parse_tlc(parser);
-    }
+    while(!parser_is_eof(parser) && !parser_consume_try(parser, CHARON_TOKEN_KIND_PNCT_BRACE_RIGHT)) { parse_tlc(parser); }
 
     parser_close_element(parser, CHARON_NODE_KIND_TLC_MODULE);
 }
@@ -41,9 +54,7 @@ static void parse_function(charon_parser_t *parser) {
     parser_consume(parser, CHARON_TOKEN_KIND_KEYWORD_FUNCTION);
     parser_consume(parser, CHARON_TOKEN_KIND_IDENTIFIER);
     if(parser_consume_try(parser, CHARON_TOKEN_KIND_PNCT_CARET_LEFT)) {
-        do {
-            parser_consume(parser, CHARON_TOKEN_KIND_IDENTIFIER);
-        } while(parser_consume_try(parser, CHARON_TOKEN_KIND_PNCT_COMMA));
+        do { parser_consume(parser, CHARON_TOKEN_KIND_IDENTIFIER); } while(parser_consume_try(parser, CHARON_TOKEN_KIND_PNCT_COMMA));
         parser_consume(parser, CHARON_TOKEN_KIND_PNCT_CARET_RIGHT);
     }
     parse_type_function(parser);
@@ -84,9 +95,7 @@ static void parse_enum(charon_parser_t *parser) {
     parser_consume(parser, CHARON_TOKEN_KIND_IDENTIFIER);
     parser_consume(parser, CHARON_TOKEN_KIND_PNCT_BRACE_LEFT);
     if(parser_peek(parser) == CHARON_TOKEN_KIND_IDENTIFIER) {
-        do {
-            parser_consume(parser, CHARON_TOKEN_KIND_IDENTIFIER);
-        } while(parser_consume_try(parser, CHARON_TOKEN_KIND_PNCT_COMMA));
+        do { parser_consume(parser, CHARON_TOKEN_KIND_IDENTIFIER); } while(parser_consume_try(parser, CHARON_TOKEN_KIND_PNCT_COMMA));
     }
     parser_consume(parser, CHARON_TOKEN_KIND_PNCT_BRACE_RIGHT);
 
