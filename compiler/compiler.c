@@ -16,7 +16,7 @@
 #include <string.h>
 #include <sys/stat.h>
 
-bool supports_ansi = true;
+bool raw_output = true;
 bool quiet_mode = false;
 
 #define PRINTF_IF_NOT_QUIET(...)                 \
@@ -25,7 +25,7 @@ bool quiet_mode = false;
     } while(0)
 
 char *ansi_color(const char *text) {
-    if(!supports_ansi) return "";
+    if(!raw_output) return "";
 
     return strdup(text);
 }
@@ -69,8 +69,8 @@ int main(int argc, char **argv) {
     if(argc == 3) {
         // @note: very technical option names
         // ignores ANSI support
-        if(strcmp(argv[2], "--no-ansi") == 0) {
-            supports_ansi = false;
+        if(strcmp(argv[2], "--raw-output") == 0) {
+            raw_output = false;
         }
         // disables ALL printing
         else if(strcmp(argv[2], "--quiet") == 0)
