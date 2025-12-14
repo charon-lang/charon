@@ -32,8 +32,11 @@ void parse_type(charon_parser_t *parser) {
 
     // Array type
     if(parser_consume_try(parser, CHARON_TOKEN_KIND_PNCT_BRACKET_LEFT)) {
+        if(!parser_consume_try(parser, CHARON_TOKEN_KIND_PNCT_BRACKET_RIGHT)) {
+            parse_expr(parser);
+            parser_consume(parser, CHARON_TOKEN_KIND_PNCT_BRACKET_RIGHT);
+        }
         parse_type(parser);
-        parser_consume(parser, CHARON_TOKEN_KIND_PNCT_BRACKET_RIGHT);
         return parser_close_element(parser, CHARON_NODE_KIND_TYPE_ARRAY);
     }
 
