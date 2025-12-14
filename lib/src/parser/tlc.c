@@ -92,9 +92,13 @@ static void parse_enum(charon_parser_t *parser) {
 
     parser_consume(parser, CHARON_TOKEN_KIND_KEYWORD_ENUM);
     parser_consume(parser, CHARON_TOKEN_KIND_IDENTIFIER);
+    if(parser_consume_try(parser, CHARON_TOKEN_KIND_PNCT_COLON)) parse_type(parser);
     parser_consume(parser, CHARON_TOKEN_KIND_PNCT_BRACE_LEFT);
     if(parser_peek(parser) == CHARON_TOKEN_KIND_IDENTIFIER) {
-        do { parser_consume(parser, CHARON_TOKEN_KIND_IDENTIFIER); } while(parser_consume_try(parser, CHARON_TOKEN_KIND_PNCT_COMMA));
+        do {
+            parser_consume(parser, CHARON_TOKEN_KIND_IDENTIFIER);
+            if(parser_consume_try(parser, CHARON_TOKEN_KIND_PNCT_EQUAL)) parse_expr(parser);
+        } while(parser_consume_try(parser, CHARON_TOKEN_KIND_PNCT_COMMA));
     }
     parser_consume(parser, CHARON_TOKEN_KIND_PNCT_BRACE_RIGHT);
 

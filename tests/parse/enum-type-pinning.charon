@@ -1,0 +1,23 @@
+extern fn printf(fmt: *char, ...): i32;
+
+enum State: u64 {
+    VALID = 64,
+    INVALID = 12,
+    APPLE = 53,
+    PEAR = 23
+}
+
+fn test(state: State) {
+    printf("%u\n", state);
+}
+
+fn main(): u32 {
+
+    let x = State::VALID;
+
+    printf("%u %u\n", x, State::INVALID);
+
+    test(State::APPLE);
+
+    return 0 as u8;
+}
