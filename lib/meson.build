@@ -23,6 +23,7 @@ charon_lib = static_library(
         'src/element.c',
         'src/lexer.c',
         'src/node.c',
+        'src/query.c',
         'src/token.c',
         'src/trivia.c',
         'src/util.c',
