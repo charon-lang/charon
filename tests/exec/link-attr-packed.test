@@ -1,0 +1,60 @@
+Root
+    Extern
+        Token(`extern`)
+        Token(`fn`)
+        Token(identifier `print_format`)
+        Function Type
+            Token(`(`)
+            Token(identifier `fmt`)
+            Token(`:`)
+            Pointer Type
+                Token(`*`)
+                Type Reference
+                    Token(identifier `char`)
+            Token(`,`)
+            Token(`...`)
+            Token(`)`)
+            Token(`:`)
+            Type Reference
+                Token(identifier `i32`)
+        Token(`;`)
+    Type Definition
+        Token(`type`)
+        Token(identifier `X`)
+        Attribute
+            Token(`@`)
+            Token(identifier `packed`)
+        Structure Type
+            Token(`struct`)
+            Token(`{`)
+            Token(`}`)
+    Function
+        Token(`fn`)
+        Token(identifier `main`)
+        Function Type
+            Token(`(`)
+            Token(`)`)
+            Token(`:`)
+            Type Reference
+                Token(identifier `uint`)
+        Statement
+            Block
+                Token(`{`)
+                Statement
+                    Expression
+                        Function Call
+                            Variable
+                                Token(identifier `print_format`)
+                            Token(`(`)
+                            Literal String
+                                Token(string `"Hello world\n"`)
+                            Token(`)`)
+                        Token(`;`)
+                Statement
+                    Return
+                        Token(`return`)
+                        Literal Number
+                            Token(decimal number `0`)
+                        Token(`;`)
+                Token(`}`)
+    Token(eof)
