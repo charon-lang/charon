@@ -36,6 +36,10 @@ const char *charon_utf8_as_string(const charon_utf8_text_t *text) {
     return (const char *) text->data;
 }
 
+charon_utf8_text_t *utf8_copy(const charon_utf8_text_t *text) {
+    return utf8_slice_copy((utf8_slice_t) { .text = text, .size = text->size, .start_index = 0 });
+}
+
 utf8_slice_t utf8_slice(const charon_utf8_text_t *text, size_t start_index, size_t size) {
     if(start_index > text->size) start_index = text->size;
     if(start_index + size > text->size) size = text->size - start_index;

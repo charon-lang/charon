@@ -3,40 +3,48 @@
 #include "charon/file.h"
 #include "charon/memory.h"
 #include "charon/node.h"
-#include "charon/queries.h"
-#include "charon/query.h"
+#include "charon/symbol.h"
+#include "charon/utf8.h"
 #include "common//dynarray.h"
-#include "context.h"
-#include "node.h"
+#include "sema/context.h"
+#include "sema/queries.h"
+#include "sema/query.h"
 
 #include <assert.h>
 #include <stddef.h>
 #include <stdio.h>
 
+void print_table(context_t *ctx, const charon_symbol_table_t *table, int depth) {
+    for(size_t i = 0; i < table->symbol_count; i++) {
+        const charon_symbol_t *symbol = table->symbols[i];
+
+        const charon_file_t *file = context_lookup_file(ctx, symbol->definition->file_id);
+        assert(file != nullptr);
+
+        const charon_element_inner_t *current = file->root_element;
+        for(size_t j = 0; j < symbol->definition->length; j++) {
+            assert(charon_element_type(current) == CHARON_ELEMENT_TYPE_NODE);
+            current = charon_element_node_child(current, symbol->definition->indices[j]);
+        }
+
+        printf("%*s-> %s [%s] in %s\n", depth, "", charon_utf8_as_string(symbol->name), charon_node_kind_tostring(charon_element_node_kind(current)), file->name);
+
+        if(symbol->kind == CHARON_SYMBOL_KIND_MODULE) print_table(ctx, &symbol->module.table, depth + 2);
+    }
+}
+
 void test(charon_memory_allocator_t *allocator, const charon_file_t *file) {
-    charon_context_t *context = context_make();
+    context_t *context = context_make();
 
     context_file_entry_t entry = { .file_id = context->file_id_counter++, .file = file };
     DYNARRAY_PUSH(&context->file_entries, entry);
 
+    query_engine_t *engine = query_engine_make(allocator, context);
 
-    const node_ref_map_t *ref_map;
-    charon_query_engine_t *engine = charon_query_engine_make(allocator, context);
-    charon_query_engine_execute(engine, &g_charon_queries_node_ref_map, &entry.file_id, (const void **) &ref_map);
+    const charon_symbol_table_t *symtab;
+    assert(queries_symtab(engine, &entry.file_id, &symtab));
 
+    print_table(context, symtab, 0);
 
-    printf("map size %lu\n", ref_map->element_count);
-    for(size_t i = 0; i < ref_map->element_count; i++) {
-        const node_ref_t *node_ref = ref_map->elements[i];
-
-        const charon_element_inner_t *current = file->root_element;
-        for(size_t j = 0; j < node_ref->path->length; j++) {
-            assert(charon_element_type(current) == CHARON_ELEMENT_TYPE_NODE);
-            current = charon_element_node_child(current, node_ref->path->steps[j]);
-        }
-
-        printf("-> %s [%s]\n", node_ref->file->name, charon_node_kind_tostring(charon_element_node_kind(current)));
-    }
-
-    charon_query_engine_destroy(engine);
+    query_engine_destroy(engine);
 }

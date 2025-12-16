@@ -18,12 +18,18 @@
         (ARRAY)->elements[(ARRAY)->element_count - 1] = ELEMENT;                                                     \
     }
 
-#define DYNARRAY_POP(ARRAY)                                                                                          \
-    ({                                                                                                               \
-        assert((ARRAY)->element_count > 0);                                                                          \
-        size_t index = (ARRAY)->elements[(ARRAY)->element_count - 1];                                                \
-        (ARRAY)->elements = reallocarray((ARRAY)->elements, --(ARRAY)->element_count, sizeof((ARRAY)->elements[0])); \
-        index;                                                                                                       \
+#define DYNARRAY_POP(ARRAY)                                                                                              \
+    ({                                                                                                                   \
+        assert((ARRAY)->element_count > 0);                                                                              \
+        size_t index = (ARRAY)->elements[(ARRAY)->element_count - 1];                                                    \
+        if((ARRAY)->element_count == 1) {                                                                                \
+            free((ARRAY)->elements);                                                                                     \
+            (ARRAY)->element_count = 0;                                                                                  \
+            (ARRAY)->elements = nullptr;                                                                                 \
+        } else {                                                                                                         \
+            (ARRAY)->elements = reallocarray((ARRAY)->elements, --(ARRAY)->element_count, sizeof((ARRAY)->elements[0])); \
+        }                                                                                                                \
+        index;                                                                                                           \
     })
 
 #define DYNARRAY_CLEAR(ARRAY)        \

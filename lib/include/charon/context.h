@@ -1,3 +1,3 @@
 #pragma once
 
-typedef struct charon_context charon_context_t;
+typedef struct charon_context context_t;

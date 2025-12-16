@@ -16,7 +16,7 @@ struct charon_context {
     DYNARRAY(context_file_entry_t) file_entries;
 };
 
-charon_context_t *context_make();
-void context_destroy(charon_context_t *ctx);
+context_t *context_make();
+void context_destroy(context_t *ctx);
 
-const charon_file_t *context_lookup_file(charon_context_t *ctx, size_t file_id);
+const charon_file_t *context_lookup_file(context_t *ctx, size_t file_id);

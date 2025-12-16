@@ -222,7 +222,7 @@ charon_parser_output_t parser_build(charon_parser_t *parser) {
                 size_t index = depth - 1;
                 while(current_node->parent != nullptr) {
                     assert(index > 0);
-                    path->steps[--index] = current_node->self_index;
+                    path->indices[--index] = current_node->self_index;
                     current_node = current_node->parent;
                 }
 

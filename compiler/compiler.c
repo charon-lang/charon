@@ -131,7 +131,7 @@ int main(int argc, char **argv) {
 
         charon_element_t *current_element = root_element;
         for(size_t i = 0; i < diag->path->length; i++) {
-            size_t child_index = diag->path->steps[i];
+            size_t child_index = diag->path->indices[i];
             assert(charon_element_type(current_element->inner) == CHARON_ELEMENT_TYPE_NODE);
             assert(charon_element_node_child_count(current_element->inner) > child_index);
 

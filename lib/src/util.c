@@ -1,4 +1,6 @@
 #include "charon/element.h"
+#include "charon/memory.h"
+#include "charon/path.h"
 
 #include <assert.h>
 #include <stddef.h>
@@ -32,4 +34,21 @@ const charon_element_inner_t *charon_util_element_swap(charon_element_cache_t *c
     }
 
     return new_subtree;
+}
+
+void charon_util_element_walk_tree(charon_memory_allocator_t *allocator, void (*fn)(charon_element_t *element, void *payload), void *payload, charon_element_t *element) {
+    if(charon_element_type(element->inner) == CHARON_ELEMENT_TYPE_NODE) {
+        for(size_t i = 0; i < charon_element_node_child_count(element->inner); i++) {
+            charon_util_element_walk_tree(allocator, fn, payload, charon_element_wrap_node_child(allocator, element, i));
+        }
+    }
+    fn(element, payload);
+}
+
+const charon_element_inner_t *charon_util_resolve(const charon_element_inner_t *root, const charon_path_t *path) {
+    const charon_element_inner_t *current = root;
+    for(size_t i = 0; i < path->length; i++) {
+        current = charon_element_node_child(current, path->indices[i]);
+    }
+    return current;
 }

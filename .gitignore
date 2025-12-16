@@ -6,3 +6,6 @@ subprojects/*
 
 docs/book
 *.result
+
+.charon
+test.charon

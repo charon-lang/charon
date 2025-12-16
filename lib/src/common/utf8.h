@@ -22,6 +22,11 @@ typedef struct {
 utf8_slice_t utf8_slice(const charon_utf8_text_t *text, size_t start_index, size_t size);
 
 /**
+ * Creates a malloced copy of the text.
+ */
+charon_utf8_text_t *utf8_copy(const charon_utf8_text_t *text);
+
+/**
  * Creates a malloced copy of a slice.
  */
 charon_utf8_text_t *utf8_slice_copy(utf8_slice_t slice);

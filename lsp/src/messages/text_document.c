@@ -137,10 +137,10 @@ static void publish_diagnostics(document_t *document) {
     for(charon_diag_item_t *diag = document->diagnostics; diag != nullptr; diag = diag->next) {
         charon_element_t *current_element = root_element;
         for(size_t i = 0; i < diag->path->length; i++) {
-            size_t index = diag->path->steps[i];
+            size_t index = diag->path->indices[i];
             assert(charon_element_type(current_element->inner) == CHARON_ELEMENT_TYPE_NODE);
             assert(charon_element_node_child_count(current_element->inner) > index);
-            current_element = charon_element_wrap_node_child(allocator, current_element, diag->path->steps[i]);
+            current_element = charon_element_wrap_node_child(allocator, current_element, diag->path->indices[i]);
         }
 
         size_t length = charon_element_length(current_element->inner);
@@ -325,7 +325,7 @@ static void handle_change(struct json_object *message) {
             }
 
             lca_path = charon_path_make(index_count);
-            for(size_t i = 0; i < index_count; i++) lca_path->steps[i] = indices[index_count - 1 - i];
+            for(size_t i = 0; i < index_count; i++) lca_path->indices[i] = indices[index_count - 1 - i];
             free(indices);
 
             charon_diag_item_t *new_diagnostics = nullptr;
@@ -336,7 +336,7 @@ static void handle_change(struct json_object *message) {
 
                 if(diag->path->length < lca_path->length) goto push;
                 for(size_t i = 0; i < lca_path->length; i++) {
-                    if(lca_path->steps[i] != diag->path->steps[i]) goto push;
+                    if(lca_path->indices[i] != diag->path->indices[i]) goto push;
                 }
 
                 charon_path_destroy(diag->path);
@@ -386,8 +386,8 @@ static void handle_change(struct json_object *message) {
             next_diag = diag->next;
 
             charon_path_t *new_path = charon_path_make(lca_path->length + diag->path->length);
-            memcpy(new_path->steps, lca_path->steps, lca_path->length * sizeof(lca_path->steps[0]));
-            memcpy(&new_path->steps[lca_path->length], diag->path->steps, diag->path->length * sizeof(diag->path->steps[0]));
+            memcpy(new_path->indices, lca_path->indices, lca_path->length * sizeof(lca_path->indices[0]));
+            memcpy(&new_path->indices[lca_path->length], diag->path->indices, diag->path->length * sizeof(diag->path->indices[0]));
 
             charon_path_destroy(diag->path);
             diag->path = new_path;
