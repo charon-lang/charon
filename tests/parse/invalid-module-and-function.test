@@ -1,0 +1,25 @@
+Root
+    Module
+        Token(`module`)
+        Token(identifier `test`)
+        Token(`{`)
+        Function
+            Token(`fn`)
+            Token(identifier `test`)
+            Function Type
+                Token(`(`)
+                Token(`)`)
+            Statement
+                Block
+                    Token(`{`)
+                    Error
+                        Token(eof)
+        Error
+            Token(eof)
+    Token(eof)
+DIAGNOSTIC Unexpected Token Expected } got eof
+Error
+    Token(eof)
+DIAGNOSTIC Unexpected Token Expected } got eof
+Error
+    Token(eof)
