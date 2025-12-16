@@ -42,7 +42,13 @@ static void parse_module(charon_parser_t *parser) {
     parser_consume(parser, CHARON_TOKEN_KIND_KEYWORD_MODULE);
     parser_consume(parser, CHARON_TOKEN_KIND_IDENTIFIER);
     parser_consume(parser, CHARON_TOKEN_KIND_PNCT_BRACE_LEFT);
-    while(!parser_is_eof(parser) && !parser_consume_try(parser, CHARON_TOKEN_KIND_PNCT_BRACE_RIGHT)) { parse_tlc(parser); }
+    while(!parser_consume_try(parser, CHARON_TOKEN_KIND_PNCT_BRACE_RIGHT)) {
+        if(parser_is_eof(parser)) {
+            parser_consume(parser, CHARON_TOKEN_KIND_PNCT_BRACE_RIGHT);
+            break;
+        }
+        parse_tlc(parser);
+    }
 
     parser_close_element(parser, CHARON_NODE_KIND_TLC_MODULE);
 }

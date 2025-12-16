@@ -115,7 +115,13 @@ void parse_stmt_block(charon_parser_t *parser) {
     parser_open_element(parser);
 
     parser_consume(parser, CHARON_TOKEN_KIND_PNCT_BRACE_LEFT);
-    while(!parser_is_eof(parser) && !parser_consume_try(parser, CHARON_TOKEN_KIND_PNCT_BRACE_RIGHT)) { parse_stmt(parser); }
+    while(!parser_consume_try(parser, CHARON_TOKEN_KIND_PNCT_BRACE_RIGHT)) {
+        if(parser_is_eof(parser)) {
+            parser_consume(parser, CHARON_TOKEN_KIND_PNCT_BRACE_RIGHT);
+            break;
+        }
+        parse_stmt(parser);
+    }
 
     parser_close_element(parser, CHARON_NODE_KIND_STMT_BLOCK);
 
