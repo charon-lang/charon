@@ -54,7 +54,7 @@ run_parse_test() {
         return
     fi
 
-    ./build/compiler/charonc $CHARON_FILE --raw-output > $TEST_PATH.result
+    ./build/compiler/charonc $CHARON_FILE --raw-output --no-sema > $TEST_PATH.result
     EXIT_CODE=$?
     if [ $EXIT_CODE -ne 0 ]; then
         print_result 0 $TEST_NAME "tester exited with $EXIT_CODE"

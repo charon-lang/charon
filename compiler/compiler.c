@@ -16,19 +16,21 @@
 #include <string.h>
 #include <sys/stat.h>
 
-bool raw_output = true;
-bool quiet_mode = false;
+typedef struct {
+    bool raw_output;
+    bool quiet_mode;
+    bool sema_mode;
+} args_t;
 
-#define PRINTF_IF_NOT_QUIET(...) \
-    do {                         \
-        if(!quiet_mode) {        \
-            printf(__VA_ARGS__); \
-        }                        \
+args_t g_args = { .raw_output = false, .quiet_mode = false, .sema_mode = true };
+
+#define PRINTF_IF_NOT_QUIET(...)                        \
+    do {                                                \
+        if(!g_args.quiet_mode) { printf(__VA_ARGS__); } \
     } while(0)
 
 char *ansi_color(const char *text) {
-    if(!raw_output) return "";
-
+    if(!g_args.raw_output) return "";
     return strdup(text);
 }
 
@@ -43,9 +45,7 @@ static void print_tree(charon_memory_allocator_t *allocator, charon_element_t *e
             PRINTF_IF_NOT_QUIET("%s%s%s\n", node_kind == CHARON_NODE_KIND_ERROR ? ansi_color("\e[41m") : "", charon_node_kind_tostring(node_kind), ansi_color("\e[0m"));
 
             size_t child_count = charon_element_node_child_count(element->inner);
-            for(size_t i = 0; i < child_count; i++) {
-                print_tree(allocator, charon_element_wrap_node_child(allocator, element, i), depth + 1);
-            }
+            for(size_t i = 0; i < child_count; i++) { print_tree(allocator, charon_element_wrap_node_child(allocator, element, i), depth + 1); }
             break;
         }
         case CHARON_ELEMENT_TYPE_TOKEN:
@@ -66,27 +66,35 @@ static void print_tree(charon_memory_allocator_t *allocator, charon_element_t *e
 
 extern void test(charon_memory_allocator_t *allocator, const charon_file_t *file);
 
+void parse_args(int argc, char **argv) {
+    for(int i = 2; i < argc; i++) {
+        // ignores ANSI support
+        if(strcmp(argv[i], "--raw-output") == 0) {
+            g_args.raw_output = false;
+        }
+        // disables ALL printing
+        else if(strcmp(argv[i], "--quiet") == 0)
+        {
+            g_args.quiet_mode = true;
+        }
+        // disables sema printing
+        else if(strcmp(argv[i], "--no-sema") == 0)
+        {
+            g_args.sema_mode = false;
+        } else {
+            printf("unknown option: %s\n", argv[i]);
+            exit(EXIT_FAILURE);
+        }
+    }
+}
+
 int main(int argc, char **argv) {
     if(argc < 2) {
         printf("no path provided\n");
         exit(EXIT_FAILURE);
     }
 
-    if(argc == 3) {
-        // @note: very technical option names
-        // ignores ANSI support
-        if(strcmp(argv[2], "--raw-output") == 0) {
-            raw_output = false;
-        }
-        // disables ALL printing
-        else if(strcmp(argv[2], "--quiet") == 0)
-        {
-            quiet_mode = true;
-        } else {
-            printf("unknown option: %s\n", argv[2]);
-            exit(EXIT_FAILURE);
-        }
-    }
+    parse_args(argc, argv);
 
     char *name = basename(strdup(argv[1]));
 
@@ -145,8 +153,10 @@ int main(int argc, char **argv) {
         free(diag);
     }
 
-    charon_file_t f = { .name = name, .text = text, .root_element = root_element->inner };
-    test(allocator, &f);
+    if(g_args.sema_mode) {
+        charon_file_t f = { .name = name, .text = text, .root_element = root_element->inner };
+        test(allocator, &f);
+    }
 
     charon_lexer_destroy(lexer);
     charon_parser_destroy(parser);
