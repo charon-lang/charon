@@ -27,9 +27,17 @@ void print_table(context_t *ctx, const charon_symbol_table_t *table, int depth) 
             current = charon_element_node_child(current, symbol->definition->indices[j]);
         }
 
-        printf("%*s-> %s [%s] in %s\n", depth, "", charon_utf8_as_string(symbol->name), charon_node_kind_tostring(charon_element_node_kind(current)), file->name);
-
-        if(symbol->kind == CHARON_SYMBOL_KIND_MODULE) print_table(ctx, &symbol->module.table, depth + 2);
+        printf("%*s-> %s: \"%s\"", depth, "", charon_node_kind_tostring(charon_element_node_kind(current)), charon_utf8_as_string(symbol->name));
+        if(symbol->kind == CHARON_SYMBOL_KIND_MODULE) {
+            printf(" | num_symbols: %zu\n", symbol->module.table.symbol_count);
+            print_table(ctx, &symbol->module.table, depth + 4);
+        } else if(symbol->kind == CHARON_SYMBOL_KIND_FUNCTION) {
+            printf(" | num_params: %zu\n", symbol->function.param_table->param_count);
+            for(size_t p = 0; p < symbol->function.param_table->param_count; p++) {
+                charon_function_param_t *param = symbol->function.param_table->param_table[p];
+                printf("%*s   - Param %zu: \"%s\"\n", depth + 4, "", p, charon_utf8_as_string(param->name));
+            }
+        }
     }
 }
 
@@ -43,7 +51,7 @@ void test(charon_memory_allocator_t *allocator, const charon_file_t *file) {
 
     const charon_symbol_table_t *symtab;
     assert(queries_symtab(engine, &entry.file_id, &symtab));
-
+    printf("\nSymbol Table for %s:\n", file->name);
     print_table(context, symtab, 0);
 
     query_engine_destroy(engine);
