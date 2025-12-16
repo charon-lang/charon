@@ -28,6 +28,9 @@ Root
             Function Type
                 Token(`(`)
                 Token(`)`)
+                Token(`:`)
+                Type Reference
+                    Token(identifier `void`)
             Statement
                 Block
                     Token(`{`)
@@ -52,6 +55,9 @@ Root
                 Function Type
                     Token(`(`)
                     Token(`)`)
+                    Token(`:`)
+                    Type Reference
+                        Token(identifier `void`)
                 Statement
                     Block
                         Token(`{`)
@@ -78,6 +84,19 @@ Root
         Token(identifier `main`)
         Function Type
             Token(`(`)
+            Token(identifier `argc`)
+            Token(`:`)
+            Type Reference
+                Token(identifier `i32`)
+            Token(`,`)
+            Token(identifier `argv`)
+            Token(`:`)
+            Pointer Type
+                Token(`*`)
+                Pointer Type
+                    Token(`*`)
+                    Type Reference
+                        Token(identifier `u8`)
             Token(`)`)
             Token(`:`)
             Type Reference
