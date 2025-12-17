@@ -1,7 +1,6 @@
 #include "charon/diag.h"
 #include "charon/node.h"
 #include "charon/path.h"
-#include "charon/platform.h"
 #include "charon/utf8.h"
 #include "charon/util.h"
 #include "document.h"

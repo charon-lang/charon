@@ -1,11 +1,11 @@
 #include "charon/lexer.h"
 
 #include "charon/element.h"
-#include "charon/platform.h"
 #include "charon/token.h"
 #include "charon/trivia.h"
 #include "common/fatal.h"
 #include "common/utf8.h"
+#include "platform.h"
 
 #include <assert.h>
 #include <pcre2.h>

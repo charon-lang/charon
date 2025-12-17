@@ -1,7 +1,7 @@
 #include "charon/memory.h"
 
-#include "charon/platform.h"
 #include "common/fatal.h"
+#include "platform.h"
 
 #include <assert.h>
 #include <stdio.h>

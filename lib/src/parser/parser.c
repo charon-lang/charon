@@ -6,10 +6,10 @@
 #include "charon/node.h"
 #include "charon/parser.h"
 #include "charon/path.h"
-#include "charon/platform.h"
 #include "charon/token.h"
 #include "common/list.h"
 #include "parser/parse.h"
+#include "platform.h"
 
 #include <assert.h>
 #include <stdarg.h>
@@ -75,9 +75,7 @@ charon_parser_t *charon_parser_make(charon_element_cache_t *element_cache, charo
 
 void charon_parser_destroy(charon_parser_t *parser) {
     list_node_t *lnode;
-    while((lnode = list_pop(&parser->events)) != nullptr) {
-        free(LIST_CONTAINER_OF(lnode, parser_event_t, list_node));
-    }
+    while((lnode = list_pop(&parser->events)) != nullptr) { free(LIST_CONTAINER_OF(lnode, parser_event_t, list_node)); }
 
     free(parser);
 }

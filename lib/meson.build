@@ -6,7 +6,7 @@ charon_lib_includes = include_directories('include')
 charon_lib = static_library(
     'charon',
     files(
-        'src/common/platform.c',
+        'src/platform.c',
         'src/common/memory.c',
         'src/common/utf8.c',
         'src/common/list.c',

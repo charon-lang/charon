@@ -1,4 +1,4 @@
-#include "include/charon/platform.h"
+#include "platform.h"
 
 #ifdef __APPLE__
 void *reallocarray(void *ptr, size_t nmemb, size_t size) {
