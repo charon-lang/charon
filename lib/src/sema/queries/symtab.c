@@ -8,6 +8,7 @@
 #include "charon/token.h"
 #include "common/dynarray.h"
 #include "common/utf8.h"
+#include "platform.h"
 #include "sema/context.h"
 #include "sema/queries.h"
 #include "sema/query.h"
@@ -55,7 +56,9 @@ static bool parse_module(charon_memory_allocator_t *allocator, charon_element_t 
     }
 
     module_symbol->name = utf8_copy(charon_element_token_text(name_element));
-    if(!insert_symbol(*table, module_symbol)) { return false; }
+    if(!insert_symbol(*table, module_symbol)) {
+        return false;
+    }
     *table = &module_symbol->module.table;
     return true;
 }
@@ -89,8 +92,12 @@ static bool parse_function(charon_memory_allocator_t *allocator, charon_element_
     // @todo: THIS FUCKING SUCKS
     while(true) {
         const charon_element_inner_t *preprocessing_element = charon_element_node_child(params_element, index);
-        if(charon_element_type(preprocessing_element) == CHARON_ELEMENT_TYPE_TOKEN && charon_element_token_kind(preprocessing_element) == CHARON_TOKEN_KIND_PNCT_COMMA) { index++; }
-        if(charon_element_type(preprocessing_element) == CHARON_ELEMENT_TYPE_TOKEN && charon_element_token_kind(preprocessing_element) == CHARON_TOKEN_KIND_PNCT_PARENTHESES_RIGHT) { break; }
+        if(charon_element_type(preprocessing_element) == CHARON_ELEMENT_TYPE_TOKEN && charon_element_token_kind(preprocessing_element) == CHARON_TOKEN_KIND_PNCT_COMMA) {
+            index++;
+        }
+        if(charon_element_type(preprocessing_element) == CHARON_ELEMENT_TYPE_TOKEN && charon_element_token_kind(preprocessing_element) == CHARON_TOKEN_KIND_PNCT_PARENTHESES_RIGHT) {
+            break;
+        }
         const charon_element_inner_t *current_element = charon_element_node_child(params_element, index);
 
         // @todo: this won't work if they don't put the var args at the end we should prob check for that because otherwise it's invalid

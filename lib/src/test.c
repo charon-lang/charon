@@ -6,6 +6,7 @@
 #include "charon/symbol.h"
 #include "charon/utf8.h"
 #include "common//dynarray.h"
+#include "platform.h"
 #include "sema/context.h"
 #include "sema/queries.h"
 #include "sema/query.h"
