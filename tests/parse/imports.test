@@ -1,0 +1,114 @@
+Root
+    Import
+        Token(`import`)
+        Token(identifier `xyz`)
+        Token(`;`)
+    Import
+        Token(`import`)
+        Token(identifier `xyz`)
+        Token(`as`)
+        Token(identifier `abc`)
+        Token(`;`)
+    Import
+        Token(`import`)
+        Token(identifier `xyz`)
+        Token(`::`)
+        Token(identifier `abc`)
+        Token(`::`)
+        Token(identifier `def`)
+        Token(`;`)
+    Import
+        Token(`import`)
+        Token(identifier `xyz`)
+        Token(`::`)
+        Token(identifier `abc`)
+        Token(`::`)
+        Token(identifier `def`)
+        Token(`as`)
+        Token(identifier `hijk`)
+        Token(`;`)
+    Import
+        Token(`import`)
+        Token(identifier `xyz`)
+        Token(`::`)
+        Token(`{`)
+        Token(identifier `hello`)
+        Token(`,`)
+        Token(identifier `X`)
+        Token(`}`)
+        Token(`;`)
+    Import
+        Token(`import`)
+        Token(identifier `xyz`)
+        Token(`::`)
+        Token(`{`)
+        Token(`*`)
+        Token(`}`)
+        Token(`;`)
+    Function
+        Token(`fn`)
+        Token(identifier `main`)
+        Function Type
+            Token(`(`)
+            Token(`)`)
+            Token(`:`)
+            Type Reference
+                Token(identifier `u32`)
+        Statement
+            Block
+                Token(`{`)
+                Statement
+                    Declaration
+                        Token(`let`)
+                        Token(identifier `x`)
+                        Token(`=`)
+                        Selector
+                            Token(identifier `State`)
+                            Token(`::`)
+                            Variable
+                                Token(identifier `VALID`)
+                        Token(`;`)
+                Statement
+                    Expression
+                        Function Call
+                            Variable
+                                Token(identifier `printf`)
+                            Token(`(`)
+                            Literal String
+                                Token(string `"%u %u\n"`)
+                            Token(`,`)
+                            Variable
+                                Token(identifier `x`)
+                            Token(`,`)
+                            Selector
+                                Token(identifier `State`)
+                                Token(`::`)
+                                Variable
+                                    Token(identifier `INVALID`)
+                            Token(`)`)
+                        Token(`;`)
+                Statement
+                    Expression
+                        Function Call
+                            Variable
+                                Token(identifier `test`)
+                            Token(`(`)
+                            Selector
+                                Token(identifier `State`)
+                                Token(`::`)
+                                Variable
+                                    Token(identifier `APPLE`)
+                            Token(`)`)
+                        Token(`;`)
+                Statement
+                    Return
+                        Token(`return`)
+                        Cast
+                            Literal Number
+                                Token(decimal number `0`)
+                            Token(`as`)
+                            Type Reference
+                                Token(identifier `u8`)
+                        Token(`;`)
+                Token(`}`)
+    Token(eof)

@@ -19,6 +19,8 @@ TOKEN(KEYWORD_FOR,      "for",          "^for\\b")
 TOKEN(KEYWORD_SIZEOF,   "sizeof",       "^sizeof\\b")
 TOKEN(KEYWORD_SWITCH,   "switch",       "^switch\\b")
 TOKEN(KEYWORD_DEFAULT,  "default",      "^default\\b")
+TOKEN(KEYWORD_IMPORT,   "import",       "^import\\b")
+
 
 // Literals
 TOKEN(LITERAL_NUMBER_HEX, "hexadecimal number", "^0x[a-fA-F\\d]+")

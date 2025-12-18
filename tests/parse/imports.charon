@@ -1,0 +1,17 @@
+import xyz;
+import xyz as abc;
+import xyz::abc::def;
+import xyz::abc::def as hijk;
+import xyz::{hello, X};
+import xyz::{*};
+
+fn main(): u32 {
+
+    let x = State::VALID;
+
+    printf("%u %u\n", x, State::INVALID);
+
+    test(State::APPLE);
+
+    return 0 as u8;
+}

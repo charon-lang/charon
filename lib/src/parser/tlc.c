@@ -6,6 +6,32 @@
 
 #include <string.h>
 
+static void parse_import(charon_parser_t *parser) {
+    parser_open_element(parser);
+
+    parser_consume(parser, CHARON_TOKEN_KIND_KEYWORD_IMPORT);
+    parser_consume(parser, CHARON_TOKEN_KIND_IDENTIFIER);
+    while(parser_consume_try(parser, CHARON_TOKEN_KIND_PNCT_DOUBLE_COLON)) {
+        if(!parser_consume_try(parser, CHARON_TOKEN_KIND_IDENTIFIER)) { break; }
+    }
+
+    // @todo: do we want this syntax?
+    if(parser_consume_try(parser, CHARON_TOKEN_KIND_PNCT_BRACE_LEFT)) {
+        if(parser_consume_try(parser, CHARON_TOKEN_KIND_PNCT_STAR)) {
+            parser_consume_try(parser, CHARON_TOKEN_KIND_PNCT_BRACE_RIGHT);
+        } else {
+            parser_consume(parser, CHARON_TOKEN_KIND_IDENTIFIER);
+            while(parser_consume_try(parser, CHARON_TOKEN_KIND_PNCT_COMMA)) { parser_consume(parser, CHARON_TOKEN_KIND_IDENTIFIER); }
+            parser_consume_try(parser, CHARON_TOKEN_KIND_PNCT_BRACE_RIGHT);
+        }
+    }
+
+    if(parser_consume_try(parser, CHARON_TOKEN_KIND_KEYWORD_AS)) { parser_consume(parser, CHARON_TOKEN_KIND_IDENTIFIER); }
+
+    parser_consume(parser, CHARON_TOKEN_KIND_PNCT_SEMI_COLON);
+    parser_close_element(parser, CHARON_NODE_KIND_TLC_IMPORT);
+}
+
 static void parse_attribute(charon_parser_t *parser) {
     parser_open_element(parser);
 
@@ -113,6 +139,7 @@ static void parse_enum(charon_parser_t *parser) {
 
 void parse_tlc(charon_parser_t *parser) {
     switch(parser_peek(parser)) {
+        case CHARON_TOKEN_KIND_KEYWORD_IMPORT:   parse_import(parser); break;
         case CHARON_TOKEN_KIND_PNCT_AT:          parse_attribute(parser); break;
         case CHARON_TOKEN_KIND_KEYWORD_MODULE:   parse_module(parser); break;
         case CHARON_TOKEN_KIND_KEYWORD_FUNCTION: parse_function(parser); break;
