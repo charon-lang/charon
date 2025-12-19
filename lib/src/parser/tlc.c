@@ -10,25 +10,9 @@ static void parse_import(charon_parser_t *parser) {
     parser_open_element(parser);
 
     parser_consume(parser, CHARON_TOKEN_KIND_KEYWORD_IMPORT);
-    parser_consume(parser, CHARON_TOKEN_KIND_IDENTIFIER);
-    while(parser_consume_try(parser, CHARON_TOKEN_KIND_PNCT_DOUBLE_COLON)) {
-        if(!parser_consume_try(parser, CHARON_TOKEN_KIND_IDENTIFIER)) { break; }
-    }
-
-    // @todo: do we want this syntax?
-    if(parser_consume_try(parser, CHARON_TOKEN_KIND_PNCT_BRACE_LEFT)) {
-        if(parser_consume_try(parser, CHARON_TOKEN_KIND_PNCT_STAR)) {
-            parser_consume_try(parser, CHARON_TOKEN_KIND_PNCT_BRACE_RIGHT);
-        } else {
-            parser_consume(parser, CHARON_TOKEN_KIND_IDENTIFIER);
-            while(parser_consume_try(parser, CHARON_TOKEN_KIND_PNCT_COMMA)) { parser_consume(parser, CHARON_TOKEN_KIND_IDENTIFIER); }
-            parser_consume_try(parser, CHARON_TOKEN_KIND_PNCT_BRACE_RIGHT);
-        }
-    }
-
-    if(parser_consume_try(parser, CHARON_TOKEN_KIND_KEYWORD_AS)) { parser_consume(parser, CHARON_TOKEN_KIND_IDENTIFIER); }
-
+    parser_consume(parser, CHARON_TOKEN_KIND_LITERAL_STRING);
     parser_consume(parser, CHARON_TOKEN_KIND_PNCT_SEMI_COLON);
+
     parser_close_element(parser, CHARON_NODE_KIND_TLC_IMPORT);
 }
 
@@ -40,7 +24,9 @@ static void parse_attribute(charon_parser_t *parser) {
     if(parser_consume_try(parser, CHARON_TOKEN_KIND_PNCT_PARENTHESES_LEFT)) {
         if(parser_peek(parser) != CHARON_TOKEN_KIND_PNCT_PARENTHESES_RIGHT) {
             parse_expr(parser);
-            while(parser_consume_try(parser, CHARON_TOKEN_KIND_PNCT_COMMA)) { parse_expr(parser); }
+            while(parser_consume_try(parser, CHARON_TOKEN_KIND_PNCT_COMMA)) {
+                parse_expr(parser);
+            }
         }
         parser_consume(parser, CHARON_TOKEN_KIND_PNCT_PARENTHESES_RIGHT);
     }
@@ -54,7 +40,9 @@ static void parse_type_definition(charon_parser_t *parser) {
     parser_consume(parser, CHARON_TOKEN_KIND_KEYWORD_TYPE);
     parser_consume(parser, CHARON_TOKEN_KIND_IDENTIFIER);
     if(parser_consume_try(parser, CHARON_TOKEN_KIND_PNCT_CARET_LEFT)) {
-        do { parser_consume(parser, CHARON_TOKEN_KIND_IDENTIFIER); } while(parser_consume_try(parser, CHARON_TOKEN_KIND_PNCT_COMMA));
+        do {
+            parser_consume(parser, CHARON_TOKEN_KIND_IDENTIFIER);
+        } while(parser_consume_try(parser, CHARON_TOKEN_KIND_PNCT_COMMA));
         parser_consume(parser, CHARON_TOKEN_KIND_PNCT_CARET_RIGHT);
     }
     parse_type(parser);
@@ -85,7 +73,9 @@ static void parse_function(charon_parser_t *parser) {
     parser_consume(parser, CHARON_TOKEN_KIND_KEYWORD_FUNCTION);
     parser_consume(parser, CHARON_TOKEN_KIND_IDENTIFIER);
     if(parser_consume_try(parser, CHARON_TOKEN_KIND_PNCT_CARET_LEFT)) {
-        do { parser_consume(parser, CHARON_TOKEN_KIND_IDENTIFIER); } while(parser_consume_try(parser, CHARON_TOKEN_KIND_PNCT_COMMA));
+        do {
+            parser_consume(parser, CHARON_TOKEN_KIND_IDENTIFIER);
+        } while(parser_consume_try(parser, CHARON_TOKEN_KIND_PNCT_COMMA));
         parser_consume(parser, CHARON_TOKEN_KIND_PNCT_CARET_RIGHT);
     }
     parse_type_function(parser);
