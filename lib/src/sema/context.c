@@ -7,9 +7,11 @@
 
 #include <assert.h>
 #include <stddef.h>
+#include <stdlib.h>
 
 static void cleanup_path(context_t *ctx, charon_path_t *path) {
     interner_unref(&ctx->file_interner, path->file);
+    free(path);
 }
 
 static void cleanup_symbol(context_t *ctx, symbol_t *symbol) {
@@ -19,12 +21,14 @@ static void cleanup_symbol(context_t *ctx, symbol_t *symbol) {
         case SYMBOL_KIND_MODULE: interner_unref(&ctx->symtab_interner, symbol->module.symtab); break;
         default:                 break;
     }
+    free(symbol);
 }
 
 static void cleanup_symtab(context_t *ctx, symbol_table_t *symtab) {
     for(size_t i = 0; i < symtab->symbol_count; i++) {
         interner_unref(&ctx->symbol_interner, symtab->symbols[i]);
     }
+    free(symtab);
 }
 
 context_t *context_make() {
