@@ -1,1 +1,2 @@
 option('build_lsp', type : 'boolean', value : true, description : 'Build LSP module')
+option('traces', type : 'array', value : [], description : 'Traces to enable')

@@ -7,6 +7,13 @@ add_project_arguments(
     language: 'c'
 )
 
+traces = get_option('traces')
+
+foreach t : traces
+    macro_suffix = t.to_upper().replace('-', '_').replace('.', '_').replace(' ', '_')
+    add_project_arguments('-DTRACE_' + macro_suffix, language: 'c')
+endforeach
+
 subdir('lib')
 
 if get_option('build_lsp')

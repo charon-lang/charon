@@ -7,6 +7,8 @@ charon_lib = static_library(
     'charon',
     files(
         'src/platform.c',
+        'src/ast/function.c',
+        'src/ast/module.c',
         'src/common/memory.c',
         'src/common/utf8.c',
         'src/common/list.c',
@@ -18,6 +20,7 @@ charon_lib = static_library(
         'src/parser/type.c',
         'src/sema/queries/symtab.c',
         'src/sema/context.c',
+        'src/sema/interner.c',
         'src/sema/query.c',
         'src/diag.c',
         'src/element.c',

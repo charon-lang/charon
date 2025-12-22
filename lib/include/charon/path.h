@@ -1,12 +1,12 @@
 #pragma once
 
-#include "charon/file.h"
+#include "charon/interner.h"
 
 #include <stddef.h>
 #include <stdlib.h>
 
 typedef struct {
-    charon_file_id_t file_id;
+    charon_interner_key_t file;
     size_t length;
     size_t indices[];
 } charon_path_t;

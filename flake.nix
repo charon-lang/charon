@@ -28,6 +28,8 @@
 
                         gdb
                         valgrind
+
+                        python3
                     ];
                 };
             }

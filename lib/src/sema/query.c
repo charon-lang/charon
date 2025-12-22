@@ -1,11 +1,14 @@
 #include "query.h"
 
 #include "charon/context.h"
+#include "charon/diag.h"
+#include "charon/path.h"
 #include "common/fatal.h"
 
 #include <assert.h>
 #include <stdbool.h>
 #include <stdint.h>
+#include <stdlib.h>
 #include <string.h>
 
 #define QUERY_DEFAULT_BUCKET_COUNT 128
@@ -37,10 +40,12 @@ struct query_state {
 
     void *key;
     void *value;
+    charon_diag_item_t *diagnostics;
 
-    bool has_value;
     bool active;
     bool invalidating;
+    bool computed;
+    query_compute_status_t compute_status;
 
     query_state_t **dependencies;
     size_t dependency_count;
@@ -146,7 +151,7 @@ static query_state_t *descriptor_state_insert(query_engine_t *engine, query_desc
     query_state_t *state = charon_memory_allocate(engine->allocator, sizeof(query_state_t));
     state->descriptor = descriptor;
     state->hash = hash;
-    state->has_value = false;
+    state->computed = false;
     state->active = false;
     state->invalidating = false;
     state->dependencies = nullptr;
@@ -155,6 +160,8 @@ static query_state_t *descriptor_state_insert(query_engine_t *engine, query_desc
     state->dependents = nullptr;
     state->dependent_count = 0;
     state->dependent_capacity = 0;
+
+    state->diagnostics = nullptr;
 
     state->key = descriptor->key_size == 0 ? nullptr : charon_memory_allocate(engine->allocator, descriptor->key_size);
     if(descriptor->key_size != 0) memcpy(state->key, key, descriptor->key_size);
@@ -193,44 +200,48 @@ static void query_state_add_dependency(query_engine_t *engine, query_state_t *pa
     pointer_array_push(engine, &dependency->dependents, &dependency->dependent_count, &dependency->dependent_capacity, parent);
 }
 
-static bool query_state_evaluate(query_engine_t *engine, query_state_t *state) {
-    if(state->active) {
-        fatal("cycle detected while executing query `%s`\n", state->descriptor->name);
-    }
+static query_compute_status_t query_state_evaluate(query_engine_t *engine, query_state_t *state) {
+    if(state->active) fatal("cycle detected while executing query `%s`\n", state->descriptor->name);
+
     state->active = true;
     engine_stack_push(engine, state);
 
     query_state_remove_from_dependencies(state);
 
-    bool ok = state->descriptor->compute(engine, engine->context, state->key, state->value);
-
-    if(ok) {
-        state->has_value = true;
-    } else {
-        state->has_value = false;
-    }
+    state->computed = true;
+    state->compute_status = state->descriptor->compute(engine, engine->context, state->key, state->value);
 
     engine_stack_pop(engine);
     state->active = false;
 
-    return ok;
+    return state->compute_status;
 }
 
-static bool query_state_ensure(query_engine_t *engine, query_state_t *state) {
-    if(state->has_value) return true;
+static query_compute_status_t query_state_ensure(query_engine_t *engine, query_state_t *state) {
+    if(state->computed) return state->compute_status;
     return query_state_evaluate(engine, state);
 }
 
 static void query_state_invalidate_recursive(query_state_t *state) {
     if(state->invalidating) return;
-    if(state->active) {
-        fatal("cannot invalidate query `%s` while it is executing\n", state->descriptor->name);
-    }
+    if(state->active) fatal("cannot invalidate query `%s` while it is executing\n", state->descriptor->name);
+
     state->invalidating = true;
 
-    if(state->has_value) {
-        if(state->descriptor->value_drop != nullptr) state->descriptor->value_drop(state->value);
-        state->has_value = false;
+    if(state->computed) {
+        if(state->descriptor->value_drop != nullptr && state->compute_status != QUERY_COMPUTE_STATUS_FATAL) {
+            state->descriptor->value_drop(state->value);
+        }
+        state->computed = false;
+    }
+
+    for(charon_diag_item_t *diag_item = state->diagnostics; diag_item != nullptr;) {
+        charon_diag_item_t *tmp = diag_item;
+        diag_item = diag_item->next;
+
+        charon_path_destroy(tmp->path);
+        if(tmp->data != nullptr) free(tmp->data);
+        free(tmp);
     }
 
     for(size_t i = 0; i < state->dependent_count; ++i) {
@@ -243,7 +254,7 @@ static void query_state_invalidate_recursive(query_state_t *state) {
 static void query_state_destroy(query_engine_t *engine, query_state_t *state) {
     query_state_remove_from_dependencies(state);
     query_state_remove_from_dependents(state);
-    if(state->descriptor->value_drop != nullptr && state->has_value) state->descriptor->value_drop(state->value);
+    if(state->descriptor->value_drop != nullptr && state->descriptor->value_drop != nullptr && state->compute_status != QUERY_COMPUTE_STATUS_FATAL) state->descriptor->value_drop(state->value);
     if(state->descriptor->key_drop != nullptr && state->key != nullptr) state->descriptor->key_drop(state->key);
 
     if(state->key != nullptr) charon_memory_free(engine->allocator, state->key);
@@ -287,7 +298,7 @@ void query_engine_destroy(query_engine_t *engine) {
     charon_memory_free(engine->allocator, engine);
 }
 
-bool query_engine_execute(query_engine_t *engine, const query_descriptor_t *descriptor, const void *key, const void **value_out) {
+query_compute_status_t query_engine_execute(query_engine_t *engine, const query_descriptor_t *descriptor, const void *key, void *value_out) {
     assert(engine != nullptr);
     assert(descriptor != nullptr);
     assert(descriptor->compute != nullptr);
@@ -298,16 +309,32 @@ bool query_engine_execute(query_engine_t *engine, const query_descriptor_t *desc
     query_state_t *state = descriptor_state_find(descriptor_state, key, hash);
     if(state == nullptr) state = descriptor_state_insert(engine, descriptor_state, key, hash);
 
-    if(engine->stack_size != 0) {
+    if(engine->stack_size > 0) {
         query_state_t *parent = engine->stack[engine->stack_size - 1];
         query_state_add_dependency(engine, parent, state);
     }
 
-    bool ok = query_state_ensure(engine, state);
-    if(!ok) return false;
+    query_compute_status_t status = query_state_ensure(engine, state);
+    if(status != QUERY_COMPUTE_STATUS_FATAL && value_out != nullptr && descriptor->value_size != 0) {
+        memcpy(value_out, state->value, descriptor->value_size);
+    }
 
-    if(value_out != nullptr) *value_out = descriptor->value_size == 0 ? nullptr : state->value;
-    return true;
+    return status;
+}
+
+void query_engine_diag(query_engine_t *engine, charon_diag_t kind, charon_path_t *path, charon_diag_data_t *data) {
+    assert(engine != nullptr);
+    assert(engine->stack_size > 0);
+
+    query_state_t *current_state = engine->stack[engine->stack_size - 1];
+
+    charon_diag_item_t *diag_item = malloc(sizeof(charon_diag_item_t));
+    diag_item->kind = kind;
+    diag_item->path = path;
+    diag_item->data = data;
+    diag_item->next = current_state->diagnostics;
+
+    current_state->diagnostics = diag_item;
 }
 
 static void descriptor_state_invalidate_all(query_descriptor_state_t *descriptor_state) {

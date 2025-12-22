@@ -24,9 +24,11 @@ typedef struct {
 
 args_t g_args = { .raw_output = false, .quiet_mode = false, .sema_mode = true };
 
-#define PRINTF_IF_NOT_QUIET(...)                        \
-    do {                                                \
-        if(!g_args.quiet_mode) { printf(__VA_ARGS__); } \
+#define PRINTF_IF_NOT_QUIET(...) \
+    do {                         \
+        if(!g_args.quiet_mode) { \
+            printf(__VA_ARGS__); \
+        }                        \
     } while(0)
 
 char *ansi_color(const char *text) {
@@ -45,7 +47,9 @@ static void print_tree(charon_memory_allocator_t *allocator, charon_element_t *e
             PRINTF_IF_NOT_QUIET("%s%s%s\n", node_kind == CHARON_NODE_KIND_ERROR ? ansi_color("\e[41m") : "", charon_node_kind_tostring(node_kind), ansi_color("\e[0m"));
 
             size_t child_count = charon_element_node_child_count(element->inner);
-            for(size_t i = 0; i < child_count; i++) { print_tree(allocator, charon_element_wrap_node_child(allocator, element, i), depth + 1); }
+            for(size_t i = 0; i < child_count; i++) {
+                print_tree(allocator, charon_element_wrap_node_child(allocator, element, i), depth + 1);
+            }
             break;
         }
         case CHARON_ELEMENT_TYPE_TOKEN:
