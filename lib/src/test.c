@@ -6,11 +6,11 @@
 #include "charon/node.h"
 #include "charon/path.h"
 #include "charon/utf8.h"
+#include "core/context.h"
+#include "core/interner.h"
+#include "core/query.h"
 #include "platform.h"
-#include "sema/context.h"
-#include "sema/interner.h"
 #include "sema/queries.h"
-#include "sema/query.h"
 #include "sema/symbol.h"
 
 #include <assert.h>

@@ -1,11 +1,11 @@
 #include "charon/diag.h"
 
 #include "charon/token.h"
-#include "stdio.h"
-#include "string.h"
 
 #include <assert.h>
 #include <stddef.h>
+#include <stdio.h>
+#include <string.h>
 
 static char *append(char *original, const char *fmt, const char *new) {
     char *tmp;

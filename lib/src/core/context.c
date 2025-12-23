@@ -2,7 +2,7 @@
 
 #include "charon/context.h"
 #include "charon/path.h"
-#include "sema/interner.h"
+#include "core/interner.h"
 #include "sema/symbol.h"
 
 #include <assert.h>

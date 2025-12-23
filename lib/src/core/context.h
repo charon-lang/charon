@@ -4,7 +4,7 @@
 #include "charon/file.h"
 #include "charon/path.h"
 #include "charon/utf8.h"
-#include "sema/interner.h"
+#include "core/interner.h"
 #include "sema/symbol.h"
 
 #include <stddef.h>

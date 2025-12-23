@@ -8,20 +8,18 @@
 #include "charon/node.h"
 #include "charon/path.h"
 #include "charon/utf8.h"
-#include "common/dynarray.h"
+#include "core/context.h"
+#include "core/interner.h"
+#include "core/query.h"
 #include "platform.h"
-#include "sema/context.h"
-#include "sema/interner.h"
 #include "sema/queries.h"
-#include "sema/query.h"
 #include "sema/symbol.h"
 
 #include <assert.h>
 #include <stddef.h>
 #include <stdio.h>
 #include <stdlib.h>
-
-typedef DYNARRAY(size_t) indices_t;
+#include <string.h>
 
 static query_compute_status_t compute_symtab(query_engine_t *engine, context_t *ctx, const void *key, void *value_out);
 
@@ -49,7 +47,7 @@ static symbol_table_t *insert_symbol(symbol_table_t *table, charon_interner_key_
     return table;
 }
 
-static bool symtab_walk(context_t *ctx, charon_memory_allocator_t *allocator, charon_element_t *element, charon_interner_key_t file, symbol_table_t **table, indices_t *indices) {
+static bool symtab_walk(context_t *ctx, charon_memory_allocator_t *allocator, charon_element_t *element, charon_interner_key_t file, symbol_table_t **table, size_t *indices, size_t index_count) {
     switch(charon_element_type(element->inner)) {
         case CHARON_ELEMENT_TYPE_NODE:   break;
         case CHARON_ELEMENT_TYPE_TOKEN:  return true;
@@ -98,10 +96,10 @@ static bool symtab_walk(context_t *ctx, charon_memory_allocator_t *allocator, ch
         }
 
         set_path: {
-            charon_path_t *path = charon_path_make(indices->element_count);
+            charon_path_t *path = charon_path_make(index_count);
             interner_ref(&ctx->file_interner, file);
             path->file = file;
-            for(size_t i = 0; i < indices->element_count; i++) path->indices[i] = indices->elements[i];
+            memcpy(path->indices, indices, index_count * sizeof(size_t));
 
             symbol->definition_path_id = context_intern_path(ctx, path);
             break;
@@ -110,11 +108,13 @@ static bool symtab_walk(context_t *ctx, charon_memory_allocator_t *allocator, ch
         default: break;
     }
 
+    size_t *new_indices = malloc((index_count + 1) * sizeof(size_t));
+    memcpy(new_indices, indices, index_count * sizeof(size_t));
     for(size_t i = 0; i < charon_element_node_child_count(element->inner); i++) {
-        DYNARRAY_PUSH(indices, i);
-        symtab_walk(ctx, allocator, charon_element_wrap_node_child(allocator, element, i), file, table, indices);
-        DYNARRAY_POP(indices);
+        new_indices[index_count] = i;
+        symtab_walk(ctx, allocator, charon_element_wrap_node_child(allocator, element, i), file, table, new_indices, index_count + 1);
     }
+    free(new_indices);
 
     if(charon_element_node_kind(element->inner) == CHARON_NODE_KIND_TLC_MODULE) {
         symbol->module.symtab = context_intern_symtab(ctx, new_table);
@@ -133,7 +133,8 @@ static query_compute_status_t compute_symtab(query_engine_t *engine, context_t *
     symbol_table->symbol_count = 0;
 
     charon_memory_allocator_t *allocator = charon_memory_allocator_make();
-    bool symtab_success = symtab_walk(ctx, allocator, charon_element_wrap_root(allocator, file->root_element), interner_key, &symbol_table, &(indices_t) DYNARRAY_INIT);
+    bool symtab_success = symtab_walk(ctx, allocator, charon_element_wrap_root(allocator, file->root_element), interner_key, &symbol_table, nullptr, 0);
+    charon_memory_allocator_free(allocator);
 
     interner_unref(&ctx->file_interner, interner_key);
 

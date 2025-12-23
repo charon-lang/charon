@@ -1,7 +1,6 @@
 #include "interner.h"
 
 #include "charon/interner.h"
-#include "sema/context.h"
 
 #include <assert.h>
 #include <stddef.h>

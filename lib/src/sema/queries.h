@@ -1,7 +1,7 @@
 #pragma once
 
 #include "charon/interner.h"
-#include "query.h"
+#include "core/query.h"
 
 #include <stddef.h>
 
