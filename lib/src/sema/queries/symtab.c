@@ -29,12 +29,18 @@ static void value_drop(context_t *ctx, void *value) {
     interner_unref(&ctx->symtab_interner, *(charon_interner_key_t *) value);
 }
 
+static bool value_copy(context_t *ctx, const void *in, void *out) {
+    interner_ref(&ctx->symtab_interner, *(charon_interner_key_t *) in);
+    return false;
+}
+
 const query_descriptor_t g_queries_symtab_descriptor = {
     .name = "symtab",
     .compute = compute_symtab,
     .key_size = sizeof(size_t),
     .value_size = sizeof(charon_interner_key_t),
     .value_drop = value_drop,
+    .value_copy = value_copy,
 };
 
 static symbol_table_t *insert_symbol(symbol_table_t *table, charon_interner_key_t symbol_key) {

@@ -59,15 +59,19 @@ void test(charon_memory_allocator_t *allocator, const charon_file_t *file) {
 
     query_engine_t *engine = query_engine_make(allocator, context);
 
-    charon_interner_key_t symtab_key;
-    assert(queries_symtab(engine, &file_key, &symtab_key) == QUERY_COMPUTE_STATUS_OK);
-
     {
-        const symbol_table_t *symtab = context_lookup_symtab(context, symtab_key);
-        assert(symtab != nullptr);
+        charon_interner_key_t symtab_key;
+        assert(queries_symtab(engine, &file_key, &symtab_key) == QUERY_COMPUTE_STATUS_OK);
 
-        printf("\nSymbol Table for %s:\n", file->name);
-        print_table(context, symtab, 0);
+        {
+            const symbol_table_t *symtab = context_lookup_symtab(context, symtab_key);
+            assert(symtab != nullptr);
+
+            printf("\nSymbol Table for %s:\n", file->name);
+            print_table(context, symtab, 0);
+        }
+
+        interner_unref(&context->symtab_interner, symtab_key);
     }
 
     printf("\nInterner States:\n");
