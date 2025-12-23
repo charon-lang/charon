@@ -21,7 +21,8 @@ typedef struct query_descriptor query_descriptor_t;
 typedef query_compute_status_t (*query_compute_fn_t)(query_engine_t *engine, context_t *ctx, const void *key, void *value_out);
 typedef uint64_t (*query_hash_fn_t)(const void *key);
 typedef bool (*query_equal_fn_t)(const void *lhs, const void *rhs);
-typedef void (*query_drop_fn_t)(void *ptr);
+typedef void (*query_drop_fn_t)(context_t *ctx, void *ptr);
+typedef bool (*query_copy_fn_t)(context_t *ctx, const void *in, void *out);
 
 struct query_descriptor {
     const char *name;

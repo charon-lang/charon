@@ -222,7 +222,7 @@ static query_compute_status_t query_state_ensure(query_engine_t *engine, query_s
     return query_state_evaluate(engine, state);
 }
 
-static void query_state_invalidate_recursive(query_state_t *state) {
+static void query_state_invalidate_recursive(query_engine_t *engine, query_state_t *state) {
     if(state->invalidating) return;
     if(state->active) fatal("cannot invalidate query `%s` while it is executing\n", state->descriptor->name);
 
@@ -230,7 +230,7 @@ static void query_state_invalidate_recursive(query_state_t *state) {
 
     if(state->computed) {
         if(state->descriptor->value_drop != nullptr && state->compute_status != QUERY_COMPUTE_STATUS_FATAL) {
-            state->descriptor->value_drop(state->value);
+            state->descriptor->value_drop(engine->context, state->value);
         }
         state->computed = false;
     }
@@ -245,7 +245,7 @@ static void query_state_invalidate_recursive(query_state_t *state) {
     }
 
     for(size_t i = 0; i < state->dependent_count; ++i) {
-        query_state_invalidate_recursive(state->dependents[i]);
+        query_state_invalidate_recursive(engine, state->dependents[i]);
     }
 
     state->invalidating = false;
@@ -254,8 +254,8 @@ static void query_state_invalidate_recursive(query_state_t *state) {
 static void query_state_destroy(query_engine_t *engine, query_state_t *state) {
     query_state_remove_from_dependencies(state);
     query_state_remove_from_dependents(state);
-    if(state->descriptor->value_drop != nullptr && state->descriptor->value_drop != nullptr && state->compute_status != QUERY_COMPUTE_STATUS_FATAL) state->descriptor->value_drop(state->value);
-    if(state->descriptor->key_drop != nullptr && state->key != nullptr) state->descriptor->key_drop(state->key);
+    if(state->descriptor->value_drop != nullptr && state->descriptor->value_drop != nullptr && state->computed && state->compute_status != QUERY_COMPUTE_STATUS_FATAL) state->descriptor->value_drop(engine->context, state->value);
+    if(state->descriptor->key_drop != nullptr && state->key != nullptr) state->descriptor->key_drop(engine->context, state->key);
 
     if(state->key != nullptr) charon_memory_free(engine->allocator, state->key);
     if(state->value != nullptr) charon_memory_free(engine->allocator, state->value);
@@ -337,10 +337,10 @@ void query_engine_diag(query_engine_t *engine, charon_diag_t kind, charon_path_t
     current_state->diagnostics = diag_item;
 }
 
-static void descriptor_state_invalidate_all(query_descriptor_state_t *descriptor_state) {
+static void descriptor_state_invalidate_all(query_engine_t *engine, query_descriptor_state_t *descriptor_state) {
     for(size_t bucket = 0; bucket < descriptor_state->bucket_count; ++bucket) {
         for(query_state_t *state = descriptor_state->buckets[bucket]; state != nullptr; state = state->next) {
-            query_state_invalidate_recursive(state);
+            query_state_invalidate_recursive(engine, state);
         }
     }
 }
@@ -353,18 +353,18 @@ void query_engine_invalidate(query_engine_t *engine, const query_descriptor_t *d
     uint64_t hash = hash_key(descriptor, key);
     query_state_t *state = descriptor_state_find(descriptor_state, key, hash);
     if(state == nullptr) return;
-    query_state_invalidate_recursive(state);
+    query_state_invalidate_recursive(engine, state);
 }
 
 void query_engine_invalidate_descriptor(query_engine_t *engine, const query_descriptor_t *descriptor) {
     assert(descriptor != nullptr);
     query_descriptor_state_t *descriptor_state = engine_get_descriptor_state(engine, descriptor, false);
     if(descriptor_state == nullptr) return;
-    descriptor_state_invalidate_all(descriptor_state);
+    descriptor_state_invalidate_all(engine, descriptor_state);
 }
 
 void query_engine_invalidate_all(query_engine_t *engine) {
     for(size_t i = 0; i < engine->descriptor_count; ++i) {
-        descriptor_state_invalidate_all(&engine->descriptors[i]);
+        descriptor_state_invalidate_all(engine, &engine->descriptors[i]);
     }
 }

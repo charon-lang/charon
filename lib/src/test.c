@@ -77,7 +77,7 @@ void test(charon_memory_allocator_t *allocator, const charon_file_t *file) {
     print_interner_state(&context->symbol_interner);
     print_interner_state(&context->symtab_interner);
 
-    interner_unref(&context->symtab_interner, symtab_key);
+    query_engine_invalidate(engine, &g_queries_symtab_descriptor, &file_key);
 
     printf("\nInterner States:\n");
     print_interner_state(&context->file_interner);
