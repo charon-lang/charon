@@ -33,6 +33,7 @@ struct query_descriptor {
     query_compute_fn_t compute;
     query_drop_fn_t key_drop;
     query_drop_fn_t value_drop;
+    query_copy_fn_t value_copy;
 };
 
 query_engine_t *query_engine_make(charon_memory_allocator_t *allocator, context_t *context);

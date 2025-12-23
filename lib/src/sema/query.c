@@ -316,7 +316,7 @@ query_compute_status_t query_engine_execute(query_engine_t *engine, const query_
 
     query_compute_status_t status = query_state_ensure(engine, state);
     if(status != QUERY_COMPUTE_STATUS_FATAL && value_out != nullptr && descriptor->value_size != 0) {
-        memcpy(value_out, state->value, descriptor->value_size);
+        if(descriptor->value_copy != nullptr && !descriptor->value_copy(engine->context, state->value, value_out)) memcpy(value_out, state->value, descriptor->value_size);
     }
 
     return status;
