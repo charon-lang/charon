@@ -1,0 +1,5 @@
+TRIVIA(WHITESPACE,          "whitespace")
+TRIVIA(NEWLINE,             "newline")
+TRIVIA(LINE_COMMENT,        "comment")
+TRIVIA(MULTI_COMMENT,       "comment")
+TRIVIA(HASHTAG_COMMENT,     "comment")
