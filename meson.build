@@ -13,3 +13,4 @@ add_project_arguments(
 )
 
 subdir('lib')
+subdir('test')

@@ -212,11 +212,7 @@ charon_lexer_token_t charon_lexer_advance(charon_lexer_t *lexer) {
                     case ',': token.kind.token = CHARON_TOKEN_KIND_PNCT_COMMA; goto terminate_consume;
                     case '&': state = STATE_PNCT_AMPERSAND; break;
                     case '|': state = STATE_PNCT_PIPE; break;
-
-                    default:
-                        fprintf(stderr, "Unknown symbol `%.*s`", codepoint_length, (char *) &codepoint);
-                        exit(1);
-                        break;
+                    default:  token.kind.token = CHARON_TOKEN_KIND_UNKNOWN; goto terminate_consume;
                 }
             } break;
 

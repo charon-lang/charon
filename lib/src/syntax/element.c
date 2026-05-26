@@ -5,6 +5,7 @@
 #include "core/interner.h"
 
 #include <assert.h>
+#include <stdio.h>
 #include <stdlib.h>
 
 static const element_inner_t *token_trivia(const element_inner_t *inner_element, size_t index) {
@@ -25,6 +26,15 @@ static const element_inner_t *token_trivia(const element_inner_t *inner_element,
 //     return trivia;
 // }
 
+size_t element_inner_size(const element_inner_t *inner_element) {
+    switch(inner_element->type) {
+        case ELEMENT_TYPE_NODE:   return sizeof(element_inner_t) + inner_element->node.child_count * sizeof(element_inner_t *);
+        case ELEMENT_TYPE_TOKEN:  return sizeof(element_inner_t) + (inner_element->token.leading_trivia_count + inner_element->token.trailing_trivia_count) * sizeof(element_inner_t *);
+        case ELEMENT_TYPE_TRIVIA: return sizeof(element_inner_t);
+        default:                  assert(false);
+    }
+}
+
 uint64_t element_inner_hash(const element_inner_t *inner_element) {
     hasher_t hasher = hasher_new();
 
@@ -44,18 +54,14 @@ uint64_t element_inner_hash(const element_inner_t *inner_element) {
 
             size_t trivia_count = inner_element->token.leading_trivia_count + inner_element->token.trailing_trivia_count;
             hasher_hash(&hasher, trivia_count);
-            for(size_t i = 0; i < trivia_count; ++i) {
-                hasher_hash(&hasher, inner_element->token.trivia[i]->hash);
-            }
+            for(size_t i = 0; i < trivia_count; ++i) hasher_hash(&hasher, element_inner_hash(inner_element->token.trivia[i]));
             break;
         }
         case ELEMENT_TYPE_NODE:
             hasher_hash(&hasher, inner_element->node.kind);
 
             hasher_hash(&hasher, inner_element->node.child_count);
-            for(size_t i = 0; i < inner_element->node.child_count; ++i) {
-                hasher_hash(&hasher, inner_element->node.children[i]->hash);
-            }
+            for(size_t i = 0; i < inner_element->node.child_count; ++i) hasher_hash(&hasher, element_inner_hash(inner_element->node.children[i]));
             break;
     }
 
@@ -133,13 +139,15 @@ const element_inner_t *element_inner_make_token(db_t *db, charon_token_kind_t ki
         }
     }
 
-
     // TODO: extremely iffy about how text is handled here
     // what lifetime does it have coming in, should we intern it here?
     //
     // also should the trivia be interned here too instead of pointers
 
-    const element_inner_t *interned_element = interner_intern(db->element_interner, &element);
+    const element_inner_t *interned_element = interner_intern(db->element_interner, element);
+
+    assert(interned_element->type == ELEMENT_TYPE_TOKEN);
+
     free(element);
     return interned_element;
 }
@@ -157,7 +165,7 @@ const element_inner_t *element_inner_make_node(db_t *db, charon_node_kind_t kind
 
     // TODO: should children be interned here
 
-    const element_inner_t *interned_element = interner_intern(db->element_interner, &element);
+    const element_inner_t *interned_element = interner_intern(db->element_interner, element);
     free(element);
     return interned_element;
 }

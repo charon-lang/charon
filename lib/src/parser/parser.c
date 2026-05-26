@@ -1,7 +1,9 @@
 #include "parser.h"
 
-#include "charon/lexer.h"
+#include "charon/syntax/token.h"
+#include "lexer_pipeline.h"
 #include "parse.h"
+#include "syntax/element.h"
 
 #include <assert.h>
 #include <stdarg.h>
@@ -20,7 +22,7 @@ typedef struct parser_event {
     parser_event_type_t event_type;
     union {
         struct {
-            lexer_token_t token;
+            const element_inner_t *token;
         } token;
         struct {
             charon_node_kind_t kind;
@@ -51,14 +53,14 @@ static void build_node_push(build_node_t *node, const element_inner_t *element) 
 static void raw_consume(parser_t *parser) {
     parser_event_t *event = malloc(sizeof(parser_event_t));
     event->event_type = PARSER_EVENT_TYPE_TOKEN;
-    event->token.token = charon_lexer_advance(parser->lexer);
+    event->token.token = lexer_pipeline_advance(parser->lexer_pipeline);
     list_push(&parser->events, &event->list_node);
 }
 
-parser_t *parser_make(db_t *db, charon_lexer_t *lexer) {
+parser_t *parser_make(db_t *db, lexer_pipeline_t *lexer_pipeline) {
     parser_t *parser = malloc(sizeof(parser_t));
     parser->db = db;
-    parser->lexer = lexer;
+    parser->lexer_pipeline = lexer_pipeline;
 
     for(size_t i = 0; i < CHARON_TOKEN_KIND_COUNT; i++) parser->syncset.token_kinds[i] = false;
     parser->events = LIST_INIT;
@@ -67,9 +69,7 @@ parser_t *parser_make(db_t *db, charon_lexer_t *lexer) {
 
 void parser_destroy(parser_t *parser) {
     list_node_t *lnode;
-    while((lnode = list_pop(&parser->events)) != nullptr) {
-        free(LIST_CONTAINER_OF(lnode, parser_event_t, list_node));
-    }
+    while((lnode = list_pop(&parser->events)) != nullptr) { free(LIST_CONTAINER_OF(lnode, parser_event_t, list_node)); }
 
     free(parser);
 }
@@ -90,11 +90,13 @@ parser_output_t parser_parse_root(parser_t *parser) {
 }
 
 bool parser_is_eof(parser_t *parser) {
-    return charon_lexer_is_eof(parser->lexer);
+    return lexer_pipeline_is_eof(parser->lexer_pipeline);
 }
 
 charon_token_kind_t parser_peek(parser_t *parser) {
-    return charon_element_token_kind(charon_lexer_peek(parser->lexer));
+    const element_inner_t *element = lexer_pipeline_peek(parser->lexer_pipeline);
+    assert(element->type == ELEMENT_TYPE_TOKEN);
+    return element->token.kind;
 }
 
 void parser_consume(parser_t *parser, charon_token_kind_t kind) {
@@ -237,7 +239,7 @@ parser_output_t parser_build(parser_t *parser) {
                 build_node_t *parent = open_node->parent;
                 open_node = parent;
 
-                const element_inner_t *element = element_inner_make_node(parser->cache, build_kind, current->elements, current->element_count);
+                const element_inner_t *element = element_inner_make_node(parser->db, build_kind, current->element_count, current->elements);
                 free(current->elements);
                 free(current);
 

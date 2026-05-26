@@ -8,12 +8,20 @@
 #include <stdint.h>
 #include <stdlib.h>
 
+static size_t size_text(const void *text) {
+    return text_size(text);
+}
+
 static uint64_t hash_text(const void *text, size_t) {
     return text_hash(text);
 }
 
 static bool equal_text(const void *a, const void *b, size_t) {
     return text_equal(a, b);
+}
+
+static size_t size_element(const void *element) {
+    return element_inner_size(element);
 }
 
 static uint64_t hash_element(const void *element, size_t) {
@@ -27,8 +35,8 @@ static bool equal_element(const void *a, const void *b, size_t) {
 db_t *db_new() {
     db_t *db = malloc(sizeof(db_t));
     db->store = store_new();
-    db->text_interner = interner_new(0, sizeof(element_inner_t), hash_element, equal_element);
-    db->element_interner = interner_new(0, sizeof(text_t), hash_text, equal_text);
+    db->element_interner = interner_new(0, 0, size_element, hash_element, equal_element);
+    db->text_interner = interner_new(0, 0, size_text, hash_text, equal_text);
     return db;
 }
 

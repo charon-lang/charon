@@ -50,6 +50,7 @@ typedef struct charon_element {
     size_t self_index;
 } charon_element_t;
 
+size_t element_inner_size(const element_inner_t *inner_element);
 uint64_t element_inner_hash(const element_inner_t *inner_element);
 bool element_inner_equal(const element_inner_t *a, const element_inner_t *b);
 
