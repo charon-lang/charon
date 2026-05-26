@@ -2,6 +2,7 @@
 
 #include "charon/syntax/token.h"
 #include "charon/syntax/trivia.h"
+#include "syntax/element.h"
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -456,4 +457,12 @@ terminate:
     }
 
     return token;
+}
+
+text_t *lexer_extract(charon_lexer_t *lexer, charon_lexer_token_t token) {
+    size_t text_size = token.end - token.start;
+    text_t *text = malloc(sizeof(text_t) + text_size);
+    text->size = text_size;
+    memcpy(&text->data, &lexer->data[token.start], text_size);
+    return text;
 }

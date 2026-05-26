@@ -4,7 +4,7 @@
 
 const char *charon_trivia_kind_tostring(charon_trivia_kind_t kind) {
     static const char *translations[] = {
-#define TRIVIA(ID, NAME, ...) [CHARON_TRIVIA_KIND_##ID] = NAME,
+#define TRIVIA(ID, NAME) [CHARON_TRIVIA_KIND_##ID] = NAME,
 #include "charon/syntax/trivia.def"
 #undef TRIVIA
     };

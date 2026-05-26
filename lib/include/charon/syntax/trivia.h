@@ -2,7 +2,7 @@
 
 typedef enum charon_trivia_kind {
 #define TRIVIA(ID, ...) CHARON_TRIVIA_KIND_##ID,
-#include "charon/syntax/trivia.def"
+#include "trivia.def"
 #undef TRIVIA
 } charon_trivia_kind_t;
 

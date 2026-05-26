@@ -5,7 +5,7 @@
 typedef enum charon_token_kind {
     CHARON_TOKEN_KIND_UNKNOWN = 0,
 #define TOKEN(ID, ...) CHARON_TOKEN_KIND_##ID,
-#include "charon/syntax/token.def"
+#include "token.def"
 #undef TOKEN
     CHARON_TOKEN_KIND_EOF
 } charon_token_kind_t;
