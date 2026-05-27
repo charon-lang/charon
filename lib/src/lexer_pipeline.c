@@ -4,6 +4,7 @@
 #include "charon/syntax/token.h"
 #include "core/db.h"
 #include "core/interner.h"
+#include "core/store.h"
 #include "lexer.h"
 #include "syntax/element.h"
 
@@ -16,12 +17,12 @@ struct lexer_pipeline {
     charon_lexer_t *lexer;
     db_t *db;
 
-    const element_inner_t *lookahead;
+    store_handle_t lookahead;
 
     charon_lexer_token_t inner_lookahead;
 
     size_t cached_trivia_count;
-    const element_inner_t **cached_trivia;
+    store_handle_t *cached_trivia;
 };
 
 static charon_lexer_token_t token_peek(lexer_pipeline_t *pipeline) {
@@ -34,16 +35,16 @@ static charon_lexer_token_t token_advance(lexer_pipeline_t *pipeline) {
     return token;
 }
 
-static const element_inner_t *lexer_pipeline_next(lexer_pipeline_t *pipeline) {
+static store_handle_t lexer_pipeline_next(lexer_pipeline_t *pipeline) {
     size_t trailing_trivia_count = 0;
     size_t leading_trivia_count = pipeline->cached_trivia_count;
-    const element_inner_t **trivia = pipeline->cached_trivia;
+    store_handle_t *trivia = pipeline->cached_trivia;
 
     pipeline->cached_trivia_count = 0;
     pipeline->cached_trivia = nullptr;
 
     charon_token_kind_t token_kind;
-    const text_t *token_text;
+    store_handle_t token_text;
 
     charon_lexer_token_t token;
     while(true) {
@@ -53,17 +54,17 @@ static const element_inner_t *lexer_pipeline_next(lexer_pipeline_t *pipeline) {
         assert(token.start != token.end);
 
         text_t *original_text = lexer_extract(pipeline->lexer, token);
-        const text_t *interned_text = interner_intern(pipeline->db->text_interner, original_text);
+        store_handle_t interned_text = interner_intern(pipeline->db->text_interner, original_text);
         free(original_text);
 
-        trivia = reallocarray(trivia, ++leading_trivia_count, sizeof(element_inner_t *));
+        trivia = reallocarray(trivia, ++leading_trivia_count, sizeof(interned_text));
         trivia[leading_trivia_count - 1] = element_inner_make_trivia(pipeline->db, token.kind.trivia, interned_text);
     }
 
     assert(!token.is_trivia);
 
     text_t *original_text = lexer_extract(pipeline->lexer, token);
-    const text_t *interned_text = interner_intern(pipeline->db->text_interner, original_text);
+    store_handle_t interned_text = interner_intern(pipeline->db->text_interner, original_text);
     free(original_text);
 
     token_kind = token.kind.token;
@@ -81,16 +82,16 @@ static const element_inner_t *lexer_pipeline_next(lexer_pipeline_t *pipeline) {
         assert(token.kind.token != CHARON_TOKEN_KIND_EOF);
 
         text_t *original_text = lexer_extract(pipeline->lexer, token);
-        const text_t *interned_text = interner_intern(pipeline->db->text_interner, original_text);
+        store_handle_t interned_text = interner_intern(pipeline->db->text_interner, original_text);
         free(original_text);
 
-        pipeline->cached_trivia = reallocarray(pipeline->cached_trivia, ++pipeline->cached_trivia_count, sizeof(element_inner_t *));
+        pipeline->cached_trivia = reallocarray(pipeline->cached_trivia, ++pipeline->cached_trivia_count, sizeof(store_handle_t));
         pipeline->cached_trivia[pipeline->cached_trivia_count - 1] = element_inner_make_trivia(pipeline->db, token.kind.trivia, interned_text);
 
         if(token.kind.trivia == CHARON_TRIVIA_KIND_NEWLINE) {
         consume_trailing:
             trailing_trivia_count = pipeline->cached_trivia_count;
-            trivia = reallocarray(trivia, leading_trivia_count + trailing_trivia_count, sizeof(element_inner_t *));
+            trivia = reallocarray(trivia, leading_trivia_count + trailing_trivia_count, sizeof(store_handle_t));
             for(size_t i = 0; i < trailing_trivia_count; i++) trivia[leading_trivia_count + i] = pipeline->cached_trivia[i];
 
             pipeline->cached_trivia_count = 0;
@@ -99,12 +100,8 @@ static const element_inner_t *lexer_pipeline_next(lexer_pipeline_t *pipeline) {
         }
     }
 
-    const element_inner_t *element = element_inner_make_token(pipeline->db, token_kind, token_text, leading_trivia_count, trailing_trivia_count, trivia);
-
-    assert(element->type == ELEMENT_TYPE_TOKEN);
-
+    store_handle_t element = element_inner_make_token(pipeline->db, token_kind, token_text, leading_trivia_count, trailing_trivia_count, trivia);
     free(trivia);
-
     return element;
 }
 
@@ -126,16 +123,16 @@ void lexer_pipeline_destroy(lexer_pipeline_t *pipeline) {
     free(pipeline);
 }
 
-const element_inner_t *lexer_pipeline_peek(lexer_pipeline_t *pipeline) {
-    return pipeline->lookahead;
+charon_token_kind_t lexer_pipeline_peek(lexer_pipeline_t *pipeline) {
+    return ((const element_inner_t *) store_get(pipeline->db->store, pipeline->lookahead))->token.kind;
 }
 
-const element_inner_t *lexer_pipeline_advance(lexer_pipeline_t *pipeline) {
-    const element_inner_t *element = pipeline->lookahead;
+store_handle_t lexer_pipeline_advance(lexer_pipeline_t *pipeline) {
+    store_handle_t element = pipeline->lookahead;
     pipeline->lookahead = lexer_pipeline_next(pipeline);
     return element;
 }
 
 bool lexer_pipeline_is_eof(lexer_pipeline_t *pipeline) {
-    return lexer_pipeline_peek(pipeline)->token.kind == CHARON_TOKEN_KIND_EOF;
+    return lexer_pipeline_peek(pipeline) == CHARON_TOKEN_KIND_EOF;
 }

@@ -42,6 +42,13 @@ static store_entry_t *store_lookup(store_t *store, store_handle_t handle) {
     return entry;
 }
 
+bool store_handle_is_dead(store_t *store, store_handle_t handle) {
+    assert(handle.index < store->capacity);
+    store_entry_t *entry = &store->entries[handle.index];
+    assert(entry->revision >= handle.revision);
+    return entry->revision != handle.revision;
+}
+
 store_t *store_new() {
     store_t *store = malloc(sizeof(store_t));
     store->capacity = 0;

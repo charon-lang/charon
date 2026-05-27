@@ -14,7 +14,7 @@
 typedef struct parser_event parser_event_t;
 
 typedef struct {
-    const element_inner_t *root;
+    store_handle_t root_element;
     diag_item_t *diagnostics;
 } parser_output_t;
 

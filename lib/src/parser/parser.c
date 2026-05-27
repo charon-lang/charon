@@ -1,6 +1,7 @@
 #include "parser.h"
 
 #include "charon/syntax/token.h"
+#include "core/store.h"
 #include "lexer_pipeline.h"
 #include "parse.h"
 #include "syntax/element.h"
@@ -22,7 +23,7 @@ typedef struct parser_event {
     parser_event_type_t event_type;
     union {
         struct {
-            const element_inner_t *token;
+            store_handle_t token;
         } token;
         struct {
             charon_node_kind_t kind;
@@ -42,11 +43,11 @@ typedef struct build_node {
     size_t self_index;
 
     size_t element_count;
-    const element_inner_t **elements;
+    store_handle_t *elements;
 } build_node_t;
 
-static void build_node_push(build_node_t *node, const element_inner_t *element) {
-    node->elements = reallocarray(node->elements, ++node->element_count, sizeof(const element_inner_t *));
+static void build_node_push(build_node_t *node, store_handle_t element) {
+    node->elements = reallocarray(node->elements, ++node->element_count, sizeof(store_handle_t));
     node->elements[node->element_count - 1] = element;
 }
 
@@ -94,9 +95,7 @@ bool parser_is_eof(parser_t *parser) {
 }
 
 charon_token_kind_t parser_peek(parser_t *parser) {
-    const element_inner_t *element = lexer_pipeline_peek(parser->lexer_pipeline);
-    assert(element->type == ELEMENT_TYPE_TOKEN);
-    return element->token.kind;
+    return lexer_pipeline_peek(parser->lexer_pipeline);
 }
 
 void parser_consume(parser_t *parser, charon_token_kind_t kind) {
@@ -239,11 +238,11 @@ parser_output_t parser_build(parser_t *parser) {
                 build_node_t *parent = open_node->parent;
                 open_node = parent;
 
-                const element_inner_t *element = element_inner_make_node(parser->db, build_kind, current->element_count, current->elements);
+                store_handle_t element = element_inner_make_node(parser->db, build_kind, current->element_count, current->elements);
                 free(current->elements);
                 free(current);
 
-                if(parent == nullptr) return (parser_output_t) { .root = element, .diagnostics = diagnostics };
+                if(parent == nullptr) return (parser_output_t) { .root_element = element, .diagnostics = diagnostics };
 
                 build_node_push(parent, element);
                 depth--;

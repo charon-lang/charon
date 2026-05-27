@@ -11,6 +11,12 @@ typedef struct {
 
 typedef struct store store_t;
 
+static inline bool store_handle_eq(store_handle_t a, store_handle_t b) {
+    return a.index == b.index && a.revision == b.revision;
+}
+
+bool store_handle_is_dead(store_t *store, store_handle_t handle);
+
 store_t *store_new();
 void store_destroy(store_t *store);
 

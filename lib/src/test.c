@@ -1,6 +1,7 @@
 #include "charon/lexer.h"
 #include "common/text.h"
 #include "core/db.h"
+#include "core/store.h"
 #include "lexer_pipeline.h"
 #include "parser/parser.h"
 #include "syntax/element.h"
@@ -14,13 +15,13 @@ void print_text(const text_t *text) {
     printf("%.*s", (int) text->size, text->data);
 }
 
-void print_element(const element_inner_t *element) {
+void print_element(db_t *db, const element_inner_t *element) {
     switch(element->type) {
         case ELEMENT_TYPE_NODE:
-            for(size_t i = 0; i < element->node.child_count; i++) print_element(element->node.children[i]);
+            for(size_t i = 0; i < element->node.child_count; i++) print_element(db, store_get(db->store, element->node.children[i]));
             break;
         case ELEMENT_TYPE_TOKEN:
-            for(size_t i = 0; i < element->token.leading_trivia_count; i++) print_element(element->token.trivia[i]);
+            for(size_t i = 0; i < element->token.leading_trivia_count; i++) print_element(db, store_get(db->store, element->token.trivia[i]));
 
             switch(element->token.kind) {
                 case CHARON_TOKEN_KIND_KEYWORD_RETURN:
@@ -95,17 +96,17 @@ void print_element(const element_inner_t *element) {
                 default:                                       break;
             }
 
-            print_text(element->token.text);
+            print_text(store_get(db->store, element->token.text));
 
             printf("\x1b[0m");
 
-            for(size_t i = 0; i < element->token.trailing_trivia_count; i++) print_element(element->token.trivia[element->token.leading_trivia_count + i]);
+            for(size_t i = 0; i < element->token.trailing_trivia_count; i++) print_element(db, store_get(db->store, element->token.trivia[element->token.leading_trivia_count + i]));
             break;
-        case ELEMENT_TYPE_TRIVIA: print_text(element->trivia.text); break;
+        case ELEMENT_TYPE_TRIVIA: print_text(store_get(db->store, element->trivia.text)); break;
     }
 }
 
-static void print_tree(const element_inner_t *element, int depth) {
+static void print_tree(db_t *db, const element_inner_t *element, int depth) {
     for(int i = 0; i < depth * 4; i++) printf(" ");
 
     switch(element->type) {
@@ -116,7 +117,7 @@ static void print_tree(const element_inner_t *element, int depth) {
             printf("%s%s%s\n", node_kind == CHARON_NODE_KIND_ERROR ? "\e[41m" : "", charon_node_kind_tostring(node_kind), "\e[0m");
 
             size_t child_count = element->node.child_count;
-            for(size_t i = 0; i < child_count; i++) { print_tree(element->node.children[i], depth + 1); }
+            for(size_t i = 0; i < child_count; i++) { print_tree(db, store_get(db->store, element->node.children[i]), depth + 1); }
             break;
         }
         case ELEMENT_TYPE_TOKEN:
@@ -124,13 +125,9 @@ static void print_tree(const element_inner_t *element, int depth) {
             const char *kind_text = charon_token_kind_tostring(token_kind);
 
             printf("Token(%s", kind_text);
-
-            if(element->token.text != nullptr) {
-                printf(", `");
-                print_text(element->token.text);
-                printf("`");
-            }
-
+            printf(", `");
+            print_text(store_get(db->store, element->token.text));
+            printf("`");
             printf(")\n");
             break;
     }
@@ -146,9 +143,8 @@ void charon_test(const void *data, size_t data_size) {
 
     parser_output_t output = parser_parse_root(parser);
 
-    print_element(output.root);
-
-    print_tree(output.root, 0);
+    print_tree(db, store_get(db->store, output.root_element), 0);
+    print_element(db, store_get(db->store, output.root_element));
 
     parser_destroy(parser);
 
