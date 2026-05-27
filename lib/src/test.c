@@ -8,7 +8,7 @@
 #include <stddef.h>
 #include <stdio.h>
 
-void print_text(text_t *text) {
+void print_text(const text_t *text) {
     printf("%.*s", (int) text->size, text->data);
 }
 

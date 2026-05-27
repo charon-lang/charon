@@ -43,7 +43,7 @@ static const element_inner_t *lexer_pipeline_next(lexer_pipeline_t *pipeline) {
     pipeline->cached_trivia = nullptr;
 
     charon_token_kind_t token_kind;
-    text_t *token_text;
+    const text_t *token_text;
 
     charon_lexer_token_t token;
     while(true) {
@@ -57,15 +57,17 @@ static const element_inner_t *lexer_pipeline_next(lexer_pipeline_t *pipeline) {
         free(original_text);
 
         trivia = reallocarray(trivia, ++leading_trivia_count, sizeof(element_inner_t *));
-        // TODO: DONT CAST AWAY THE CONST?
-        trivia[leading_trivia_count - 1] = element_inner_make_trivia(pipeline->db, token.kind.trivia, (text_t *) interned_text);
+        trivia[leading_trivia_count - 1] = element_inner_make_trivia(pipeline->db, token.kind.trivia, interned_text);
     }
 
     assert(!token.is_trivia);
 
+    text_t *original_text = lexer_extract(pipeline->lexer, token);
+    const text_t *interned_text = interner_intern(pipeline->db->text_interner, original_text);
+    free(original_text);
+
     token_kind = token.kind.token;
-    // TODO: intern text?
-    token_text = lexer_extract(pipeline->lexer, token);
+    token_text = interned_text;
 
     while(true) {
         token = token_peek(pipeline);
@@ -83,8 +85,7 @@ static const element_inner_t *lexer_pipeline_next(lexer_pipeline_t *pipeline) {
         free(original_text);
 
         pipeline->cached_trivia = reallocarray(pipeline->cached_trivia, ++pipeline->cached_trivia_count, sizeof(element_inner_t *));
-        // TODO: DONT CAST AWAY THE CONST?
-        pipeline->cached_trivia[pipeline->cached_trivia_count - 1] = element_inner_make_trivia(pipeline->db, token.kind.trivia, (text_t *) interned_text);
+        pipeline->cached_trivia[pipeline->cached_trivia_count - 1] = element_inner_make_trivia(pipeline->db, token.kind.trivia, interned_text);
 
         if(token.kind.trivia == CHARON_TRIVIA_KIND_NEWLINE) {
         consume_trailing:

@@ -23,12 +23,12 @@ typedef struct element_inner {
         struct {
             charon_trivia_kind_t kind;
 
-            text_t *text;
+            const text_t *text;
         } trivia;
         struct {
             charon_token_kind_t kind;
 
-            text_t *text;
+            const text_t *text;
 
             size_t leading_trivia_count, leading_trivia_length;
             size_t trailing_trivia_count, trailing_trivia_length;
@@ -54,6 +54,6 @@ size_t element_inner_size(const element_inner_t *inner_element);
 uint64_t element_inner_hash(const element_inner_t *inner_element);
 bool element_inner_equal(const element_inner_t *a, const element_inner_t *b);
 
-const element_inner_t *element_inner_make_trivia(db_t *db, charon_trivia_kind_t kind, text_t *text);
-const element_inner_t *element_inner_make_token(db_t *db, charon_token_kind_t kind, text_t *text, size_t leading_trivia_count, size_t trailing_trivia_count, const element_inner_t *trivia[]);
+const element_inner_t *element_inner_make_trivia(db_t *db, charon_trivia_kind_t kind, const text_t *text);
+const element_inner_t *element_inner_make_token(db_t *db, charon_token_kind_t kind, const text_t *text, size_t leading_trivia_count, size_t trailing_trivia_count, const element_inner_t *trivia[]);
 const element_inner_t *element_inner_make_node(db_t *db, charon_node_kind_t kind, size_t child_count, const element_inner_t *children[]);

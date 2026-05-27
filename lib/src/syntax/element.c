@@ -106,7 +106,7 @@ bool element_inner_equal(const element_inner_t *a, const element_inner_t *b) {
     return true;
 }
 
-const element_inner_t *element_inner_make_trivia(db_t *db, charon_trivia_kind_t kind, text_t *text) {
+const element_inner_t *element_inner_make_trivia(db_t *db, charon_trivia_kind_t kind, const text_t *text) {
     element_inner_t element = {
         .length = text == nullptr ? 0 : text->size,
         .type = ELEMENT_TYPE_TRIVIA,
@@ -119,7 +119,7 @@ const element_inner_t *element_inner_make_trivia(db_t *db, charon_trivia_kind_t 
     return interner_intern(db->element_interner, &element);
 }
 
-const element_inner_t *element_inner_make_token(db_t *db, charon_token_kind_t kind, text_t *text, size_t leading_trivia_count, size_t trailing_trivia_count, const element_inner_t *trivia[]) {
+const element_inner_t *element_inner_make_token(db_t *db, charon_token_kind_t kind, const text_t *text, size_t leading_trivia_count, size_t trailing_trivia_count, const element_inner_t *trivia[]) {
     element_inner_t *element = malloc(sizeof(element_inner_t) + (leading_trivia_count + trailing_trivia_count) * sizeof(element_inner_t *));
     element->length = text == nullptr ? 0 : text->size;
     element->type = ELEMENT_TYPE_TOKEN;
