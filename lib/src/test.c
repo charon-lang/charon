@@ -5,8 +5,10 @@
 #include "parser/parser.h"
 #include "syntax/element.h"
 
+#include <assert.h>
 #include <stddef.h>
 #include <stdio.h>
+#include <string.h>
 
 void print_text(const text_t *text) {
     printf("%.*s", (int) text->size, text->data);
@@ -103,6 +105,37 @@ void print_element(const element_inner_t *element) {
     }
 }
 
+static void print_tree(const element_inner_t *element, int depth) {
+    for(int i = 0; i < depth * 4; i++) printf(" ");
+
+    switch(element->type) {
+        case ELEMENT_TYPE_TRIVIA: assert(false);
+        case ELEMENT_TYPE_NODE:   {
+            charon_node_kind_t node_kind = element->node.kind;
+
+            printf("%s%s%s\n", node_kind == CHARON_NODE_KIND_ERROR ? "\e[41m" : "", charon_node_kind_tostring(node_kind), "\e[0m");
+
+            size_t child_count = element->node.child_count;
+            for(size_t i = 0; i < child_count; i++) { print_tree(element->node.children[i], depth + 1); }
+            break;
+        }
+        case ELEMENT_TYPE_TOKEN:
+            charon_token_kind_t token_kind = element->token.kind;
+            const char *kind_text = charon_token_kind_tostring(token_kind);
+
+            printf("Token(%s", kind_text);
+
+            if(element->token.text != nullptr) {
+                printf(", `");
+                print_text(element->token.text);
+                printf("`");
+            }
+
+            printf(")\n");
+            break;
+    }
+}
+
 void charon_test(const void *data, size_t data_size) {
     db_t *db = db_new();
 
@@ -114,6 +147,8 @@ void charon_test(const void *data, size_t data_size) {
     parser_output_t output = parser_parse_root(parser);
 
     print_element(output.root);
+
+    print_tree(output.root, 0);
 
     parser_destroy(parser);
 
