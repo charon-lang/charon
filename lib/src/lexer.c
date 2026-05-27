@@ -353,14 +353,14 @@ charon_lexer_token_t charon_lexer_advance(charon_lexer_t *lexer) {
                 switch(codepoint) {
                     case '=': token.kind.token = CHARON_TOKEN_KIND_PNCT_LESS_EQUAL; goto terminate_consume;
                     case '<': token.kind.token = CHARON_TOKEN_KIND_PNCT_SHIFT_LEFT; goto terminate_consume;
-                    default:  token.kind.token = CHARON_TOKEN_KIND_PNCT_CARET_RIGHT; goto terminate;
+                    default:  token.kind.token = CHARON_TOKEN_KIND_PNCT_CARET_LEFT; goto terminate;
                 }
             } break;
             case STATE_PNCT_CARET_RIGHT: {
                 switch(codepoint) {
                     case '=': token.kind.token = CHARON_TOKEN_KIND_PNCT_GREATER_EQUAL; goto terminate_consume;
                     case '>': token.kind.token = CHARON_TOKEN_KIND_PNCT_SHIFT_RIGHT; goto terminate_consume;
-                    default:  token.kind.token = CHARON_TOKEN_KIND_PNCT_CARET_LEFT; goto terminate;
+                    default:  token.kind.token = CHARON_TOKEN_KIND_PNCT_CARET_RIGHT; goto terminate;
                 }
             } break;
             case STATE_PNCT_NOT: {
