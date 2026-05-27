@@ -64,6 +64,7 @@ store_handle_t store_insert(store_t *store, void *data, store_drop_fn_t drop_fn)
     store->free_entry_list = entry->data;
 
     entry->data = data;
+    entry->drop_fn = drop_fn;
 
     assert(entry->counter == 0);
     entry->counter = 1;

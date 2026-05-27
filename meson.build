@@ -2,7 +2,7 @@ project(
     'charon',
     'c',
     'cpp',
-    default_options: ['c_std=gnu23', 'warning_level=1', 'werror=true'],
+    default_options: ['c_std=gnu23', 'warning_level=2', 'werror=true'],
 )
 
 add_project_arguments(

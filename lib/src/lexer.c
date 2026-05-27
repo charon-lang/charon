@@ -2,8 +2,9 @@
 
 #include "charon/syntax/token.h"
 #include "charon/syntax/trivia.h"
-#include "syntax/element.h"
+#include "common/text.h"
 
+#include <stddef.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -57,7 +58,7 @@ static int read_utf8_codepoint(charon_lexer_t *lexer, uint32_t *out_codepoint) {
         return 1;
     }
 
-    int codepoint_length;
+    size_t codepoint_length;
     uint32_t codepoint;
     if((first_byte & 0xE0) == 0xC0) {
         codepoint_length = 2;
@@ -74,7 +75,7 @@ static int read_utf8_codepoint(charon_lexer_t *lexer, uint32_t *out_codepoint) {
 
     if(lexer->data_size - lexer->cursor < codepoint_length) return -1;
 
-    for(int i = 1; i < codepoint_length; i++) {
+    for(size_t i = 1; i < codepoint_length; i++) {
         uint8_t b = lexer->data[lexer->cursor + i];
         if((b & 0xC0) != 0x80) return -1;
         codepoint = (codepoint << 6) | (b & 0x3F);
