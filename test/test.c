@@ -19,7 +19,8 @@ int main(int argc, const char **argv) {
         exit(EXIT_FAILURE);
     }
 
-    char *name = basename(strdup(argv[1]));
+    char *path_copy = strdup(argv[1]);
+    char *name = basename(path_copy);
 
     FILE *file = fopen(argv[1], "r");
     if(file == NULL) {
@@ -73,6 +74,9 @@ int main(int argc, const char **argv) {
     charon_lexer_destroy(lexer);
 
     charon_test(data, data_size);
+
+    free(data);
+    free(path_copy);
 
     return 0;
 }
