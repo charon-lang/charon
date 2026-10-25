@@ -6,6 +6,7 @@ charon_lib_sources = include_directories('src')
 charon_lib = static_library(
     'charon',
     files(
+        'src/common/hashmap.c',
         'src/common/list.c',
         'src/common/text.c',
         'src/core/db.c',
