@@ -243,7 +243,10 @@ parser_output_t parser_build(parser_t *parser) {
                 free(current->elements);
                 free(current);
 
-                if(parent == nullptr) return (parser_output_t) { .root = element, .diagnostics = diagnostics };
+                if(parent == nullptr) {
+                    free(event);
+                    return (parser_output_t) { .root = element, .diagnostics = diagnostics };
+                }
 
                 build_node_push(parent, element);
                 depth--;
