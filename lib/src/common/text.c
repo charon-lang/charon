@@ -11,7 +11,7 @@ size_t text_size(const text_t *text) {
 
 bool text_equal(const text_t *a, const text_t *b) {
     if(a->size != b->size) return false;
-    return memcmp(a->data, b->data, a->size);
+    return memcmp(a->data, b->data, a->size) == 0;
 }
 
 uint64_t text_hash(const text_t *text) {
