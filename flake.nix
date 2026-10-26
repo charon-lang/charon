@@ -1,20 +1,25 @@
 {
     inputs = {
-        nixpkgs.url = "github:NixOS/nixpkgs/nixos-25.11";
-        flake-utils.url = "github:numtide/flake-utils";
+        nixpkgs.url = "github:NixOS/nixpkgs/nixos-26.05";
     };
 
     outputs =
-        { nixpkgs, flake-utils, ... }:
-        flake-utils.lib.eachDefaultSystem (
-            system:
-            let
-                pkgs = import nixpkgs { inherit system; };
-            in
-            {
-                devShells.default = pkgs.mkShell {
-                    shellHook = "export NIX_SHELL_NAME='charon'; export NIX_HARDENING_ENABLE=''";
-                    buildInputs = with pkgs; [
+        { nixpkgs, ... }:
+        let
+            systems = [
+                "x86_64-linux"
+                "aarch64-linux"
+                "x86_64-darwin"
+                "aarch64-darwin"
+            ];
+            forEachSystem = f: nixpkgs.lib.genAttrs systems (system: f (import nixpkgs { inherit system; }));
+        in
+        {
+            devShells = forEachSystem (pkgs: {
+                default = pkgs.mkShell {
+                    NIX_SHELL_NAME = "charon";
+
+                    nativeBuildInputs = with pkgs; [
                         meson
                         ninja
                         pkg-config
@@ -23,7 +28,6 @@
                         llvmPackages_20.clang-tools
                         lld_20
 
-                        pcre2
                         llvmPackages_20.libllvm
 
                         gdb
@@ -32,6 +36,6 @@
                         python3
                     ];
                 };
-            }
-        );
+            });
+        };
 }
