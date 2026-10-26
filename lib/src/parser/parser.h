@@ -27,6 +27,8 @@ typedef struct parser {
 
     lexer_pipeline_t *lexer_pipeline;
 
+    store_handle_t source_file;
+
     parser_syncset_t syncset;
     list_t events;
 } parser_t;
@@ -36,7 +38,7 @@ parser_output_t parser_parse_stmt_block(parser_t *parser);
 parser_output_t parser_parse_root(parser_t *parser);
 
 
-parser_t *parser_make(db_t *db, lexer_pipeline_t *lexer_pipeline);
+parser_t *parser_make(db_t *db, lexer_pipeline_t *lexer_pipeline, store_handle_t file);
 void parser_destroy(parser_t *parser);
 
 bool parser_is_eof(parser_t *parser);

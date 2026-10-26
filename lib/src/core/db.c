@@ -1,6 +1,8 @@
 #include "db.h"
 
 #include "core/store.h"
+#include "query/input.h"
+#include "query/query.h"
 #include "syntax/element.h"
 
 #include <assert.h>
@@ -37,10 +39,16 @@ db_t *db_new() {
     db->store = store_new();
     db->element_interner = interner_new(0, 0, size_element, hash_element, equal_element);
     db->text_interner = interner_new(0, 0, size_text, hash_text, equal_text);
+
+    query_input_init(db);
+    query_system_init(db);
     return db;
 }
 
 void db_destroy(db_t *db) {
+    query_system_deinit(db);
+    query_input_deinit(db);
+
     store_destroy(db->store);
     interner_destroy(db->text_interner);
     interner_destroy(db->element_interner);

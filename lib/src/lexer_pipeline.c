@@ -93,6 +93,7 @@ static const element_inner_t *lexer_pipeline_next(lexer_pipeline_t *pipeline) {
             trivia = reallocarray(trivia, leading_trivia_count + trailing_trivia_count, sizeof(element_inner_t *));
             for(size_t i = 0; i < trailing_trivia_count; i++) trivia[leading_trivia_count + i] = pipeline->cached_trivia[i];
 
+            free(pipeline->cached_trivia);
             pipeline->cached_trivia_count = 0;
             pipeline->cached_trivia = nullptr;
             break;

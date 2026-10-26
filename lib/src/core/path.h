@@ -11,8 +11,9 @@ typedef struct {
     size_t indices[];
 } path_t;
 
-static inline path_t *path_make(size_t length) {
+static inline path_t *path_make(store_handle_t file, size_t length) {
     path_t *path = malloc(sizeof(path_t) + sizeof(size_t) * length);
+    path->file = file;
     path->length = length;
     return path;
 }

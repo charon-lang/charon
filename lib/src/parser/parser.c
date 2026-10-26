@@ -57,10 +57,11 @@ static void raw_consume(parser_t *parser) {
     list_push(&parser->events, &event->list_node);
 }
 
-parser_t *parser_make(db_t *db, lexer_pipeline_t *lexer_pipeline) {
+parser_t *parser_make(db_t *db, lexer_pipeline_t *lexer_pipeline, store_handle_t file) {
     parser_t *parser = malloc(sizeof(parser_t));
     parser->db = db;
     parser->lexer_pipeline = lexer_pipeline;
+    parser->source_file = file;
 
     for(size_t i = 0; i < CHARON_TOKEN_KIND_COUNT; i++) parser->syncset.token_kinds[i] = false;
     parser->events = LIST_INIT;
@@ -210,7 +211,7 @@ parser_output_t parser_build(parser_t *parser) {
                 goto build_node;
             }
             case PARSER_EVENT_TYPE_ERROR: {
-                path_t *path = path_make(depth - 1);
+                path_t *path = path_make(parser->source_file, depth - 1);
                 build_node_t *current_node = open_node;
 
                 size_t index = depth - 1;

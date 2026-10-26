@@ -1,20 +1,27 @@
-#include "charon/lexer.h"
-#include "common/text.h"
 #include "core/db.h"
-#include "lexer_pipeline.h"
-#include "parser/parser.h"
-#include "syntax/element.h"
+#include "core/diag.h"
+#include "query/input.h"
+#include "query/queries.h"
+#include "query/query.h"
 
 #include <assert.h>
 #include <stddef.h>
 #include <stdio.h>
 #include <string.h>
 
-void print_text(const text_t *text) {
-    printf("%.*s", (int) text->size, text->data);
+static query_input_t input_for(const file_t *file) {
+    return (query_input_t) { .kind = QUERY_INPUT_FILE, .ptr = file };
 }
 
-void print_element(const element_inner_t *element) {
+static void print_text(const text_t *text) {
+    if(text == nullptr) {
+        printf("<null>");
+        return;
+    }
+    printf("%.*s", (int) text->size, (const char *) text->data);
+}
+
+static void print_element(const element_inner_t *element) {
     switch(element->type) {
         case ELEMENT_TYPE_NODE:
             for(size_t i = 0; i < element->node.child_count; i++) print_element(element->node.children[i]);
@@ -136,22 +143,72 @@ static void print_tree(const element_inner_t *element, int depth) {
     }
 }
 
-void charon_test(const void *data, size_t data_size) {
+static void print_tokens(const element_array_t *tokens) {
+    printf("  FILE_TOKENS: %zu\n", tokens->count);
+    for(size_t i = 0; i < tokens->count; i++) {
+        const element_inner_t *token = tokens->tokens[i];
+        printf("    [%zu] %s `", i, charon_token_kind_tostring(token->token.kind));
+        print_text(token->token.text);
+        printf("`\n");
+    }
+}
+
+static void print_items(const decl_array_t *items) {
+    printf("  FILE_ITEMS: %zu\n", items->count);
+    for(size_t i = 0; i < items->count; i++) {
+        const element_inner_t *item = items->items[i];
+        printf("    [%zu] %s\n", i, item->type == ELEMENT_TYPE_NODE ? charon_node_kind_tostring(item->node.kind) : "?");
+    }
+}
+
+static void print_diagnostics(db_t *db, const diag_array_t *diagnostics) {
+    printf("  FILE_DIAGNOSTICS: %zu\n", diagnostics->count);
+    for(size_t i = 0; i < diagnostics->count; i++) {
+        const diag_item_t *item = diagnostics->items[i];
+        const file_t *file = db_file_from_handle(db, item->path->file);
+
+        printf("    [%zu] kind=%d path=", i, (int) item->kind);
+        if(file == nullptr)
+            printf("<unknown>");
+        else
+            print_text(file->path);
+
+        printf(" indices=[");
+        for(size_t j = 0; j < item->path->length; j++) printf("%s%zu", j == 0 ? "" : ", ", item->path->indices[j]);
+        printf("]\n");
+    }
+}
+
+void charon_test(const char *path) {
     db_t *db = db_new();
 
-    charon_lexer_t *lexer = charon_lexer_new(data, data_size);
-    lexer_pipeline_t *pipeline = lexer_pipeline_make(db, lexer);
+    const file_t *file = db_add_file(db, path);
+    if(file == nullptr) {
+        db_destroy(db);
+        return;
+    }
 
-    parser_t *parser = parser_make(db, pipeline);
+    query_input_t input = input_for(file);
 
-    parser_output_t output = parser_parse_root(parser);
+    printf("== colored ==\n");
+    query_parse_result_t *parse = (query_parse_result_t *) query_execute(db, QUERY_FILE_PARSE, &input);
+    print_element(parse->root);
+    printf("\n");
 
-    print_element(output.root);
+    printf("== tokens ==\n");
+    element_array_t *tokens = (element_array_t *) query_execute(db, QUERY_FILE_TOKENS, &input);
+    print_tokens(tokens);
 
-    print_tree(output.root, 0);
+    printf("== items ==\n");
+    decl_array_t *items = (decl_array_t *) query_execute(db, QUERY_FILE_ITEMS, &input);
+    print_items(items);
 
-    parser_destroy(parser);
+    printf("== tree ==\n");
+    print_tree(parse->root, 0);
 
-    lexer_pipeline_destroy(pipeline);
-    charon_lexer_destroy(lexer);
+    printf("== diagnostics ==\n");
+    diag_array_t *diagnostics = (diag_array_t *) query_execute(db, QUERY_FILE_DIAGNOSTICS, &input);
+    print_diagnostics(db, diagnostics);
+
+    db_destroy(db);
 }

@@ -27,6 +27,7 @@ static void store_expand(store_t *store, size_t new_size) {
 
     for(size_t i = store->capacity; i < new_size; i++) {
         store->entries[i].revision = 1;
+        store->entries[i].counter = 0;
         store->entries[i].data = store->free_entry_list;
         store->free_entry_list = &store->entries[i];
     }
@@ -53,6 +54,11 @@ store_t *store_new() {
 }
 
 void store_destroy(store_t *store) {
+    for(size_t i = 0; i < store->capacity; i++) {
+        store_entry_t *entry = &store->entries[i];
+        if(entry->counter != 0 && entry->drop_fn != nullptr) entry->drop_fn(entry->data);
+    }
+
     free(store->entries);
     free(store);
 }
