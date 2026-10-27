@@ -46,6 +46,95 @@ static void drop_element_array(void *value) {
     free(array);
 }
 
+/// @brief Compare two diagnostic paths by file handle and index sequence.
+static bool diag_path_equal(const path_t *a, const path_t *b) {
+    if(a == nullptr || b == nullptr) return a == b;
+
+    if(a->file.index != b->file.index || a->file.revision != b->file.revision) return false;
+    if(a->length != b->length) return false;
+
+    for(size_t i = 0; i < a->length; i++) {
+        if(a->indices[i] != b->indices[i]) return false;
+    }
+    return true;
+}
+
+/// @brief Compare two diagnostics' payloads, selecting the union member by kind.
+static bool diag_data_equal(diag_t kind, const diag_data_t *a, const diag_data_t *b) {
+    if(a == nullptr || b == nullptr) return a == b;
+
+    switch(kind) {
+        case CHARON_DIAG_UNEXPECTED_TOKEN:
+            if(a->unexpected_token.found != b->unexpected_token.found) return false;
+            if(a->unexpected_token.expected_count != b->unexpected_token.expected_count) return false;
+            for(size_t i = 0; i < a->unexpected_token.expected_count; i++) {
+                if(a->unexpected_token.expected[i] != b->unexpected_token.expected[i]) return false;
+            }
+            return true;
+    }
+    return false;
+}
+
+static bool diag_item_equal(const diag_item_t *a, const diag_item_t *b) {
+    if(a->kind != b->kind) return false;
+    if(!diag_path_equal(a->path, b->path)) return false;
+    return diag_data_equal(a->kind, a->data, b->data);
+}
+
+static bool diag_list_equal(const diag_item_t *a, const diag_item_t *b) {
+    while(a != nullptr && b != nullptr) {
+        if(!diag_item_equal(a, b)) return false;
+        a = a->next;
+        b = b->next;
+    }
+    return a == nullptr && b == nullptr;
+}
+
+/// @note The parse tree is interned, the diagnostics are freshly heap allocated and have to be compared structurally.
+static bool equal_parse_result(const void *old_value, const void *new_value) {
+    const query_parse_result_t *old_result = old_value;
+    const query_parse_result_t *new_result = new_value;
+
+    if(old_result->root != new_result->root) return false;
+    return diag_list_equal(old_result->diagnostics, new_result->diagnostics);
+}
+
+/// @note Diagnostics are owned by the parse result, so the arrays are compared by pointer
+static bool equal_diag_array(const void *old_value, const void *new_value) {
+    const diag_array_t *old_array = old_value;
+    const diag_array_t *new_array = new_value;
+
+    if(old_array->count != new_array->count) return false;
+    for(size_t i = 0; i < old_array->count; i++) {
+        if(old_array->items[i] != new_array->items[i]) return false;
+    }
+    return true;
+}
+
+/// @note Elements are interned, so pointer equality is structural equality.
+static bool equal_decl_array(const void *old_value, const void *new_value) {
+    const decl_array_t *old_array = old_value;
+    const decl_array_t *new_array = new_value;
+
+    if(old_array->count != new_array->count) return false;
+    for(size_t i = 0; i < old_array->count; i++) {
+        if(old_array->items[i] != new_array->items[i]) return false;
+    }
+    return true;
+}
+
+/// @note Elements are interned, so pointer equality is structural equality.
+static bool equal_element_array(const void *old_value, const void *new_value) {
+    const element_array_t *old_array = old_value;
+    const element_array_t *new_array = new_value;
+
+    if(old_array->count != new_array->count) return false;
+    for(size_t i = 0; i < old_array->count; i++) {
+        if(old_array->tokens[i] != new_array->tokens[i]) return false;
+    }
+    return true;
+}
+
 static void *exec_file_parse(db_t *db, const query_input_t *input) {
     const file_t *file = input->ptr;
     const text_t *source = db_file_source(db, file);
@@ -148,11 +237,11 @@ static void *exec_file_tokens(db_t *db, const query_input_t *input) {
 }
 
 static const query_desc_t DESCRIPTORS[QUERY_KIND_COUNT] = {
-    [QUERY_FILE_TEXT] = { .name = "FILE_TEXT",        .is_input = true,  .exec = nullptr,               .drop = nullptr            },
-    [QUERY_FILE_PARSE] = { .name = "FILE_PARSE",       .is_input = false, .exec = exec_file_parse,       .drop = drop_parse_result  },
-    [QUERY_FILE_DIAGNOSTICS] = { .name = "FILE_DIAGNOSTICS", .is_input = false, .exec = exec_file_diagnostics, .drop = drop_diag_array    },
-    [QUERY_FILE_ITEMS] = { .name = "FILE_ITEMS",       .is_input = false, .exec = exec_file_items,       .drop = drop_decl_array    },
-    [QUERY_FILE_TOKENS] = { .name = "FILE_TOKENS",      .is_input = false, .exec = exec_file_tokens,      .drop = drop_element_array },
+    [QUERY_FILE_TEXT] = { .name = "FILE_TEXT",        .is_input = true,  .exec = nullptr,               .drop = nullptr,            .value_equal = nullptr             },
+    [QUERY_FILE_PARSE] = { .name = "FILE_PARSE",       .is_input = false, .exec = exec_file_parse,       .drop = drop_parse_result,  .value_equal = equal_parse_result  },
+    [QUERY_FILE_DIAGNOSTICS] = { .name = "FILE_DIAGNOSTICS", .is_input = false, .exec = exec_file_diagnostics, .drop = drop_diag_array,    .value_equal = equal_diag_array    },
+    [QUERY_FILE_ITEMS] = { .name = "FILE_ITEMS",       .is_input = false, .exec = exec_file_items,       .drop = drop_decl_array,    .value_equal = equal_decl_array    },
+    [QUERY_FILE_TOKENS] = { .name = "FILE_TOKENS",      .is_input = false, .exec = exec_file_tokens,      .drop = drop_element_array, .value_equal = equal_element_array },
 };
 
 const query_desc_t *query_descriptor(query_kind_t kind) {

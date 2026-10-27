@@ -9,11 +9,13 @@
 #include "query/input.h"
 
 #include <assert.h>
+#include <inttypes.h>
 #include <stdbool.h>
 #include <stddef.h>
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 
 typedef struct query_memo {
     query_key_t *key;
@@ -148,9 +150,17 @@ const void *query_execute(db_t *db, query_kind_t kind, const query_input_t *inpu
 
     list_pop_back(&db->query.in_progress_memos);
 
+    store_drop_fn_t drop = desc->drop != nullptr ? desc->drop : query_drop_none;
+
+    if(memo->has_run && desc->value_equal != nullptr && desc->value_equal(store_get(db->store, memo->result), value)) {
+        drop(value);
+        memo->verified_at = db->query.revision;
+        db->query.misses++;
+        return store_get(db->store, memo->result);
+    }
+
     if(memo->has_run) store_unref(db->store, memo->result);
 
-    store_drop_fn_t drop = desc->drop != nullptr ? desc->drop : query_drop_none;
     memo->result = store_insert(db->store, value, drop);
     memo->has_run = true;
     memo->verified_at = db->query.revision;

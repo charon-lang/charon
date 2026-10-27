@@ -10,6 +10,10 @@
 typedef uint32_t query_kind_t;
 typedef struct query_input query_input_t;
 
+/// @brief Compare a derived query's previous value against its recomputed value
+/// @note Returning true lets the engine back-date changed_at, so dependents are not re-ran
+typedef bool (*query_value_equal_fn_t)(const void *old_value, const void *new_value);
+
 typedef struct {
     const char *name;
     bool is_input;
@@ -21,6 +25,9 @@ typedef struct {
 
     /// @brief Release a value previously returned by `exec`, or `nullptr` for values that are interned/shared and therefore never freed.
     store_drop_fn_t drop;
+
+    /// @brief Optional early cutoff comparison, see query_value_equal_fn_t. nullptr will force the engine to always re-run dependents.
+    query_value_equal_fn_t value_equal;
 } query_desc_t;
 
 /// @brief fetch the descriptor for a kind
